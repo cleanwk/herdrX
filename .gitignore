@@ -60,3 +60,12 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# Generated build products
+.build/
+build/
+DerivedData/
+*.xcodeproj/
+*.xcworkspace/
+.impeccable/review/
+__pycache__/

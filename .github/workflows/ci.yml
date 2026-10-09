@@ -1,0 +1,21 @@
+name: Build and test
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+permissions:
+  contents: read
+jobs:
+  macos:
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - run: scripts/build.sh
+      - run: scripts/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Herd-X-preview
+          path: build/dist/*
+          retention-days: 14

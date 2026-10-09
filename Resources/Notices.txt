@@ -1,0 +1,19 @@
+Herd-X third-party notices
+
+Herd-X source: MIT (see repository LICENSE).
+Original icon artwork was generated for this project; no Ghostty logo is bundled.
+
+libghostty-spm 1.6.20260909: MIT
+https://github.com/Lakr233/libghostty-spm
+
+Ghostty: MIT
+https://github.com/ghostty-org/ghostty
+The libghostty binary and its bundled dependencies retain their upstream notices.
+
+Sparkle 2.9.6: MIT
+https://github.com/sparkle-project/Sparkle
+Sparkle framework contains its upstream license and acknowledgment files.
+
+Herdr is an external service/CLI, not redistributed in this application.
+Herd-X uses Herdr's public RPC and plugin contracts. No implementation from the
+PolyForm-licensed herdrm reference application is copied into this repository.
