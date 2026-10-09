@@ -23,4 +23,3 @@ public struct PaneKey: Codable, Hashable, Sendable {
     public let pane: String
     public init(device: String, pane: String) { self.device = device; self.pane = pane }
 }
-
