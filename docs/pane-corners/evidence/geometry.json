@@ -1,0 +1,585 @@
+[
+  {
+    "window": [
+      1200,
+      760
+    ],
+    "canvas": [
+      1184,
+      723
+    ],
+    "corners": [
+      8,
+      8
+    ],
+    "fullScreen": false,
+    "visiblePanes": [],
+    "source": "macOS 27 resolved corner radii"
+  },
+  {
+    "window": [
+      1200,
+      760
+    ],
+    "canvas": [
+      1184,
+      723
+    ],
+    "corners": [
+      8,
+      8
+    ],
+    "fullScreen": false,
+    "visiblePanes": [
+      {
+        "pane": "w1:p1",
+        "frame": [
+          4,
+          4,
+          580,
+          695
+        ]
+      },
+      {
+        "pane": "w1:p2",
+        "frame": [
+          600,
+          4,
+          580,
+          695
+        ]
+      }
+    ],
+    "source": "macOS 27 resolved corner radii"
+  },
+  {
+    "window": [
+      1200,
+      760
+    ],
+    "canvas": [
+      1184,
+      723
+    ],
+    "corners": [
+      8,
+      8
+    ],
+    "fullScreen": false,
+    "visiblePanes": [
+      {
+        "pane": "w1:p3",
+        "frame": [
+          4,
+          369.5,
+          580,
+          329.5
+        ]
+      },
+      {
+        "pane": "w1:p4",
+        "frame": [
+          600,
+          369.5,
+          580,
+          329.5
+        ]
+      },
+      {
+        "pane": "w1:p5",
+        "frame": [
+          4,
+          4,
+          580,
+          329.5
+        ]
+      },
+      {
+        "pane": "w1:p6",
+        "frame": [
+          600,
+          4,
+          580,
+          329.5
+        ]
+      }
+    ],
+    "source": "macOS 27 resolved corner radii"
+  },
+  {
+    "window": [
+      1200,
+      760
+    ],
+    "canvas": [
+      1184,
+      723
+    ],
+    "corners": [
+      0,
+      8
+    ],
+    "fullScreen": false,
+    "visiblePanes": [
+      {
+        "pane": "w1:p3",
+        "frame": [
+          4,
+          369.5,
+          580,
+          329.5
+        ]
+      },
+      {
+        "pane": "w1:p4",
+        "frame": [
+          600,
+          369.5,
+          580,
+          329.5
+        ]
+      },
+      {
+        "pane": "w1:p5",
+        "frame": [
+          4,
+          4,
+          580,
+          329.5
+        ]
+      },
+      {
+        "pane": "w1:p6",
+        "frame": [
+          600,
+          4,
+          580,
+          329.5
+        ]
+      }
+    ],
+    "source": "macOS 27 resolved corner radii"
+  },
+  {
+    "window": [
+      1200,
+      760
+    ],
+    "canvas": [
+      923,
+      723
+    ],
+    "corners": [
+      0,
+      8
+    ],
+    "fullScreen": false,
+    "visiblePanes": [],
+    "source": "macOS 26 container-inset path forced on macOS 27"
+  },
+  {
+    "window": [
+      980,
+      620
+    ],
+    "canvas": [
+      923,
+      723
+    ],
+    "corners": [
+      0,
+      8
+    ],
+    "fullScreen": false,
+    "visiblePanes": [
+      {
+        "pane": "w1:p1",
+        "frame": [
+          4,
+          4,
+          449.5,
+          695
+        ]
+      },
+      {
+        "pane": "w1:p2",
+        "frame": [
+          469.5,
+          4,
+          449.5,
+          695
+        ]
+      }
+    ],
+    "source": "macOS 26 container-inset path forced on macOS 27"
+  },
+  {
+    "window": [
+      980,
+      620
+    ],
+    "canvas": [
+      703,
+      583
+    ],
+    "corners": [
+      0,
+      8
+    ],
+    "fullScreen": false,
+    "visiblePanes": [
+      {
+        "pane": "w1:p1",
+        "frame": [
+          4,
+          4,
+          339.5,
+          555
+        ]
+      },
+      {
+        "pane": "w1:p2",
+        "frame": [
+          359.5,
+          4,
+          339.5,
+          555
+        ]
+      }
+    ],
+    "source": "macOS 26 container-inset path forced on macOS 27"
+  },
+  {
+    "window": [
+      980,
+      620
+    ],
+    "canvas": [
+      703,
+      583
+    ],
+    "corners": [
+      0,
+      8
+    ],
+    "fullScreen": false,
+    "visiblePanes": [
+      {
+        "pane": "w1:p3",
+        "frame": [
+          4,
+          299.5,
+          339.5,
+          259.5
+        ]
+      },
+      {
+        "pane": "w1:p4",
+        "frame": [
+          359.5,
+          299.5,
+          339.5,
+          259.5
+        ]
+      },
+      {
+        "pane": "w1:p5",
+        "frame": [
+          4,
+          4,
+          339.5,
+          259.5
+        ]
+      },
+      {
+        "pane": "w1:p6",
+        "frame": [
+          359.5,
+          4,
+          339.5,
+          259.5
+        ]
+      }
+    ],
+    "source": "macOS 26 container-inset path forced on macOS 27"
+  },
+  {
+    "window": [
+      980,
+      620
+    ],
+    "canvas": [
+      964,
+      583
+    ],
+    "corners": [
+      8,
+      8
+    ],
+    "fullScreen": false,
+    "visiblePanes": [
+      {
+        "pane": "w1:p3",
+        "frame": [
+          4,
+          299.5,
+          470,
+          259.5
+        ]
+      },
+      {
+        "pane": "w1:p4",
+        "frame": [
+          490,
+          299.5,
+          470,
+          259.5
+        ]
+      },
+      {
+        "pane": "w1:p5",
+        "frame": [
+          4,
+          4,
+          470,
+          259.5
+        ]
+      },
+      {
+        "pane": "w1:p6",
+        "frame": [
+          490,
+          4,
+          470,
+          259.5
+        ]
+      }
+    ],
+    "source": "macOS 26 container-inset path forced on macOS 27"
+  },
+  {
+    "window": [
+      1512,
+      949
+    ],
+    "canvas": [
+      964,
+      583
+    ],
+    "corners": [
+      8,
+      0
+    ],
+    "fullScreen": true,
+    "visiblePanes": [
+      {
+        "pane": "w1:p3",
+        "frame": [
+          4,
+          299.5,
+          470,
+          259.5
+        ]
+      },
+      {
+        "pane": "w1:p4",
+        "frame": [
+          490,
+          299.5,
+          470,
+          259.5
+        ]
+      },
+      {
+        "pane": "w1:p5",
+        "frame": [
+          4,
+          4,
+          470,
+          259.5
+        ]
+      },
+      {
+        "pane": "w1:p6",
+        "frame": [
+          490,
+          4,
+          470,
+          259.5
+        ]
+      }
+    ],
+    "source": "macOS 26 container-inset path forced on macOS 27"
+  },
+  {
+    "window": [
+      1512,
+      949
+    ],
+    "canvas": [
+      1496,
+      912
+    ],
+    "corners": [
+      0,
+      0
+    ],
+    "fullScreen": true,
+    "visiblePanes": [
+      {
+        "pane": "w1:p3",
+        "frame": [
+          4,
+          464,
+          736,
+          424
+        ]
+      },
+      {
+        "pane": "w1:p4",
+        "frame": [
+          756,
+          464,
+          736,
+          424
+        ]
+      },
+      {
+        "pane": "w1:p5",
+        "frame": [
+          4,
+          4,
+          736,
+          424
+        ]
+      },
+      {
+        "pane": "w1:p6",
+        "frame": [
+          756,
+          4,
+          736,
+          424
+        ]
+      }
+    ],
+    "source": "macOS 26 container-inset path forced on macOS 27"
+  },
+  {
+    "window": [
+      980,
+      620
+    ],
+    "canvas": [
+      1496,
+      912
+    ],
+    "corners": [
+      8,
+      8
+    ],
+    "fullScreen": false,
+    "visiblePanes": [
+      {
+        "pane": "w1:p3",
+        "frame": [
+          4,
+          464,
+          736,
+          424
+        ]
+      },
+      {
+        "pane": "w1:p4",
+        "frame": [
+          756,
+          464,
+          736,
+          424
+        ]
+      },
+      {
+        "pane": "w1:p5",
+        "frame": [
+          4,
+          4,
+          736,
+          424
+        ]
+      },
+      {
+        "pane": "w1:p6",
+        "frame": [
+          756,
+          4,
+          736,
+          424
+        ]
+      }
+    ],
+    "source": "macOS 26 container-inset path forced on macOS 27"
+  },
+  {
+    "window": [
+      980,
+      620
+    ],
+    "canvas": [
+      964,
+      583
+    ],
+    "corners": [
+      8,
+      8
+    ],
+    "fullScreen": false,
+    "visiblePanes": [
+      {
+        "pane": "w1:p1",
+        "frame": [
+          4,
+          4,
+          470,
+          555
+        ]
+      },
+      {
+        "pane": "w1:p2",
+        "frame": [
+          490,
+          4,
+          470,
+          555
+        ]
+      }
+    ],
+    "source": "macOS 26 container-inset path forced on macOS 27"
+  },
+  {
+    "window": [
+      980,
+      620
+    ],
+    "canvas": [
+      964,
+      583
+    ],
+    "corners": [
+      8,
+      8
+    ],
+    "fullScreen": false,
+    "visiblePanes": [
+      {
+        "pane": "w1:p1",
+        "frame": [
+          4,
+          4,
+          956,
+          555
+        ]
+      }
+    ],
+    "source": "macOS 26 container-inset path forced on macOS 27"
+  }
+]

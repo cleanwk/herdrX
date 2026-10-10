@@ -533,10 +533,10 @@
           "titleMainAvailableFraction": "0.64 with context, otherwise 1.",
           "minimumSizeIntent": "At least 24 columns and 6 rows. PaneMetrics shares contentInset 4pt, headerHeight 24pt, horizontalOverhead 8pt, verticalOverhead 28pt and splitGap 8pt between rendering, Desk.minimumPaneSize and split eligibility.",
           "splitKeyboardIncrement": "5 percentage points within minimum pane bounds.",
-          "outerCorners": "Square pane corners; window rounding belongs to the window outside the inset canvas",
+          "outerCorners": "Continuous outer bottom corners from public window geometry, reduced by the 8pt canvas inset; left only when sidebar hidden; internal/top/full-screen corners square",
           "terminalHeaderHeight": "24pt",
           "minimumSizeFormula": "width=max(160, font*0.65*24+8)+8, height=max(100, font*1.5*6+28)+8, in points; font fallback 13.5pt.",
-          "terminalCornerMask": "None; terminal content is inset inside square pane frames",
+          "terminalCornerMask": "Same continuous path as outline; canvas corner radius minus 4pt content inset, clamped at zero",
           "closeTarget": "22×22pt, focused opacity 0.5, pane/button hover and VoiceOver 1; 150ms ease-out; hidden hit testing disabled",
           "restoreTarget": "22×22pt; 10pt medium SF Symbol. Visible while zoomed.",
           "outerInsets": "8pt left/right/bottom with sidebar shown or hidden; title reserve supplies the top gap",
@@ -949,7 +949,7 @@
       "name": "Terminal Pane",
       "kind": "custom",
       "refersTo": "pane-title",
-      "description": "Real Space-owned Ghostty surface; independent square outlines, approximately 11pt title reserve, 8pt gutters and outer side/bottom margins, 22pt native close/restore targets, and shared PaneMetrics for rendering and split minimums.",
+      "description": "Real Space-owned Ghostty surface; independent outlines with system-concentric outer bottom corners and square internal corners, approximately 11pt title reserve, 8pt gutters and outer side/bottom margins, 22pt native close/restore targets, and shared PaneMetrics for rendering and split minimums.",
       "nativeSource": "App/Terminal.swift: TerminalCanvas.Canvas"
     },
     {

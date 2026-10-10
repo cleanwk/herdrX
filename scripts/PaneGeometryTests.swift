@@ -40,8 +40,30 @@ import CoreGraphics
                 }
             }
         }
+        let outer = PaneCorners(left: 12, right: 12)
+        let left = CGRect(x: 0, y: 0, width: 0.5, height: 1)
+        let right = CGRect(x: 0.5, y: 0, width: 0.5, height: 1)
+        let upper = CGRect(x: 0, y: 0, width: 1, height: 0.5)
+        let lower = CGRect(x: 0, y: 0.5, width: 1, height: 0.5)
+        precondition(outer.forPane(left, fullScreen: false) == PaneCorners(left: 12))
+        precondition(outer.forPane(right, fullScreen: false) == PaneCorners(right: 12))
+        precondition(outer.forPane(upper, fullScreen: false) == PaneCorners())
+        precondition(outer.forPane(lower, fullScreen: false) == outer)
+        precondition(outer.forPane(lower, fullScreen: true) == PaneCorners())
+        let sidebar = PaneCorners(right: 12)
+        precondition(sidebar.forPane(left, fullScreen: false) == PaneCorners())
+        precondition(sidebar.forPane(right, fullScreen: false) == sidebar)
+        precondition(outer.inset(by: 0.75) == PaneCorners(left: 11.25, right: 11.25))
+        precondition(outer.inset(by: 4) == PaneCorners(left: 8, right: 8))
+        precondition(outer.inset(by: 20) == PaneCorners())
+        let shape = CGRect(x: 0, y: 0, width: 300, height: 200)
+        let curved = PaneShape.path(in: shape, corners: PaneCorners(left: 12))
+        precondition(!curved.contains(CGPoint(x: 0.1, y: 0.1)), "Outer bottom corner is still square")
+        precondition(curved.contains(CGPoint(x: 0.1, y: 199.9)), "Top corner was rounded")
+        precondition(curved.contains(CGPoint(x: 299.9, y: 0.1)), "Internal bottom corner was rounded")
+        precondition(PaneShape.path(in: shape, corners: PaneCorners()).contains(CGPoint(x: 0.1, y: 0.1)), "Full-screen or internal corner is not square")
         let tiny = PaneMetrics.frame(CGRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5), in: CGSize(width: 2, height: 2), scale: 2)
         precondition(tiny.width >= 0 && tiny.height >= 0, "Tiny layout produced a negative frame")
-        print("PASS: independent pane borders, 8pt gutters, nested/stacked/grid layouts, resize, 1×/2× pixel alignment and outer canvas edges")
+        print("PASS: independent pane borders, 8pt gutters, nested/stacked/grid layouts, resize, 1×/2× pixel alignment, outer canvas edges, selective continuous corners and concentric terminal masks")
     }
 }

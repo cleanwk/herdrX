@@ -109,7 +109,7 @@ rounded:
   agent-selection: "7pt"
   font-preview: "7pt"
   reconnect: "8pt"
-  pane: "0pt"
+  pane: "System-concentric outer bottom corners; internal and full-screen corners 0pt"
 spacing:
   sidebar-row-x: "8pt"
   sidebar-content-indent: "18pt"
@@ -349,7 +349,7 @@ There is no authored shadow or motion vocabulary. Theme surfaces, thin outlines,
 
 ## Shapes
 
-Use the component-specific frontmatter radii for rows, tabs, preview, search and recovery. All pane corners are square, following the native Herdr reference. The entire pane area now sits inside the window contour, so pane outlines no longer borrow the window corner radius or require terminal corner masks. Strokes are 1.5pt on Retina and round to 2pt on 1× displays to keep both stroke edges on backing pixels. Each outline is inset by half the stroke width. Internal edges are independent, not overdrawn shared lines. Accent controls retain their native circular geometry.
+Use the component-specific frontmatter radii for rows, tabs, preview, search and recovery. Only the bottom corners nearest the window contour use continuous, concentric curves. Resolve their radii from public SwiftUI window geometry after the 8pt canvas inset (resolved radii on macOS 27+, container corner insets on macOS 26; nominal 10pt window radius minus the inset on older systems). The left corner stays square beside a visible sidebar. Every internal split corner, top corner and full-screen corner stays square. Subtract half the stroke width for the outline centerline and 4pt for the terminal content mask; both use the same continuous path. Recompute after sidebar, layout, backing-scale and full-screen changes. Strokes are 1.5pt on Retina and round to 2pt on 1× displays to keep both stroke edges on backing pixels. Each outline is inset by half the stroke width. Internal edges are independent, not overdrawn shared lines. Accent controls retain their native circular geometry.
 
 ## Components
 
