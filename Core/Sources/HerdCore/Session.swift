@@ -42,21 +42,7 @@ public struct Session: Equatable, Sendable {
               panes.allSatisfy({ pane in tabKeys.contains(pane.workspace + "|" + pane.tab) }) else { throw Failure("Invalid session topology") }
     }
     public static func load(_ rpc: RPC) async throws -> Session {
-        do { return try Session(try await rpc.call("session.snapshot")["snapshot"]) }
-        catch {
-            // Build the whole fallback transaction before exposing anything to UI.
-            let spaces = try await rpc.call("workspace.list")["workspaces"]
-            guard case .array = spaces else { throw Failure("Invalid workspace list") }
-            var tabs: [JSON] = []; var panes: [JSON] = []
-            for space in spaces.array {
-                let group = try await rpc.call("tab.list", ["workspace_id": space["workspace_id"]])["tabs"]
-                guard case .array = group else { throw Failure("Invalid tab list") }
-                tabs += group.array
-                let list = try await rpc.call("pane.list", ["workspace_id": space["workspace_id"]])["panes"]
-                guard case .array = list else { throw Failure("Invalid pane list") }; panes += list.array
-            }
-            return try Session(.object(["workspaces": spaces, "tabs": .array(tabs), "panes": .array(panes)]))
-        }
+        return try Session(try await rpc.call("session.snapshot")["snapshot"])
     }
 }
 

@@ -2,7 +2,7 @@ import XCTest
 import Darwin
 @testable import HerdCore
 
-/// A real Unix socket exercises framing, fallback transactions and event recovery.
+/// A real Unix socket exercises framing, snapshot validation and event recovery.
 private final class Server {
     let path = "/tmp/hxt-" + UUID().uuidString.prefix(10) + ".sock"
     let fd: Int32
@@ -48,24 +48,17 @@ final class TransportTests: XCTestCase {
         let server = try Server(requests: 1) { _ in [.object(["id": .string("wrong"), "result": .object([:])])] }
         do { _ = try await RPC(path: server.path).call("test"); XCTFail("Mismatched response accepted") } catch { XCTAssertTrue(error.localizedDescription.contains("Mismatched")) }
     }
-    func testFallbackLoadsWorkspaceScopedPanesAndRejectsPartialTopology() async throws {
-        for complete in [true, false] {
-            let server = try Server(requests: 4) { request in
-                let result: JSON
-                switch request["method"].string {
-                case "session.snapshot": return [.object(["id": request["id"], "error": .object(["message": .string("method unsupported")])])]
-                case "workspace.list": result = .object(["workspaces": .array([.object(["workspace_id": .string("w1")])])])
-                case "tab.list": result = .object(["tabs": .array([.object(["workspace_id": .string("w1"), "tab_id": .string("t1")])])])
-                case "pane.list":
-                    guard request["params"]["workspace_id"].string == "w1", request["params"]["tab_id"] == .null else { return [] }
-                    result = .object(["panes": .array([.object(["workspace_id": .string("w1"), "tab_id": .string(complete ? "t1" : "missing"), "pane_id": .string("p1"), "terminal_id": .string("terminal-9")])])])
-                default: return []
-                }
-                return [.object(["id": request["id"], "result": result])]
-            }
-            do { let session = try await Session.load(RPC(path: server.path)); XCTAssertTrue(complete); XCTAssertEqual(session.panes.first?.terminal, "terminal-9") }
-            catch { XCTAssertFalse(complete) }
+    func testUnsupportedSnapshotIsNotHiddenByLegacyFallback() async throws {
+        let server = try Server(requests: 1) { request in
+            [.object(["id": request["id"], "error": .object(["message": .string("snapshot unavailable")])])]
         }
+        do { _ = try await Session.load(RPC(path: server.path)); XCTFail("Unsupported snapshot accepted") }
+        catch { XCTAssertTrue(error.localizedDescription.contains("snapshot unavailable")) }
+    }
+    func testArgumentsPreserveBoundariesWithoutShellEvaluation() throws {
+        XCTAssertEqual(try Arguments.parse("--model 'my model' \"\" path\\ with\\ spaces $(whoami)"), ["--model", "my model", "", "path with spaces", "$(whoami)"])
+        XCTAssertThrowsError(try Arguments.parse("--model 'unfinished"))
+        XCTAssertThrowsError(try Arguments.parse("unfinished\\"))
     }
     func testEventHistoryLossRequiresARefreshAndNewSubscription() async throws {
         let server = try Server(requests: 1) { request in [

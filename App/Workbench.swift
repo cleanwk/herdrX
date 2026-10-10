@@ -7,21 +7,28 @@ struct Workbench: View {
     @State private var sidebar: CGFloat = 260
     @State private var baseWidth: CGFloat = 260
     @State private var newAgent = false
+    @State private var newSpace = false
+    @State private var showSidebar = true
+    @State private var deviceFilter = ""
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text("HerdrX").font(.headline).padding(.leading, 80)
+                Button { showSidebar.toggle() } label: { Image(systemName: "sidebar.left") }.help("Toggle Sidebar · ⌘B").padding(.leading, 72)
+                Text(desk.currentDevice?.displayName ?? "This Mac").font(.headline)
                 Spacer()
                 Button { desk.showSearch = true } label: { Label("Jump", systemImage: "magnifyingglass") }.help("Jump to a pane · ⌘K")
-                Menu { ForEach(["codex", "claude", "pi", "cursor"], id: \.self) { agent in Button(agent) { desk.create(agent: agent) } }; Divider(); Button("New Shell") { desk.create() }; Button("New Space") { desk.create(space: true) } } label: { Label("New", systemImage: "plus") }
+                Button { newAgent = true } label: { Label("New Agent", systemImage: "sparkles") }.help("New Agent · ⌘N")
+                Menu { Button("New Terminal") { desk.create() }; Button("New Space…") { newSpace = true } } label: { Image(systemName: "plus") }.help("New Terminal or Space")
                 Button { desk.split(horizontal: true) } label: { Image(systemName: "rectangle.split.2x1") }.help("Split Right · ⌘D")
                 SettingsLink { Image(systemName: "gearshape") }.help("Settings · ⌘,")
             }.buttonStyle(.borderless).padding(.horizontal, 16).frame(height: 48)
             Divider()
             HStack(spacing: 0) {
+                if showSidebar {
                 sidebarView.frame(width: sidebar)
                 Rectangle().fill(Color(nsColor: .separatorColor)).frame(width: 1)
                     .overlay(Rectangle().fill(.clear).frame(width: 8).contentShape(Rectangle()).gesture(DragGesture().onChanged { sidebar = min(450, max(180, baseWidth + $0.translation.width)) }.onEnded { _ in baseWidth = sidebar }).onTapGesture(count: 2) { sidebar = 260; baseWidth = 260 })
+                }
                 VStack(spacing: 0) {
                     Tabs(entries: tabs, selected: desk.selectedTab, select: { id in desk.select(device: desk.selectedDevice, space: desk.selectedSpace, tab: id) }, move: reorder).frame(height: 38)
                     Divider()
@@ -44,9 +51,8 @@ struct Workbench: View {
             }.font(.system(size: 11)).padding(.horizontal, 14).frame(height: 26)
         }.background(Color(nsColor: .windowBackgroundColor))
         .sheet(isPresented: $desk.showSearch) { Jump().environmentObject(desk) }
-        .sheet(isPresented: $newAgent) {
-            VStack(alignment: .leading, spacing: 16) { Text("New Agent").font(.title2); ForEach(["codex", "claude", "pi", "cursor"], id: \.self) { agent in Button(agent) { desk.create(agent: agent); newAgent = false } }; Button("Cancel") { newAgent = false } }.padding(24).frame(width: 320)
-        }
+        .sheet(isPresented: $newAgent) { AgentLaunch().environmentObject(desk) }
+        .sheet(isPresented: $newSpace) { SpaceCreate().environmentObject(desk) }
         .alert("HerdrX", isPresented: Binding(get: { desk.message != nil }, set: { if !$0 { desk.message = nil } })) { Button("OK") { desk.message = nil } } message: { Text(desk.message ?? "") }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in desk.shutdown() }
         .background(shortcuts)
@@ -64,13 +70,14 @@ struct Workbench: View {
     var sidebarView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
+                Picker("Show", selection: $deviceFilter) { Text("All Devices").tag(""); ForEach(desk.devices) { Text($0.displayName).tag($0.id) } }.labelsHidden().accessibilityLabel("Filter devices")
                 VStack(alignment: .leading, spacing: 4) {
                     Text("ON THIS MAC").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary).padding(.horizontal, 8)
                     ForEach(desk.shellTabs) { tab in
                         Button { desk.select(device: nil, tab: tab.id) } label: { Label(tab.label, systemImage: "terminal").lineLimit(1).frame(maxWidth: .infinity, alignment: .leading).padding(8).background(desk.selectedDevice == nil && desk.selectedTab == tab.id ? Color.accentColor.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 6)) }.buttonStyle(.plain)
                     }
                 }
-                ForEach(desk.devices) { device in
+                ForEach(desk.devices.filter { deviceFilter.isEmpty || $0.id == deviceFilter }) { device in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack { Image(systemName: device.endpoint.kind == "local" ? "desktopcomputer" : "server.rack"); Text(device.displayName).fontWeight(.semibold).lineLimit(1); Spacer(); Button { desk.connect(device) } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.borderless).help("Reconnect") }.padding(8)
                         if desk.connections[device.id] != "Connected" { Text(desk.connections[device.id] ?? "Disconnected").font(.caption).foregroundStyle(.secondary).lineLimit(3).padding(.horizontal, 8) }
@@ -78,16 +85,28 @@ struct Workbench: View {
                             let pane = desk.sessions[device.id]?.panes.first { $0.workspace == space.id }
                             Button { desk.select(device: device.id, space: space.id) } label: {
                                 VStack(alignment: .leading, spacing: 3) { Text(space.label).fontWeight(.medium).lineLimit(1); Text(space.tokens.isEmpty ? pane?.cwd ?? "Workspace" : space.tokens.keys.sorted().compactMap { space.tokens[$0]?.string }.joined(separator: " · ")).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle) }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 10).frame(height: 48).background(desk.selectedDevice == device.id && desk.selectedSpace == space.id ? Color.accentColor.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 6))
-                            }.buttonStyle(.plain)
+                            }.buttonStyle(.plain).contextMenu { Button("Rename…") { desk.renameSpace(device: device.id, space: space) } }
                         }
+                        if (desk.sessions[device.id]?.spaces ?? []).isEmpty, desk.connections[device.id] == "Connected" { Button("Create Space…") { newSpace = true }.buttonStyle(.borderless).padding(.horizontal, 8) }
                     }
                 }
                 if !desk.agents.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("AGENTS").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary).padding(.horizontal, 8)
-                        ForEach(desk.agents) { row in
+                        ForEach(desk.agents.filter { deviceFilter.isEmpty || $0.device == deviceFilter }) { row in
                             let device = row.device, pane = row.pane
-                            Button { desk.jump(device + "|" + pane.id) } label: { HStack { Circle().fill(pane.status == "blocked" ? Color.orange : pane.status == "working" ? Color.green : Color.secondary).frame(width: 6, height: 6); VStack(alignment: .leading, spacing: 2) { Text(pane.label).lineLimit(1); Text(pane.stateLabel).font(.caption).foregroundStyle(.secondary) }; Spacer() }.padding(8) }.buttonStyle(.plain)
+                            Button { desk.jump(device + "|" + pane.id) } label: { HStack { Circle().fill(pane.status == "blocked" ? Color.orange : pane.status == "working" ? Color.green : Color.secondary).frame(width: 6, height: 6); VStack(alignment: .leading, spacing: 2) { Text(pane.label).lineLimit(1); Text((desk.sessions[device]?.spaces.first { $0.id == pane.workspace }?.label ?? "Space") + " · " + (pane.agent ?? "Agent") + " · " + pane.stateLabel).font(.caption).foregroundStyle(.secondary) }; Spacer() }.padding(8) }.buttonStyle(.plain)
+                        }
+                    }
+                }
+                let terminals = desk.devices.filter { deviceFilter.isEmpty || $0.id == deviceFilter }.flatMap { device in (desk.sessions[device.id]?.panes ?? []).filter { $0.agent == nil }.map { AgentRow(device: device.id, pane: $0) } }
+                if !terminals.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("TERMINALS").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary).padding(.horizontal, 8)
+                        ForEach(terminals) { row in
+                            Button { desk.jump(row.device + "|" + row.pane.id) } label: {
+                                HStack(spacing: 8) { Image(systemName: "terminal").foregroundStyle(.secondary); VStack(alignment: .leading, spacing: 2) { Text(row.pane.label).lineLimit(1); Text((desk.sessions[row.device]?.spaces.first { $0.id == row.pane.workspace }?.label ?? "Space") + " · " + (row.pane.cwd ?? "Terminal")).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle) }; Spacer(minLength: 0) }.padding(8)
+                            }.buttonStyle(.plain)
                         }
                     }
                 }
@@ -96,10 +115,11 @@ struct Workbench: View {
     }
     var shortcuts: some View {
         Group {
+            Button("Toggle Sidebar") { showSidebar.toggle() }.keyboardShortcut("b")
             Button("Jump") { desk.showSearch = true }.keyboardShortcut("k")
             Button("New Shell") { desk.create() }.keyboardShortcut("t")
             Button("New Agent") { newAgent = true }.keyboardShortcut("n")
-            Button("New Space") { desk.create(space: true) }.keyboardShortcut("n", modifiers: [.command, .shift])
+            Button("New Space") { newSpace = true }.keyboardShortcut("n", modifiers: [.command, .shift])
             Button("New Tab") { desk.create() }.keyboardShortcut("t", modifiers: [.command, .option])
             Button("Split Right") { desk.split(horizontal: true) }.keyboardShortcut("d")
             Button("Split Down") { desk.split(horizontal: false) }.keyboardShortcut("d", modifiers: [.command, .shift])
@@ -138,9 +158,9 @@ struct Jump: View {
                 .onMoveCommand { direction in if direction == .down { index = min(max(0, results.count - 1), index + 1) }; if direction == .up { index = max(0, index - 1) } }
             ScrollViewReader { reader in ScrollView { LazyVStack(alignment: .leading, spacing: 4) { ForEach(Array(results.enumerated()), id: \.element) { offset, id in
                 let row = desk.jumpRows[id]
-                Button { desk.jump(id) } label: { VStack(alignment: .leading) { Text(row?.label ?? id).lineLimit(1); Text(row?.detail ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(1) }.frame(maxWidth: .infinity, alignment: .leading).padding(8).background(offset == index ? Color.accentColor.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 6)) }.buttonStyle(.plain).id(offset)
-            }; if results.isEmpty { Text("No matching spaces or terminals").foregroundStyle(.secondary).padding(8) } } }.frame(height: 320).onChange(of: index) { reader.scrollTo(index) } }
-            Button("Cancel") { desk.showSearch = false }.keyboardShortcut(.cancelAction)
+                Button { desk.jump(id) } label: { HStack(spacing: 10) { Image(systemName: row?.pane != nil ? "terminal" : row?.space != nil ? "square.stack.3d.up" : "terminal").foregroundStyle(.secondary).frame(width: 22); VStack(alignment: .leading) { Text(row?.label ?? id).lineLimit(1); Text(row?.detail ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(1) }; Spacer(minLength: 0) }.frame(maxWidth: .infinity, alignment: .leading).padding(8).background(offset == index ? Color.accentColor.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 6)) }.buttonStyle(.plain).id(offset)
+            }; if results.isEmpty { Text("No matching spaces or terminals").foregroundStyle(.secondary).padding(8) } } }.frame(height: 320).onChange(of: index) { reader.scrollTo(index, anchor: .center) } }
+            HStack { Text("↑ ↓ Select     ↩ Open     Esc Close").font(.caption).foregroundStyle(.secondary); Spacer(); Button("Cancel") { desk.showSearch = false }.keyboardShortcut(.cancelAction) }
         }.padding(20).frame(width: 520).onAppear { field = true }
     }
 }
@@ -200,5 +220,81 @@ struct Tabs: NSViewRepresentable {
             guard let source else { return }
             if dragged, let insertion { move?(entries[source].0, insertion) } else { select?(entries[source].0) }
         }
+    }
+}
+
+
+private struct AgentLaunch: View {
+    @EnvironmentObject var desk: Desk
+    @Environment(\.dismiss) private var dismiss
+    @State private var device = ""
+    @State private var workspace = ""
+    @State private var kind = ""
+    @State private var options: [(String, String)] = []
+    @State private var arguments = ""
+    @State private var error: String?
+    @State private var loading = false
+    @State private var launching = false
+    var spaces: [Item] { desk.sessions[device]?.spaces ?? [] }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Label("New Agent", systemImage: "sparkles").font(.title2)
+            Form {
+                Picker("Device", selection: $device) { ForEach(desk.devices) { Text($0.displayName).tag($0.id) } }
+                Picker("Space", selection: $workspace) { ForEach(spaces) { Text($0.label).tag($0.id) } }
+                Picker("Agent", selection: $kind) { ForEach(options, id: \.0) { Text($0.1).tag($0.0) } }
+                TextField("Arguments", text: $arguments, prompt: Text("Optional, e.g. --model 'my model'"))
+            }.disabled(launching)
+            if loading { HStack { ProgressView().controlSize(.small); Text("Checking available tools…").foregroundStyle(.secondary) } }
+            if let error { Text(error).font(.callout).foregroundStyle(.secondary).textSelection(.enabled) }
+            Text("Opens a new terminal in this space. Herdr launches the selected tool.").font(.caption).foregroundStyle(.secondary)
+            HStack { Spacer(); Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction).disabled(launching); Button(launching ? "Launching…" : "Launch Agent") {
+                launching = true; error = nil
+                Task { do { let args = try Arguments.parse(arguments); try await desk.createTab(device: device, workspace: workspace, agent: kind, args: args); dismiss() } catch { self.error = error.localizedDescription }; launching = false }
+            }.keyboardShortcut(.defaultAction).disabled(loading || launching || kind.isEmpty || workspace.isEmpty || desk.connections[device] != "Connected") }
+        }.padding(24).frame(width: 480)
+        .onAppear { device = desk.selectedDevice ?? desk.devices.first(where: { desk.connections[$0.id] == "Connected" })?.id ?? desk.devices.first?.id ?? "" }
+        .task(id: device) {
+            let target = device; options = []; kind = ""; error = nil; loading = true
+            workspace = (device == desk.selectedDevice ? desk.selectedSpace : nil) ?? spaces.first?.id ?? ""
+            do {
+                let result = try await desk.rpc(target).call("integration.list")
+                guard !Task.isCancelled, device == target else { return }
+                options = result["integrations"].array.filter { $0["available"] == .bool(true) }.compactMap { value in guard let id = value["target"].string else { return nil }; return (id, value["label"].string ?? id) }
+                kind = options.first?.0 ?? ""
+                if options.isEmpty { error = "No supported tools found. Install an agent CLI on this device, then reopen this sheet." }
+                if spaces.isEmpty { error = "Create a space on this device before launching an agent." }
+            } catch { if !Task.isCancelled { self.error = "Cannot load agents: " + error.localizedDescription } }
+            if !Task.isCancelled { loading = false }
+        }
+    }
+}
+
+private struct SpaceCreate: View {
+    @EnvironmentObject var desk: Desk
+    @Environment(\.dismiss) private var dismiss
+    @State private var device = ""
+    @State private var name = ""
+    @State private var path = ""
+    @State private var error: String?
+    @State private var busy = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Label("New Space", systemImage: "square.stack.3d.up").font(.title2)
+            Form {
+                Picker("Device", selection: $device) { ForEach(desk.devices) { Text($0.displayName).tag($0.id) } }
+                TextField("Name", text: $name, prompt: Text("Project name"))
+                TextField("Directory", text: $path, prompt: Text("Absolute path on this device"))
+            }.disabled(busy)
+            Text("Herdr creates the space in an existing directory on the selected device.").font(.caption).foregroundStyle(.secondary)
+            if let error { Text(error).foregroundStyle(.secondary).textSelection(.enabled) }
+            if desk.connections[device] != "Connected" { Text("Connect this device in Settings before creating a space.").font(.callout).foregroundStyle(.secondary) }
+            HStack { Spacer(); Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction).disabled(busy); Button(busy ? "Creating…" : "Create Space") {
+                busy = true; error = nil
+                Task { do { try await desk.createSpace(device: device, name: name.trimmingCharacters(in: .whitespaces), cwd: path); dismiss() } catch { self.error = error.localizedDescription }; busy = false }
+            }.keyboardShortcut(.defaultAction).disabled(busy || name.trimmingCharacters(in: .whitespaces).isEmpty || !path.hasPrefix("/") || path.contains(where: \.isNewline) || desk.connections[device] != "Connected") }
+        }.padding(24).frame(width: 480)
+        .onAppear { device = desk.selectedDevice ?? desk.devices.first(where: { desk.connections[$0.id] == "Connected" })?.id ?? desk.devices.first?.id ?? "" }
+        .onChange(of: device) { _, _ in path = device == desk.selectedDevice ? desk.currentPane?.cwd ?? "" : ""; if path.isEmpty, desk.devices.first(where: { $0.id == device })?.endpoint.kind == "local" { path = NSHomeDirectory() } }
     }
 }

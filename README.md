@@ -8,14 +8,14 @@
 
 ## 安装与升级
 
-主要分发渠道是现有的 [cleanwk/homebrew-tap](https://github.com/cleanwk/homebrew-tap)。**首个稳定版本发布后**，tap 会自动生成 `herdrx` cask：
+主要分发渠道是现有的 [cleanwk/homebrew-tap](https://github.com/cleanwk/homebrew-tap)。每次稳定版本发布后，GitHub Actions 自动打包并更新 `herdrx` cask：
 
 ```sh
 brew install --cask cleanwk/tap/herdrx
 brew update && brew upgrade --cask herdrx
 ```
 
-默认版本采用 ad-hoc 签名，不需要 Apple Developer ID 或公证凭据。首次打开若被 macOS 拦截，先尝试启动，再到系统设置 → 隐私与安全 → 仍要打开。Brew 保留正常 quarantine 检查，应用更新后可能需要再次确认。CI 的预览包不作为正式版本同步；版本 tag 发布的稳定包才同步到 cask。见 [Release](docs/Release.md)。
+默认版本采用 ad-hoc 签名，不需要 Apple Developer ID 或公证凭据。首次打开若被 macOS 拦截，先尝试启动，再到系统设置 → 隐私与安全 → 仍要打开。Brew 保留正常 quarantine 检查，应用更新后可能需要再次确认。若明确接受当前未公证版本，可用 `brew install --cask --no-quarantine cleanwk/tap/herdrx` 安装；已安装时只对本 App 执行 `xattr -dr com.apple.quarantine /Applications/HerdrX.app`，无需关闭全局 Gatekeeper。CI 的预览包不作为正式版本同步；版本 tag 发布的稳定包才同步到 cask。见 [Release](docs/Release.md)。
 
 ## 使用
 
@@ -34,11 +34,12 @@ brew update && brew upgrade --cask herdrx
 | ⌘⇧Return | 放大或还原当前 Pane |
 | ⌘1…9 / ⌘⇧[ / ⌘⇧] | 选择或轮换标签 |
 | ⌘W | 关闭当前 Pane；最后一个本地 Shell 关闭窗口 |
+| ⌘B | 隐藏或显示侧栏 |
 | ⌘K | 搜索 Space、Shell 与 Agent，支持拼音和首字母 |
 | ⌘⇧J | 跳至其他等待输入或已完成的 Agent |
 | ⌘⇧R | 恢复终端输入模式 |
 
-侧栏分隔线可拖动，双击恢复默认宽度。分屏分隔线支持拖动；服务端比例在放开鼠标时提交。Settings → Terminal 调整字体和行距，通知需要主动开启。HerdrX 不内置文件目录、文件预览或文件传输。
+侧栏分隔线可拖动，双击恢复默认宽度。分屏分隔线支持拖动；服务端比例在放开鼠标时提交。New Agent 从 Herdr 获取可用工具，选择设备、空间与可选参数后启动；New Space 显式输入名称和目录。侧栏按设备筛选，Space 右键重命名。Settings → Appearance 选择系统、浅色或深色；Terminal 调整字体和行距并预览，Notifications 主动开启通知及声音，点击提醒返回对应 Pane。HerdrX 不内置文件目录、文件预览或文件传输。
 
 ## Herdr 扩展
 
