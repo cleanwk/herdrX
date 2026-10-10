@@ -69,11 +69,11 @@ private struct Updates: View {
         Form {
             Text("Homebrew").font(.headline)
             Text("Install and upgrade from your existing cleanwk tap.")
-            Text("brew install --cask cleanwk/tap/herd-x\nbrew update && brew upgrade --cask herd-x").font(.system(.body, design: .monospaced)).textSelection(.enabled)
+            Text("brew install --cask cleanwk/tap/herdrx\nbrew update && brew upgrade --cask herdrx").font(.system(.body, design: .monospaced)).textSelection(.enabled)
             Text("Homebrew manages Brew installations. Signed direct downloads can use Sparkle when a release signing key is configured.").font(.caption).foregroundStyle(.secondary)
             Button("Check Direct Download Updates") { updater?.checkForUpdates(nil) }.disabled(updater == nil)
         }.formStyle(.grouped).onAppear {
-            let brewOwned = ["/opt/homebrew/Caskroom/herd-x", "/usr/local/Caskroom/herd-x"].contains { FileManager.default.fileExists(atPath: $0) }
+            let brewOwned = ["/opt/homebrew/Caskroom/herdrx", "/usr/local/Caskroom/herdrx", "/opt/homebrew/Caskroom/herd-x", "/usr/local/Caskroom/herd-x"].contains { FileManager.default.fileExists(atPath: $0) }
             let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String ?? ""
             if !brewOwned, !key.isEmpty, !key.contains("$(") { updater = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil) }
         }

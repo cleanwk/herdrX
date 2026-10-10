@@ -1,18 +1,18 @@
-# Herd-X
+# HerdrX
 
 原生 macOS Herdr 工作台：在一个窗口里管理本机和 SSH 设备上的 Space、标签、分屏终端与编码 Agent。SwiftUI / AppKit 界面，Ghostty 渲染原始终端字节，Herdr 管理服务端会话与扩展。
 
-![Herd-X icon](Resources/Icon/Preview.png)
+![HerdrX icon](Resources/Icon/Preview.png)
 
 支持 macOS 14+，发布包同时包含 Apple Silicon 和 Intel。
 
 ## 安装与升级
 
-主要分发渠道是现有的 [cleanwk/homebrew-tap](https://github.com/cleanwk/homebrew-tap)。**首个稳定版本发布后**，tap 会自动生成 `herd-x` cask：
+主要分发渠道是现有的 [cleanwk/homebrew-tap](https://github.com/cleanwk/homebrew-tap)。**首个稳定版本发布后**，tap 会自动生成 `herdrx` cask：
 
 ```sh
-brew install --cask cleanwk/tap/herd-x
-brew update && brew upgrade --cask herd-x
+brew install --cask cleanwk/tap/herdrx
+brew update && brew upgrade --cask herdrx
 ```
 
 默认版本采用 ad-hoc 签名，不需要 Apple Developer ID 或公证凭据。首次打开若被 macOS 拦截，先尝试启动，再到系统设置 → 隐私与安全 → 仍要打开。Brew 保留正常 quarantine 检查，应用更新后可能需要再次确认。CI 的预览包不作为正式版本同步；版本 tag 发布的稳定包才同步到 cask。见 [Release](docs/Release.md)。
@@ -23,7 +23,7 @@ brew update && brew upgrade --cask herd-x
 
 本机默认读取 `~/.config/herdr/herdr.sock`。需要在对应设备安装并运行 Herdr；已核对的契约版本是 **Herdr 0.9.3 / protocol 22**。普通 Shell 的运行不依赖 Herdr。
 
-选择服务器 Space 会附着该标签的终端，并使用 Herdr 的 `--takeover` 语义。后续切换标签复用同一 attach。其他客户端接管后，点击 Reconnect 手动恢复。退出 Herd-X 或删除设备连接只会断开客户端；关闭服务器 Pane 会另行确认，因为它会终止服务端进程。
+选择服务器 Space 会附着该标签的终端，并使用 Herdr 的 `--takeover` 语义。后续切换标签复用同一 attach。其他客户端接管后，点击 Reconnect 手动恢复。退出 HerdrX 或删除设备连接只会断开客户端；关闭服务器 Pane 会另行确认，因为它会终止服务端进程。
 
 | 快捷键 | 操作 |
 | --- | --- |
@@ -38,13 +38,13 @@ brew update && brew upgrade --cask herd-x
 | ⌘⇧J | 跳至其他等待输入或已完成的 Agent |
 | ⌘⇧R | 恢复终端输入模式 |
 
-侧栏分隔线可拖动，双击恢复默认宽度。分屏分隔线支持拖动；服务端比例在放开鼠标时提交。Settings → Terminal 调整字体和行距，通知需要主动开启。Herd-X 不内置文件目录、文件预览或文件传输。
+侧栏分隔线可拖动，双击恢复默认宽度。分屏分隔线支持拖动；服务端比例在放开鼠标时提交。Settings → Terminal 调整字体和行距，通知需要主动开启。HerdrX 不内置文件目录、文件预览或文件传输。
 
 ## Herdr 扩展
 
 沿用 Herdr 原有的 TOML manifest 与 `plugin.*` API。通过 `herdr plugin install` 在目标设备安装扩展，在 Settings → Plugins 查看、启停、运行动作、阅读日志或以 Tab 打开终端面板。执行上下文由 GUI 传给 Herdr，扩展进程由 Herdr 托管。
 
-Herdr v1 的扩展面板是终端面板；Herd-X 不另建 manifest、插件进程管理器、权限协议或 Schema UI。ACC 业务不在本项目范围内。元数据标题、状态标签及 workspace token 直接来自 Herdr。[上游插件契约](https://github.com/herdrdev/herdr/blob/v0.9.3/docs/next/website/src/content/docs/plugins.mdx)。
+Herdr v1 的扩展面板是终端面板；HerdrX 不另建 manifest、插件进程管理器、权限协议或 Schema UI。ACC 业务不在本项目范围内。元数据标题、状态标签及 workspace token 直接来自 Herdr。[上游插件契约](https://github.com/herdrdev/herdr/blob/v0.9.3/docs/next/website/src/content/docs/plugins.mdx)。
 
 ## 构建
 
@@ -56,9 +56,9 @@ scripts/build.sh
 scripts/package.sh
 ```
 
-产物在 `build/release/Build/Products/Release/Herd-X.app`，ZIP 和校验信息在 `build/dist/`。默认采用本地 ad-hoc 签名。`SIGN_IDENTITY`、`NOTARIZE=1` 和 Apple 凭据用于正式包，见发布文档。
+产物在 `build/release/Build/Products/Release/HerdrX.app`，ZIP 和校验信息在 `build/dist/`。默认采用本地 ad-hoc 签名。`SIGN_IDENTITY`、`NOTARIZE=1` 和 Apple 凭据用于正式包，见发布文档。
 
-日常开发：`xcodegen generate` 后打开生成的 `HerdX.xcodeproj`。Debug 使用独立 bundle ID，避免与已安装的发布版混淆。纯通信核心可单独验证：
+日常开发：`xcodegen generate` 后打开生成的 `HerdrX.xcodeproj`。Debug 使用独立 bundle ID，避免与已安装的发布版混淆。纯通信核心可单独验证：
 
 ```sh
 swift test --package-path Core -c release

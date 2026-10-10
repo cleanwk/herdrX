@@ -1,4 +1,4 @@
-# Herd-X icon
+# HerdrX icon
 
 Original artwork generated with the built-in ImageGen tool. The white H-shaped herd animal references Ghostty's simplicity and mascot clarity without copying its ghost. The committed opaque source avoids alpha-edge artifacts. Xcode's Icon Composer source is App/AppIcon.icon; Apple’s compiler supplies native masks, presentation variants and a backwards-compatible ICNS.
 

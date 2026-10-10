@@ -8,15 +8,15 @@ spec.loader.exec_module(tap)
 
 class ReleaseTests(unittest.TestCase):
     def setUp(self):
-        self.metadata = dict(version="1.2.3", filename="Herd-X-1.2.3-universal.zip", notarized=True,
+        self.metadata = dict(version="1.2.3", filename="HerdrX-1.2.3-universal.zip", notarized=True,
                              architectures=["arm64", "x86_64"], min_macos="14.0", sha256="a" * 64)
         self.release = dict(tag_name="v1.2.3", draft=False, prerelease=False, assets=[dict(
             name=self.metadata["filename"], digest="sha256:" + self.metadata["sha256"],
-            browser_download_url="https://github.com/cleanwk/herdrX/releases/download/v1.2.3/Herd-X-1.2.3-universal.zip")])
+            browser_download_url="https://github.com/cleanwk/herdrX/releases/download/v1.2.3/HerdrX-1.2.3-universal.zip")])
     def test_valid_release(self):
         text = tap.cask(self.release, self.metadata)
         self.assertIn('version "1.2.3"', text)
-        self.assertIn('app "Herd-X.app"', text)
+        self.assertIn('app "HerdrX.app"', text)
         self.assertNotIn("auto_updates", text)
     def test_ad_hoc_release(self):
         self.metadata["notarized"] = False

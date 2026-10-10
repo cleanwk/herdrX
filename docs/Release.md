@@ -25,9 +25,9 @@
 2. 确认 CI 成功，推送与 VERSION 一致的 `vmajor.minor.patch` tag。
 3. Release Action 构建 universal app、验证两种架构与签名；配置完整的 Apple 凭据时额外公证并 staple；成功后上传 ZIP、SHA256SUMS、release.json 和可选 appcast.xml。
 4. 已有 tap 的更新 Action 每 15 分钟检查一次，或手动 Run workflow。它只接受稳定、明确标记公证状态、架构完整且 GitHub 资产 digest 与元数据一致的版本，禁止降级，然后提交真实 cask。
-5. 用户运行 `brew update && brew upgrade --cask herd-x`。
+5. 用户运行 `brew update && brew upgrade --cask herdrx`。
 
-`distribution/tap/update.py` 和 `herd-x.yml` 是需要放进既有 tap 的文件，分别放到 `scripts/update-herd-x.py` 与 `.github/workflows/herd-x.yml`。首次稳定版本之前不生成占位 cask，也不填虚构校验值。计划任务要求工作流在 tap 默认分支上。tap 应用自己的 GITHUB_TOKEN 写入自身仓库。
+`distribution/tap/update.py` 和 `herdrx.yml` 是需要放进既有 tap 的文件，分别放到 `scripts/update-herdrx.py` 与 `.github/workflows/herdrx.yml`。首次稳定版本之前不生成占位 cask，也不填虚构校验值。计划任务要求工作流在 tap 默认分支上。tap 应用自己的 GITHUB_TOKEN 写入自身仓库。
 
 ## 本地验证
 
@@ -40,3 +40,7 @@ CI runner 使用 GitHub 当前公布的 [xcode-27](https://github.com/actions/ru
 ## 首次启动
 
 Brew 可以安装 ad-hoc 签名的 cask，但 macOS 可能阻止首次启动。先尝试打开应用，再在系统设置 → 隐私与安全点击“仍要打开”，由用户确认这个应用。更新后可能需要再次确认。流程不修改系统 Gatekeeper 设置或移除 quarantine。参考 [Apple 的说明](https://support.apple.com/en-us/102445)及 [Homebrew 的安全模型](https://docs.brew.sh/Homebrew-Security-and-Supply-Chain)。
+
+## 名称修正
+
+从 0.1.1 起，应用与包名统一为 HerdrX，Brew token 为 `herdrx`。旧 `herd-x` 通过 tap 的 `cask_renames.json` 迁移。应用的内部 bundle ID 和已有数据目录保留，以便沿用设备配置及偏好设置；它们不决定界面或安装名称。历史图标生成提示保留原始记录。

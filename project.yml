@@ -1,4 +1,4 @@
-name: HerdX
+name: HerdrX
 options:
   deploymentTarget:
     macOS: '14.0'
@@ -13,7 +13,7 @@ packages:
     url: https://github.com/sparkle-project/Sparkle
     exactVersion: 2.9.6
 targets:
-  HerdX:
+  HerdrX:
     type: application
     platform: macOS
     sources:
@@ -35,8 +35,8 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleName: Herd-X
-        CFBundleDisplayName: Herd-X
+        CFBundleName: HerdrX
+        CFBundleDisplayName: HerdrX
         CFBundleShortVersionString: '$(MARKETING_VERSION)'
         CFBundleVersion: '$(CURRENT_PROJECT_VERSION)'
         CFBundleIconName: AppIcon
@@ -52,10 +52,10 @@ targets:
           PRODUCT_BUNDLE_IDENTIFIER: io.github.cleanwk.herd-x.dev
           ENABLE_HARDENED_RUNTIME: NO
       base:
-        PRODUCT_NAME: Herd-X
+        PRODUCT_NAME: HerdrX
         PRODUCT_BUNDLE_IDENTIFIER: io.github.cleanwk.herd-x
         SWIFT_VERSION: '5.0'
-        MARKETING_VERSION: '0.1.0'
+        MARKETING_VERSION: '0.1.1'
         CURRENT_PROJECT_VERSION: 1
         CODE_SIGN_IDENTITY: '-'
         CODE_SIGN_STYLE: Manual
@@ -65,9 +65,9 @@ targets:
         ARCHS: 'arm64 x86_64'
         SPARKLE_PUBLIC_KEY: ''
 schemes:
-  HerdX:
+  HerdrX:
     build:
       targets:
-        HerdX: all
+        HerdrX: all
     run:
       config: Debug
