@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "nativeGestures": [
+    "drag maximum480",
+    "restart retained480",
+    "reverse drag clamps200",
+    "double click resets260"
+  ],
+  "observedWidths": [
+    200,
+    260,
+    480,
+    720
+  ],
+  "finalWindow": [
+    1440,
+    900
+  ],
+  "finalCanvas": [
+    1179,
+    871
+  ],
+  "note": "720 is an intermediate canvas-derived estimate during window layout, not a persisted sidebar width. Confirmed native endpoint values:200,480;restart480;double-click260."
+}

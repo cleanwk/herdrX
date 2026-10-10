@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "delta": {
+    "workspaces": 1,
+    "tabs": 1,
+    "panes": 1
+  },
+  "cwd": "/private/tmp/herdrx-fixture/docs",
+  "pane": "w2:p1"
+}

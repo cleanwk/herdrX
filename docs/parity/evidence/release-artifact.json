@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "build": "scripts/build.sh",
+  "architectures": [
+    "arm64",
+    "x86_64"
+  ],
+  "signature": "ad-hoc; codesign --verify --deep --strict passed",
+  "executables": {
+    "HerdrX": "31609a2589daa7d0a34f68636a2d96eea417f5ac13faa19a512dd775cc008f85",
+    "herdrx-tailcat": "a566b7253b33c0c7640d50a0101a11b5253c4c4ebeafeeb33b4a45ef4c07f261"
+  },
+  "note": "Release build core suite skips SSH when no fixture env is set; final-core.txt separately records all17 tests with isolated SSH."
+}

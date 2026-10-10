@@ -1,0 +1,129 @@
+{
+  "status": "PASS",
+  "checks": [
+    "same surface identities before/after opening file panel",
+    "320pt panel plus 1pt separator",
+    "980x620pt native window",
+    "28pt title strip plus 1pt divider; canvas height591"
+  ],
+  "before": {
+    "canvas": [
+      719,
+      591
+    ],
+    "panes": [
+      {
+        "device": "parity-local",
+        "frame": [
+          363.5,
+          4,
+          351.5,
+          277.5
+        ],
+        "pane": "w1:p4",
+        "surface": "ObjectIdentifier(0x0000007abb560520)",
+        "visible": true
+      },
+      {
+        "device": "parity-local",
+        "frame": [
+          363.5,
+          299.5,
+          351.5,
+          277.5
+        ],
+        "pane": "w1:p3",
+        "surface": "ObjectIdentifier(0x0000007abb560720)",
+        "visible": true
+      },
+      {
+        "device": "shell",
+        "frame": [
+          4,
+          4,
+          711,
+          573
+        ],
+        "pane": "D2269C40-387A-4D03-83C3-09E0C75C3EBD",
+        "surface": "ObjectIdentifier(0x0000007abcbe3b20)",
+        "visible": false
+      },
+      {
+        "device": "parity-local",
+        "frame": [
+          4,
+          4,
+          351.5,
+          573
+        ],
+        "pane": "w1:p1",
+        "surface": "ObjectIdentifier(0x0000007abcd566e0)",
+        "visible": true
+      }
+    ],
+    "window": [
+      980,
+      620
+    ]
+  },
+  "opened": {
+    "canvas": [
+      398,
+      591
+    ],
+    "panes": [
+      {
+        "device": "parity-local",
+        "frame": [
+          203,
+          4,
+          191,
+          277.5
+        ],
+        "pane": "w1:p4",
+        "surface": "ObjectIdentifier(0x0000007abb560520)",
+        "visible": true
+      },
+      {
+        "device": "parity-local",
+        "frame": [
+          203,
+          299.5,
+          191,
+          277.5
+        ],
+        "pane": "w1:p3",
+        "surface": "ObjectIdentifier(0x0000007abb560720)",
+        "visible": true
+      },
+      {
+        "device": "shell",
+        "frame": [
+          4,
+          4,
+          711,
+          573
+        ],
+        "pane": "D2269C40-387A-4D03-83C3-09E0C75C3EBD",
+        "surface": "ObjectIdentifier(0x0000007abcbe3b20)",
+        "visible": false
+      },
+      {
+        "device": "parity-local",
+        "frame": [
+          4,
+          4,
+          191,
+          573
+        ],
+        "pane": "w1:p1",
+        "surface": "ObjectIdentifier(0x0000007abcd566e0)",
+        "visible": true
+      }
+    ],
+    "window": [
+      980,
+      620
+    ]
+  }
+}

@@ -27,4 +27,19 @@ final class CoreTests: XCTestCase {
     func testIncompleteSnapshotIsRejected() {
         XCTAssertThrowsError(try Session(.object(["workspaces": .array([])])))
     }
+    func testSearchNamePrecedesContextAndPinyinForms() {
+        let index = Search(documents: [
+            .init(id: "context", name: "Notes", context: "SSH Server /work/project feature/atlas"),
+            .init(id: "substring", name: "myatlas"),
+            .init(id: "word", name: "Project atlas"),
+            .init(id: "prefix", name: "Atlas main"),
+            .init(id: "cn", name: "开发环境", context: "本机")
+        ])
+        XCTAssertEqual(index.query("atlas"), ["prefix", "word", "substring", "context"])
+        XCTAssertEqual(index.query("kaifahuanjing"), ["cn"])
+        XCTAssertEqual(index.query("kfhj"), ["cn"])
+        XCTAssertEqual(index.query("/work/project"), ["context"])
+        XCTAssertEqual(index.query("feature/atlas"), ["context"])
+        XCTAssertEqual(index.query("ssh server"), ["context"])
+    }
 }

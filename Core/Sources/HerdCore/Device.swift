@@ -6,8 +6,9 @@ public struct Device: Codable, Identifiable, Equatable, Sendable {
         public var target: String?
         public var port: Int?
         public var socketPath: String
-        public init(kind: String, target: String? = nil, port: Int? = nil, socketPath: String) {
-            self.kind = kind; self.target = target; self.port = port; self.socketPath = socketPath
+        public var sshConfig: String?
+        public init(kind: String, target: String? = nil, port: Int? = nil, socketPath: String, sshConfig: String? = nil) {
+            self.kind = kind; self.target = target; self.port = port; self.socketPath = socketPath; self.sshConfig = sshConfig
         }
     }
     public var id: String

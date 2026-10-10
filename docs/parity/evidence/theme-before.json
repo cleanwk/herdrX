@@ -1,0 +1,60 @@
+{
+  "canvas": [
+    959,
+    871
+  ],
+  "panes": [
+    {
+      "device": "parity-local",
+      "frame": [
+        4,
+        4,
+        471.5,
+        853
+      ],
+      "pane": "w1:p1",
+      "surface": "ObjectIdentifier(0x00000077e01457e0)",
+      "visible": true
+    },
+    {
+      "device": "parity-local",
+      "frame": [
+        483.5,
+        4,
+        471.5,
+        417.5
+      ],
+      "pane": "w1:p4",
+      "surface": "ObjectIdentifier(0x00000077e0145cc0)",
+      "visible": true
+    },
+    {
+      "device": "shell",
+      "frame": [
+        4,
+        4,
+        1171,
+        853
+      ],
+      "pane": "F0CEF097-8CC8-4DCB-9D3C-0C5C14B1B057",
+      "surface": "ObjectIdentifier(0x00000077dfd7d900)",
+      "visible": false
+    },
+    {
+      "device": "parity-local",
+      "frame": [
+        483.5,
+        439.5,
+        471.5,
+        417.5
+      ],
+      "pane": "w1:p3",
+      "surface": "ObjectIdentifier(0x00000077e0146180)",
+      "visible": true
+    }
+  ],
+  "window": [
+    1440,
+    900
+  ]
+}

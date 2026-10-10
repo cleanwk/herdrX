@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "trigger": "native Cmd+Shift+N",
+  "delta": {
+    "workspaces": 1,
+    "tabs": 1,
+    "panes": 1
+  },
+  "cwd": "/private/tmp/herdrx-fixture/atlas"
+}

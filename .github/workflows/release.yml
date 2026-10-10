@@ -13,6 +13,10 @@ jobs:
     environment: release
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: Tools/Tailcat/go.mod
+          cache-dependency-path: Tools/Tailcat/go.sum
       - name: Validate version and signing configuration
         env:
           TAG: ${{ github.ref_name }}

@@ -47,20 +47,30 @@ public struct Session: Equatable, Sendable {
 }
 
 public struct Search: Sendable {
-    private let rows: [(id: String, title: String, text: String, initials: String)]
-    public init(_ items: [(String, String)]) {
-        rows = items.map { id, title in
-            let latin = title.applyingTransform(.toLatin, reverse: false)?.applyingTransform(.stripDiacritics, reverse: false) ?? title
-            return (id, title, (title + " " + latin).lowercased(), latin.split(separator: " ").compactMap(\.first).map(String.init).joined().lowercased())
+    public struct Document: Sendable {
+        public let id: String
+        public let name: String
+        public let context: String
+        public init(id: String, name: String, context: String = "") { self.id = id; self.name = name; self.context = context }
+    }
+    private struct Row: Sendable { let id: String; let name: String; let latin: String; let initials: String; let context: String }
+    private let rows: [Row]
+    public init(_ items: [(String, String)]) { self.init(documents: items.map { Document(id: $0.0, name: $0.1) }) }
+    public init(documents: [Document]) {
+        rows = documents.map { item in
+            let latin = Self.latin(item.name)
+            return Row(id: item.id, name: item.name.lowercased(), latin: latin, initials: latin.split(separator: " ").compactMap(\.first).map(String.init).joined(), context: (item.context + " " + Self.latin(item.context)).lowercased())
         }
     }
+    private static func latin(_ text: String) -> String { (text.applyingTransform(.toLatin, reverse: false)?.applyingTransform(.stripDiacritics, reverse: false) ?? text).lowercased() }
     public func query(_ input: String) -> [String] {
         let text = input.lowercased().trimmingCharacters(in: .whitespaces)
-        var buckets = [[String](), [String](), [String]()]
+        var buckets = [[String](), [String](), [String](), [String]()]
         for row in rows {
-            if text.isEmpty || row.text.hasPrefix(text) || row.initials.hasPrefix(text) { buckets[0].append(row.id) }
-            else if row.text.split(separator: " ").contains(where: { $0.hasPrefix(text) }) { buckets[1].append(row.id) }
-            else if row.text.contains(text) { buckets[2].append(row.id) }
+            if text.isEmpty || row.name.hasPrefix(text) || row.latin.hasPrefix(text) || row.latin.replacingOccurrences(of: " ", with: "").hasPrefix(text) || row.initials.hasPrefix(text) { buckets[0].append(row.id) }
+            else if (row.name + " " + row.latin).split(separator: " ").contains(where: { $0.hasPrefix(text) }) { buckets[1].append(row.id) }
+            else if row.name.contains(text) || row.latin.contains(text) { buckets[2].append(row.id) }
+            else if row.context.contains(text) { buckets[3].append(row.id) }
         }
         return Array(buckets.flatMap { $0 }.prefix(50))
     }

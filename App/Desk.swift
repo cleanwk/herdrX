@@ -64,33 +64,65 @@ final class Desk: ObservableObject {
     @Published var selectedDevice: String?
     @Published var selectedSpace: String?
     @Published var selectedTab: String = ""
-    @Published var focused: PaneKey?
+    @Published var focused: PaneKey? {
+        didSet {
+            if oldValue != focused {
+                attentionState.leave(oldValue)
+                if let focused { searchActivity["pane|" + focused.device + "|" + focused.pane] = Date.timeIntervalSinceReferenceDate; if focused.device == "shell" { searchActivity["shell|" + selectedTab] = Date.timeIntervalSinceReferenceDate } }
+            }
+            if let focused { paneMemory[(selectedDevice ?? "shell") + "|" + selectedTab] = focused }
+        }
+    }
+    @Published var attentionState = Attention()
+    @Published var deviceFilter = ""
+    @Published var creatingSpace = false
+    @Published var branches: [String: String] = [:]
+    var branchRequests: [String: UUID] = [:]
+    var branchUpdated: [String: Date] = [:]
+    @Published var tabOrders: [String: TabOrder] = [:]
+    private var reorderTasks: [String: Task<Void, Never>] = [:]
+    private var paneMemory: [String: PaneKey] = [:]
+    private var searchActivity: [String: TimeInterval] = [:]
+    @Published var paneLabels: [PaneKey: String] = [:]
     @Published var ended: Set<PaneKey> = []
     @Published var message: String?
     @Published var showSearch = false
     @Published var zoomed = false
+    @Published var draggingLayout: Layout?
     @Published var search = Search([])
     @Published var agents: [AgentRow] = []
     @Published var jumpRows: [String: JumpRow] = [:]
     var terminals: [PaneKey: Terminal] = [:]
     private var notificationRouter: NotificationRouter?
+    private var tailcats: [String: TailcatConnection] = [:]
     private var tunnels: [String: Process] = [:]
     private var paths: [String: String] = [:]
     private var connectionIDs: [String: UUID] = [:]
     private var shellNumber = 0
     private var polls: [String: Task<Void, Never>] = [:]
     private var remoteLayouts: [String: Layout] = [:]
+    private var hiddenTask: Task<Void, Never>?
+    private var hiddenAttachments: Set<PaneKey> = []
     private var layoutTask: Task<Void, Never>?
     var dividers: [Layout.Divider] {
         guard !zoomed else { return [] }
-        let layout = selectedDevice.flatMap { remoteLayouts[$0 + "|" + selectedTab] } ?? shellTabs.first { $0.id == selectedTab }?.layout
+        let layout = draggingLayout ?? selectedDevice.flatMap { remoteLayouts[$0 + "|" + selectedTab] } ?? shellTabs.first { $0.id == selectedTab }?.layout
         return layout?.dividers() ?? []
+    }
+    func previewRatio(_ divider: Layout.Divider, ratio: Double) {
+        guard dividers.contains(where: { $0.path == divider.path && $0.panes == divider.panes }) else { return }
+        if let device = selectedDevice, let layout = draggingLayout ?? remoteLayouts[device + "|" + selectedTab] { draggingLayout = layout.setting(divider.path[...], ratio: ratio) }
+        else { setRatio(divider, ratio: ratio) }
     }
     func setRatio(_ divider: Layout.Divider, ratio: Double) {
         guard dividers.contains(where: { $0.path == divider.path && $0.panes == divider.panes }) else { return }
         if selectedDevice != nil {
             let tab = selectedTab
-            perform { _ = try await $0.call("layout.set_split_ratio", ["tab_id": .string(tab), "path": .array(divider.path.map(JSON.bool)), "ratio": .number(min(0.9, max(0.1, ratio)))]) }
+            let device = selectedDevice!
+            Task {
+                defer { if selectedDevice == device && selectedTab == tab { draggingLayout = nil } }
+                do { let client = try rpc(device); _ = try await client.call("layout.set_split_ratio", ["tab_id": .string(tab), "path": .array(divider.path.map(JSON.bool)), "ratio": .number(min(0.9, max(0.1, ratio)))]); try await refresh(device, client: client) } catch { message = error.localizedDescription }
+            }
         } else if let index = shellTabs.firstIndex(where: { $0.id == selectedTab }) { shellTabs[index].layout = shellTabs[index].layout.setting(divider.path[...], ratio: ratio) }
     }
     func resize(_ direction: String) {
@@ -99,10 +131,11 @@ final class Desk: ObservableObject {
         else if let divider = dividers.last(where: { $0.panes.contains(focused) && $0.horizontal == ["left", "right"].contains(direction) }) { setRatio(divider, ratio: divider.ratio + (["right", "down"].contains(direction) ? 0.05 : -0.05)) }
     }
     private let saveURL = Desk.support.appendingPathComponent("devices.json")
-    static var support: URL { FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/HerdrX") }
+    static var support: URL { if let path = ProcessInfo.processInfo.environment["HERDRX_STATE_DIR"] { return URL(fileURLWithPath: path) }; return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/HerdrX") }
     var currentDevice: Device? { devices.first { $0.id == selectedDevice } }
     var currentPane: Item? { guard let focused else { return nil }; return sessions[focused.device]?.panes.first { $0.id == focused.pane } }
     var activeRects: [(PaneKey, CGRect)] {
+        if let draggingLayout, !zoomed { return draggingLayout.rects() }
         if let device = selectedDevice, let snapshot = sessions[device] {
             let panes = snapshot.panes.filter { $0.tab == selectedTab }
             if zoomed, let focused { return [(focused, CGRect(x: 0, y: 0, width: 1, height: 1))] }
@@ -124,36 +157,52 @@ final class Desk: ObservableObject {
     }
     init() {
         try? FileManager.default.createDirectory(at: Self.support, withIntermediateDirectories: true)
-        devices = (try? JSONDecoder().decode([Device].self, from: Data(contentsOf: saveURL))) ?? [Device(id: "local", displayName: "This Mac", endpoint: .init(kind: "local", socketPath: NSHomeDirectory() + "/.config/herdr/herdr.sock"))]
+        devices = (try? JSONDecoder().decode([Device].self, from: Data(contentsOf: saveURL))) ?? (ProcessInfo.processInfo.environment["HERDRX_STATE_DIR"] != nil ? [] : [Device(id: "local", displayName: "This Mac", endpoint: .init(kind: "local", socketPath: NSHomeDirectory() + "/.config/herdr/herdr.sock"))])
         newShell(cwd: NSHomeDirectory())
         for device in devices { connect(device) }
         notificationRouter = NotificationRouter(desk: self)
         UNUserNotificationCenter.current().delegate = notificationRouter
-        let defaults = UserDefaults.standard
-        Terminal.controller.setTerminalConfiguration(TerminalConfiguration {
-            $0.withFontSize(Float(defaults.double(forKey: "fontSize") > 0 ? defaults.double(forKey: "fontSize") : 13))
-            $0.withFontFamily(defaults.string(forKey: "fontFamily") ?? "SF Mono")
-            $0.withCustom("adjust-cell-height", "\(Int(max(0, defaults.double(forKey: "lineSpacing") - 1) * 100))%")
-            $0.withCustom("macos-option-as-alt", "true")
-        })
+        Theme.apply()
     }
     func save() { do { try JSONEncoder().encode(devices).write(to: saveURL, options: .atomic) } catch { message = error.localizedDescription } }
+    func update(_ device: Device) {
+        guard let index = devices.firstIndex(where: { $0.id == device.id }) else { return }
+        if devices[index].endpoint != device.endpoint {
+            detach(device.id); sessions[device.id] = nil; attentionState.remove(device: device.id)
+            for key in Array(terminals.keys) where key.device == device.id { terminals.removeValue(forKey: key)?.process.stop(); ended.remove(key) }
+        }
+        devices[index] = device; save(); connect(device); reindex()
+    }
+    func discoverSessions() {
+        Task {
+            do {
+                let bytes = try await FileProcess.run("/bin/zsh", ["-lc", "exec herdr session list --json"], input: Data())
+                let value = try JSONDecoder().decode(JSON.self, from: bytes)
+                guard case .array(let rows) = value["sessions"] else { throw Failure("Herdr returned an invalid session list.") }
+                let discovered = try rows.map { row -> Device in
+                    guard let name = row["name"].string, let path = row["socket_path"].string, path.hasPrefix("/") else { throw Failure("A discovered session is missing its name or absolute socket path.") }
+                    return Device(displayName: name, endpoint: .init(kind: "local", socketPath: path))
+                }
+                for device in discovered where !devices.contains(where: { $0.endpoint.kind == "local" && $0.endpoint.socketPath == device.endpoint.socketPath }) { add(device) }
+            } catch { message = "Session discovery failed: " + error.localizedDescription }
+        }
+    }
     func add(_ device: Device) { devices.append(device); save(); connect(device) }
     private func detach(_ id: String) {
-        connectionIDs[id] = nil
-        polls.removeValue(forKey: id)?.cancel()
+        connectionIDs[id] = nil; refreshIDs[id] = nil
+        polls.removeValue(forKey: id)?.cancel(); tailcats.removeValue(forKey: id)?.stop()
         if let tunnel = tunnels.removeValue(forKey: id), tunnel.isRunning { tunnel.terminate() }
         if let path = paths.removeValue(forKey: id), path.hasPrefix("/tmp/hx-") { try? FileManager.default.removeItem(atPath: path) }
     }
     func remove(_ id: String) {
-        detach(id); devices.removeAll { $0.id == id }; sessions[id] = nil; connections[id] = nil
+        detach(id); TailcatSecrets.remove("token." + id); attentionState.remove(device: id); devices.removeAll { $0.id == id }; sessions[id] = nil; connections[id] = nil
         for key in Array(terminals.keys) where key.device == id { terminals.removeValue(forKey: key)?.process.stop(); ended.remove(key) }
         if selectedDevice == id { select(device: nil) }; save(); reindex()
     }
     func connect(_ device: Device) {
         detach(device.id); connections[device.id] = "Connecting…"
         guard device.endpoint.socketPath.hasPrefix("/"), !device.endpoint.socketPath.contains(where: { $0.isNewline || $0 == "\0" || $0 == ":" }),
-              ["local", "ssh"].contains(device.endpoint.kind) else { connections[device.id] = "Enter an absolute Herdr socket path without colons or control characters."; return }
+              ["local", "ssh", "tailcat"].contains(device.endpoint.kind) else { connections[device.id] = "Enter an absolute Herdr socket path without colons or control characters."; return }
         if device.endpoint.kind == "ssh" {
             guard let target = device.endpoint.target, !target.isEmpty, !target.hasPrefix("-"), !target.contains(where: \.isWhitespace) else { connections[device.id] = "Enter a valid SSH host or config alias."; return }
         }
@@ -163,20 +212,32 @@ final class Desk: ObservableObject {
             var delay = 1
             while !Task.isCancelled {
                 let remote = device.endpoint.kind == "ssh"
-                let path = remote ? "/tmp/hx-" + UUID().uuidString.prefix(12) + ".sock" : device.endpoint.socketPath
+                var path = remote ? "/tmp/hx-" + UUID().uuidString.prefix(12) + ".sock" : device.endpoint.socketPath
                 let diagnostic = URL(fileURLWithPath: path + ".log")
                 var tunnel: Process?
+                var tailcat: TailcatConnection?
                 do {
                     defer {
+                        tailcat?.stop()
+                        if self.connectionIDs[device.id] == generation { self.tailcats[device.id] = nil }
                         if let tunnel, tunnel.isRunning { tunnel.terminate() }
                         if self.connectionIDs[device.id] == generation, self.paths[device.id] == path { self.paths[device.id] = nil; self.tunnels[device.id] = nil }
                         if remote { try? FileManager.default.removeItem(atPath: path); try? FileManager.default.removeItem(at: diagnostic) }
+                    }
+                    if device.endpoint.kind == "tailcat" {
+                        let bridge = try TailcatConnection(device: device.id); tailcat = bridge; self.tailcats[device.id] = bridge; path = bridge.path
+                        for _ in 0..<100 {
+                            try Task.checkCancellation()
+                            if FileManager.default.fileExists(atPath: path) { break }
+                            guard bridge.running else { throw Failure("Tailcat transport exited. Check credentials and host availability.") }
+                            try await Task.sleep(for: .milliseconds(100))
+                        }
                     }
                     if remote {
                         FileManager.default.createFile(atPath: diagnostic.path, contents: nil, attributes: [.posixPermissions: 0o600])
                         let output = try FileHandle(forWritingTo: diagnostic); defer { try? output.close() }
                         let process = Process(); process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
-                        process.arguments = ["-N", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=10", "-o", "ServerAliveCountMax=2", "-o", "ExitOnForwardFailure=yes", "-o", "StreamLocalBindUnlink=yes", "-p", String(device.endpoint.port ?? 22), "-L", path + ":" + device.endpoint.socketPath, device.endpoint.target!]
+                        process.arguments = (device.endpoint.sshConfig.map { ["-F", $0] } ?? []) + ["-N", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=10", "-o", "ServerAliveCountMax=2", "-o", "ExitOnForwardFailure=yes", "-o", "StreamLocalBindUnlink=yes", "-L", path + ":" + device.endpoint.socketPath] + (device.endpoint.port.map { ["-p", String($0)] } ?? []) + [device.endpoint.target!]
                         process.standardError = output; process.standardOutput = FileHandle.nullDevice
                         try process.run(); tunnel = process; self.tunnels[device.id] = process
                         for _ in 0..<100 {
@@ -204,6 +265,10 @@ final class Desk: ObservableObject {
                 } catch is CancellationError { return }
                 catch {
                     guard !Task.isCancelled else { return }
+                    guard self.connectionIDs[device.id] == generation else { return }
+                    if error.localizedDescription.localizedCaseInsensitiveContains("permission denied") || error.localizedDescription.localizedCaseInsensitiveContains("host key verification failed") {
+                        self.connections[device.id] = error.localizedDescription + " · Authenticate in Terminal, then retry."; return
+                    }
                     self.connections[device.id] = error.localizedDescription + " · Retrying in \(delay)s"
                 }
                 do { try await Task.sleep(for: .seconds(delay)) } catch { return }
@@ -214,21 +279,28 @@ final class Desk: ObservableObject {
     func rpc(_ id: String) throws -> RPC { guard let path = paths[id] else { throw Failure("Device is disconnected") }; return RPC(path: path) }
     private var refreshIDs: [String: UUID] = [:]
     func refresh(_ id: String, client: RPC) async throws {
+        guard paths[id] == client.path else { throw CancellationError() }
+        let connection = connectionIDs[id]
         let token = UUID(); refreshIDs[id] = token
         let snapshot = try await Session.load(client)
         try Task.checkCancellation()
-        guard refreshIDs[id] == token, devices.contains(where: { $0.id == id }) else { return }
-        if sessions[id] != snapshot { notifyChanges(device: id, old: sessions[id], new: snapshot); sessions[id] = snapshot; reconcile(id); reindex() }
+        guard connectionIDs[id] == connection, paths[id] == client.path, refreshIDs[id] == token, devices.contains(where: { $0.id == id }) else { return }
+        if sessions[id] != snapshot { attentionState.update(device: id, old: sessions[id], new: snapshot); notifyChanges(device: id, old: sessions[id], new: snapshot); sessions[id] = snapshot; reconcile(id); reindex() }
         connections[id] = "Connected"
+        if let device = devices.first(where: { $0.id == id }) { refreshBranches(device, snapshot: snapshot) }
     }
-    func select(device: String?, space: String? = nil, tab: String? = nil) {
-        selectedDevice = device; selectedSpace = space; zoomed = false
+    func select(device: String?, space: String? = nil, tab: String? = nil, pane: PaneKey? = nil) {
+        let rememberedTab = tab ?? (device == selectedDevice && space == selectedSpace ? selectedTab : nil)
+        let savedMemory = paneMemory
+        selectedDevice = device; selectedSpace = space; zoomed = false; draggingLayout = nil
         if let device {
-            selectedTab = tab ?? sessions[device]?.tabs.first { $0.workspace == space }?.id ?? ""
-            focused = sessions[device]?.panes.first { $0.tab == selectedTab }.map { PaneKey(device: device, pane: $0.id) }
+            selectedTab = rememberedTab ?? sessions[device]?.tabs.first { $0.workspace == space }?.id ?? ""
+            let panes = sessions[device]?.panes.filter { $0.tab == selectedTab } ?? []
+            let candidate = pane ?? savedMemory[device + "|" + selectedTab]
+            focused = candidate.flatMap { key in panes.contains(where: { $0.id == key.pane }) ? key : nil } ?? panes.first.map { PaneKey(device: device, pane: $0.id) }
             ensureAttachments()
         } else {
-            selectedTab = tab ?? shellTabs.first?.id ?? ""; focused = shellTabs.first { $0.id == selectedTab }?.layout.rects().first?.0
+            selectedTab = tab ?? shellTabs.first?.id ?? ""; let keys = shellTabs.first { $0.id == selectedTab }?.layout.rects().map(\.0) ?? []; focused = (pane ?? savedMemory["shell|" + selectedTab]).flatMap { keys.contains($0) ? $0 : nil } ?? keys.first
         }
     }
     func ensureAttachments() {
@@ -242,18 +314,20 @@ final class Desk: ObservableObject {
         }
         for pane in session.panes where pane.tab == selectedTab {
             let key = PaneKey(device: device.id, pane: pane.id)
-            guard terminals[key] == nil else { continue }
+
             let args: String
             if pane.agent != nil { args = "agent attach " + quote(pane.id) + " --takeover" }
             else if let terminal = pane.terminal { args = "terminal attach " + quote(terminal) + " --takeover" }
             else { continue }
-            let script = "export HERDR_SOCKET_PATH=" + quote(device.endpoint.socketPath) + "; exec herdr " + args
-            let command = device.endpoint.kind == "ssh" ? "exec /usr/bin/ssh -tt -p \(device.endpoint.port ?? 22) \(quote(device.endpoint.target ?? "")) \(quote("/bin/sh -lc " + quote("export PATH=\"$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"; " + script)))" : script
-            makeTerminal(key, command: command)
+            let script = "export HERDR_SOCKET_PATH=" + quote(device.endpoint.kind == "tailcat" ? paths[device.id] ?? device.endpoint.socketPath : device.endpoint.socketPath) + "; exec herdr " + args
+            let command = device.endpoint.kind == "ssh" ? "exec /usr/bin/ssh " + (device.endpoint.sshConfig.map { "-F " + quote($0) + " " } ?? "") + "-tt " + (device.endpoint.port.map { "-p \($0) " } ?? "") + "\(quote(device.endpoint.target ?? "")) \(quote("/bin/sh -lc " + quote("export PATH=\"$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"; " + script)))" : script
+            if let terminal = terminals[key] { terminal.command = command } else { makeTerminal(key, command: command) }
         }
     }
     private func makeTerminal(_ key: PaneKey, command: String) {
         let terminal = Terminal(command: command)
+        terminal.view.objectMenu = { [weak self] in self?.paneMenu(key) }
+        terminal.view.pasteAttachment = { [weak self] in self?.pasteAttachment(to: key) ?? false }
         terminal.focused = { [weak self] in if self?.focused != key { self?.focused = key } }
         terminal.onExit = { [weak self] in self?.ended.insert(key) }
         terminal.process.inputRejected = { [weak self] in self?.message = "Terminal input is waiting for the process. Try a smaller paste when it responds." }
@@ -287,12 +361,43 @@ final class Desk: ObservableObject {
             shellTabs[index].layout = shellTabs[index].layout.splitting(key, with: next, horizontal: horizontal); focused = next
         }
     }
+    func orderedTabs(device: String, space: String?) -> [Item] {
+        let tabs = sessions[device]?.tabs.filter { $0.workspace == space } ?? []
+        guard let space, let order = tabOrders[device + "|" + space] else { return tabs }
+        let byID = Dictionary(uniqueKeysWithValues: tabs.map { ($0.id, $0) })
+        return order.visible.compactMap { byID[$0] } + tabs.filter { !order.visible.contains($0.id) }
+    }
+    func reorderTab(_ source: String, insertion: Int) {
+        guard let device = selectedDevice, let space = selectedSpace,
+              sessions[device]?.tabs.contains(where: { $0.id == source && $0.workspace == space }) == true else { return }
+        let key = device + "|" + space
+        if tabOrders[key] == nil { tabOrders[key] = TabOrder(orderedTabs(device: device, space: space).map(\.id)) }
+        tabOrders[key]?.enqueue(source: source, insertion: insertion)
+        guard reorderTasks[key] == nil else { return }
+        reorderTasks[key] = Task {
+            defer { reorderTasks[key] = nil; tabOrders[key] = nil }
+            while let order = tabOrders[key], let move = order.pending.first, !Task.isCancelled {
+                do {
+                    let client = try rpc(device)
+                    _ = try await client.call("tab.move", ["tab_id": .string(move.source), "insert_index": .number(Double(order.serverIndex(move)))])
+                    try await refresh(device, client: client)
+                    let ids = sessions[device]?.tabs.filter { $0.workspace == space }.map(\.id) ?? []
+                    tabOrders[key]?.complete(move.id, server: ids)
+                } catch { tabOrders[key]?.complete(move.id, server: nil); message = "Tab reorder failed: " + error.localizedDescription }
+            }
+        }
+    }
     func create() {
         guard let id = selectedDevice, let space = selectedSpace else { newShell(); return }
         Task { do { try await createTab(device: id, workspace: space, agent: nil, args: []) } catch { message = error.localizedDescription } }
     }
     func createTab(device: String, workspace: String, agent: String?, args: [String]) async throws {
         let client = try rpc(device)
+        let override = devices.first { $0.id == device }?.endpoint.kind == "local" ? agent.flatMap { UserDefaults.standard.string(forKey: "agentCommand." + $0) } ?? "" : ""
+        let command = try Arguments.parse(override)
+        if let executable = command.first {
+            _ = try await FileProcess.run("/bin/zsh", ["-lc", "export PATH=\"$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"; command -v " + quote(executable)], input: Data())
+        }
         var params: [String: JSON] = ["focus": .bool(false), "workspace_id": .string(workspace)]
         if device == selectedDevice, workspace == selectedSpace, let cwd = currentPane?.cwd { params["cwd"] = .string(cwd) }
         let result = try await client.call("tab.create", params)
@@ -301,18 +406,29 @@ final class Desk: ObservableObject {
         try await refresh(device, client: client)
         if let pane = sessions[device]?.panes.first(where: { $0.id == paneID }) { select(device: device, space: pane.workspace, tab: pane.tab) }
         if let agent {
+            if !command.isEmpty {
+                _ = try await client.call("pane.send_text", ["pane_id": .string(paneID), "text": .string((command + args).map(quote).joined(separator: " "))])
+                _ = try await client.call("pane.send_keys", ["pane_id": .string(paneID), "keys": .array([.string("Enter")])])
+                for _ in 0..<30 {
+                    try await Task.sleep(for: .milliseconds(500)); try await refresh(device, client: client)
+                    if sessions[device]?.panes.first(where: { $0.id == paneID })?.agent != nil { return }
+                }
+                throw Failure("Command was sent, but Herdr has not detected an agent. The new pane is available for inspection.")
+            }
             _ = try await client.call("agent.start", ["kind": .string(agent), "name": .string(agent + "-" + UUID().uuidString.prefix(6)), "pane_id": .string(paneID), "args": .array(args.map(JSON.string)), "timeout_ms": .number(30000)], timeout: 45)
             try await refresh(device, client: client)
         }
     }
     func createSpace(device: String, name: String, cwd: String) async throws {
         let client = try rpc(device)
-        let result = try await client.call("workspace.create", ["focus": .bool(false), "label": .string(name), "cwd": .string(cwd)])
+        var params: [String: JSON] = ["focus": .bool(false), "cwd": .string(cwd)]
+        if !name.isEmpty { params["label"] = .string(name) }
+        let result = try await client.call("workspace.create", params)
         try await refresh(device, client: client)
         if let id = result["workspace"]["workspace_id"].string { select(device: device, space: id) }
     }
     func renameSpace(device: String, space: Item) {
-        let prompt = NSAlert(); prompt.messageText = "Rename Space"; prompt.addButton(withTitle: "Rename"); prompt.addButton(withTitle: "Cancel")
+        let prompt = NSAlert(); prompt.messageText = L("Rename Space"); prompt.addButton(withTitle: L("Rename")); prompt.addButton(withTitle: L("Cancel"))
         let field = NSTextField(string: space.label); field.frame = NSRect(x: 0, y: 0, width: 300, height: 24); prompt.accessoryView = field
         guard prompt.runModal() == .alertFirstButtonReturn, !field.stringValue.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         let name = field.stringValue
@@ -322,16 +438,15 @@ final class Desk: ObservableObject {
         guard let id = selectedDevice else { return }
         Task { do { let client = try rpc(id); try await action(client); try await refresh(id, client: client) } catch { message = error.localizedDescription } }
     }
-    func closePane() {
-        guard let key = focused else { return }
-        if selectedDevice != nil {
-            let alert = NSAlert(); alert.messageText = "Close this server pane?"; alert.informativeText = "This ends its terminal and agent. Closing the window only detaches."; alert.addButton(withTitle: "Close Pane"); alert.addButton(withTitle: "Cancel")
-            guard alert.runModal() == .alertFirstButtonReturn else { return }
-            perform { _ = try await $0.call("pane.close", ["pane_id": .string(key.pane)]) }
-        } else if let index = shellTabs.firstIndex(where: { $0.id == selectedTab }) {
-            terminals.removeValue(forKey: key)?.process.stop()
-            if let layout = shellTabs[index].layout.removing(key) { shellTabs[index].layout = layout; focused = layout.rects().first?.0 }
-            else { shellTabs.remove(at: index); if shellTabs.isEmpty { NSApp.keyWindow?.close() } else { select(device: nil) } }
+    func closePane(_ target: PaneKey? = nil) {
+        guard let key = target ?? focused else { return }
+        if key.device != "shell" {
+            guard confirmClose("Pane “\(paneTitles[key] ?? key.pane)”", device: key.device, count: 1) else { return }
+            objectAction(device: key.device, method: "pane.close", params: ["pane_id": .string(key.pane)])
+        } else if let index = shellTabs.firstIndex(where: { $0.layout.rects().contains { $0.0 == key } }) {
+            terminals.removeValue(forKey: key)?.process.stop(); ended.remove(key)
+            if let layout = shellTabs[index].layout.removing(key) { shellTabs[index].layout = layout; if focused == key { focused = layout.rects().first?.0 } }
+            else { let removed = shellTabs.remove(at: index); if selectedTab == removed.id { select(device: nil) } }
             reindex()
         }
     }
@@ -344,32 +459,37 @@ final class Desk: ObservableObject {
         let valid = Set(sessions[device]?.panes.map(\.id) ?? [])
         for key in Array(terminals.keys) where key.device == device && !valid.contains(key.pane) { terminals.removeValue(forKey: key)?.process.stop(); ended.remove(key) }
     }
-    private func rank(_ status: String) -> Int { status == "blocked" ? 0 : status == "done" ? 1 : status == "working" ? 2 : 3 }
+    private func rank(_ status: String) -> Int { Attention.rank(status) }
     func reindex() {
-        agents = sessions.flatMap { device, session in session.panes.filter { $0.agent != nil }.map { AgentRow(device: device, pane: $0) } }.sorted { (rank($0.pane.status), $0.device + $0.pane.id) < (rank($1.pane.status), $1.device + $1.pane.id) }
+        let ordered = devices.flatMap { device -> [AgentRow] in
+            guard let session = sessions[device.id] else { return [] }
+            return session.spaces.flatMap { space in session.tabs.filter { $0.workspace == space.id }.flatMap { tab in session.panes.filter { $0.tab == tab.id && $0.agent != nil }.map { AgentRow(device: device.id, pane: $0) } } }
+        }
+        agents = ordered.enumerated().sorted { (rank($0.element.pane.status), $0.offset) < (rank($1.element.pane.status), $1.offset) }.map(\.element)
         var rows = shellTabs.map { JumpRow(id: "shell|" + $0.id, device: nil, space: nil, tab: $0.id, pane: nil, label: $0.label, detail: "Local shell") }
         for device in devices {
             guard let session = sessions[device.id] else { continue }
-            rows += session.spaces.map { JumpRow(id: "space|" + device.id + "|" + $0.id, device: device.id, space: $0.id, tab: nil, pane: nil, label: $0.label, detail: device.displayName + " · Space") }
-            rows += session.panes.map { JumpRow(id: "pane|" + device.id + "|" + $0.id, device: device.id, space: $0.workspace, tab: $0.tab, pane: $0.id, label: $0.label, detail: device.displayName + " · " + ($0.cwd ?? $0.status)) }
+            rows += session.spaces.map { JumpRow(id: "space|" + device.id + "|" + $0.id, device: device.id, space: $0.id, tab: nil, pane: nil, label: $0.label, detail: device.displayName + " · " + ($0.cwd ?? "") + " · " + ($0.tokens["branch"]?.string ?? branches[device.id + "|" + $0.id] ?? "Space")) }
+            rows += session.panes.map { pane in JumpRow(id: "pane|" + device.id + "|" + pane.id, device: device.id, space: pane.workspace, tab: pane.tab, pane: pane.id, label: pane.label, detail: device.displayName + " · " + (session.spaces.first { space in space.id == pane.workspace }?.label ?? "") + " · " + (pane.agent ?? "Terminal") + " · " + (pane.cwd ?? pane.status)) }
         }
         rows.sort { left, right in
             let a = left.device.flatMap { sessions[$0]?.panes.first { $0.id == left.pane } }.map { rank($0.status) } ?? 3
             let b = right.device.flatMap { sessions[$0]?.panes.first { $0.id == right.pane } }.map { rank($0.status) } ?? 3
-            return (a, left.label, left.id) < (b, right.label, right.id)
+            let leftType = left.id.hasPrefix("space|") ? 0 : left.pane == nil ? 2 : 1
+            let rightType = right.id.hasPrefix("space|") ? 0 : right.pane == nil ? 2 : 1
+            return (leftType, a, -(searchActivity[left.id] ?? 0), left.label, left.id) < (rightType, b, -(searchActivity[right.id] ?? 0), right.label, right.id)
         }
         jumpRows = Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
-        search = Search(rows.map { ($0.id, $0.label + " " + $0.detail) })
+        search = Search(documents: rows.map { Search.Document(id: $0.id, name: $0.label, context: $0.detail) })
     }
     func jump(_ value: String) {
         if let row = jumpRows[value] {
-            select(device: row.device, space: row.space, tab: row.tab)
-            if let device = row.device, let pane = row.pane { focused = PaneKey(device: device, pane: pane) }
+            select(device: row.device, space: row.space, tab: row.tab, pane: row.device.flatMap { device in row.pane.map { PaneKey(device: device, pane: $0) } })
             showSearch = false; return
         }
         let parts = value.split(separator: "|", maxSplits: 1).map(String.init)
-        guard parts.count == 2, let pane = sessions[parts[0]]?.panes.first(where: { $0.id == parts[1] }) else { return }
-        select(device: parts[0], space: pane.workspace, tab: pane.tab); focused = PaneKey(device: parts[0], pane: pane.id); showSearch = false
+        guard parts.count == 2, let pane = sessions[parts[0]]?.panes.first(where: { $0.id == parts[1] }) else { message = "This terminal is no longer available."; return }
+        select(device: parts[0], space: pane.workspace, tab: pane.tab, pane: PaneKey(device: parts[0], pane: pane.id)); showSearch = false
     }
     func focusDirection(_ direction: String) {
         guard let key = focused, let origin = activeRects.first(where: { $0.0 == key })?.1 else { return }
@@ -385,24 +505,64 @@ final class Desk: ObservableObject {
         if let next = candidates.first { focused = next.0 }
     }
     func changeTab(_ offset: Int) {
-        let ids = selectedDevice.flatMap { sessions[$0]?.tabs.filter { $0.workspace == selectedSpace }.map(\.id) } ?? shellTabs.map(\.id)
+        let ids = selectedDevice.flatMap { orderedTabs(device: $0, space: selectedSpace).map(\.id) } ?? shellTabs.map(\.id)
         guard !ids.isEmpty else { return }; let index = ids.firstIndex(of: selectedTab) ?? 0
         select(device: selectedDevice, space: selectedSpace, tab: ids[(index + offset + ids.count) % ids.count])
     }
+    var attentionCandidates: [AgentRow] {
+        agents.filter { (deviceFilter.isEmpty || $0.device == deviceFilter) && attentionState.needsAttention($0.id, status: $0.pane.status) }
+    }
     func attention() {
-        let candidates = sessions.flatMap { device, session in session.panes.filter { ["blocked", "done"].contains($0.status) }.map { (device, $0) } }.sorted { $0.1.status == "blocked" && $1.1.status != "blocked" }
-        if let next = candidates.first(where: { PaneKey(device: $0.0, pane: $0.1.id) != focused }) { jump(next.0 + "|" + next.1.id) }
+        let rows = attentionCandidates
+        guard !rows.isEmpty else { return }
+        let index = rows.firstIndex { $0.id == focused }
+        let next = rows[index.map { ($0 + 1) % rows.count } ?? 0]
+        jump(next.device + "|" + next.pane.id)
+    }
+    func quickSpace() {
+        guard !creatingSpace, let device = selectedDevice ?? devices.first(where: { connections[$0.id] == "Connected" })?.id else { message = "Connect a Herdr device to create a space."; return }
+        creatingSpace = true
+        let pane = selectedDevice == device ? focused : nil
+        let fallback = sessions[device]?.spaces.first(where: { $0.id == selectedSpace })?.cwd
+        Task {
+            defer { creatingSpace = false }
+            do {
+                let cwd: String
+                if let pane {
+                    let value = try await rpc(device).call("pane.get", ["pane_id": .string(pane.pane)])["pane"]
+                    guard let path = value["foreground_cwd"].string ?? value["cwd"].string else { throw Failure("Cannot read the current pane directory.") }; cwd = path
+                } else if let fallback { cwd = fallback }
+                else if devices.first(where: { $0.id == device })?.endpoint.kind == "local" { cwd = focused.flatMap { terminals[$0]?.process.cwd() } ?? NSHomeDirectory() }
+                else { throw Failure("Select a remote pane or use New Space… to specify its directory.") }
+                try await createSpace(device: device, name: "", cwd: cwd)
+            } catch { message = error.localizedDescription }
+        }
     }
     private func notifyChanges(device: String, old: Session?, new: Session) {
         guard UserDefaults.standard.bool(forKey: "notifications"), let old else { return }
         let previous = Dictionary(uniqueKeysWithValues: old.panes.map { ($0.id, $0.status) })
-        for pane in new.panes where pane.agent != nil && ["blocked", "done"].contains(pane.status) && previous[pane.id] != pane.status {
+        for pane in new.panes where pane.agent != nil && ["blocked", "done"].contains(pane.status) && previous[pane.id] != nil && previous[pane.id] != pane.status {
             if NSApp.isActive, focused == PaneKey(device: device, pane: pane.id) { continue }
             let content = UNMutableNotificationContent(); content.userInfo = ["device": device, "pane": pane.id]; content.title = pane.label; content.body = pane.status == "blocked" ? "Needs your input" : "Finished"; if !UserDefaults.standard.bool(forKey: "silentNotifications") { content.sound = .default }
             UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
         }
     }
-    func shutdown() { layoutTask?.cancel(); Array(polls.keys).forEach { detach($0) }; terminals.values.forEach { $0.process.stop() } }
+    func applicationHidden() {
+        hiddenTask?.cancel()
+        hiddenTask = Task {
+            do { try await Task.sleep(for: .milliseconds(1500)) } catch { return }
+            guard NSApp.isHidden else { return }
+            for (key, terminal) in terminals where key.device != "shell" && !ended.contains(key) {
+                hiddenAttachments.insert(key); terminal.process.stop(); ended.insert(key)
+            }
+        }
+    }
+    func applicationShown() {
+        hiddenTask?.cancel(); hiddenTask = nil
+        for key in hiddenAttachments { if let terminal = terminals[key] { ended.remove(key); terminal.restart() } }
+        hiddenAttachments = []
+    }
+    func shutdown() { hiddenTask?.cancel(); reorderTasks.values.forEach { $0.cancel() }; layoutTask?.cancel(); Array(polls.keys).forEach { detach($0) }; terminals.values.forEach { $0.process.stop() } }
 }
 
 

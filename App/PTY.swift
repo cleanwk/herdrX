@@ -48,14 +48,19 @@ final class ByteProcess: @unchecked Sendable {
         let context = Run(fd: fd, pid: pid)
         state.lock(); generation += 1; let epoch = generation; run = context; state.unlock()
         let output = self.output
-        context.queue.async {
+        context.queue.async { [weak self] in
             let reader = DispatchSource.makeReadSource(fileDescriptor: fd, queue: context.queue)
             reader.setCancelHandler { close(fd) }
             reader.setEventHandler {
                 guard context.active else { return }
                 var bytes = [UInt8](repeating: 0, count: 65536)
                 let count = read(fd, &bytes, bytes.count)
-                if count > 0 { output?(Data(bytes.prefix(count))) }
+                if count > 0 {
+                    guard let self else { return }
+                    self.state.lock(); defer { self.state.unlock() }
+                    guard self.generation == epoch, self.run === context else { return }
+                    output?(Data(bytes.prefix(count)))
+                }
                 else if count == 0 || (count < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) { context.active = false; context.writer?.cancel(); context.writer = nil; context.reader?.cancel(); context.reader = nil }
             }
             context.reader = reader; reader.activate()
@@ -75,14 +80,16 @@ final class ByteProcess: @unchecked Sendable {
         state.lock(); let context = run; state.unlock()
         guard let context else { return }
         let rejected = inputRejected
-        context.queue.async {
+        context.queue.async { [weak self] in
             guard context.active else { return }
             guard context.pending.count + data.count <= 16 * 1024 * 1024 else { DispatchQueue.main.async { rejected?() }; return }
             context.pending.append(data)
             if context.writer == nil {
                 let writer = DispatchSource.makeWriteSource(fileDescriptor: context.fd, queue: context.queue)
                 writer.setEventHandler {
-                    guard context.active else { return }
+                    guard context.active, let self else { return }
+                    self.state.lock(); defer { self.state.unlock() }
+                    guard self.run === context else { return }
                     let n = context.pending.withUnsafeBytes { Darwin.write(context.fd, $0.baseAddress, $0.count) }
                     if n > 0 { context.pending.removeFirst(n) }
                     else if n < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR { context.pending.removeAll(); context.writer?.cancel(); context.writer = nil; return }
@@ -97,7 +104,7 @@ final class ByteProcess: @unchecked Sendable {
         context?.queue.async {
             guard let context, context.active else { return }
             var size = winsize(ws_row: rows, ws_col: columns, ws_xpixel: 0, ws_ypixel: 0)
-            ioctl(context.fd, TIOCSWINSZ, &size)
+            _ = ioctl(context.fd, TIOCSWINSZ, &size)
         }
     }
     func cwd() -> String? {
@@ -105,7 +112,7 @@ final class ByteProcess: @unchecked Sendable {
         guard let context else { return nil }
         // Resolve foreground process rather than a cached shell launch path.
         var foreground: Int32 = 0
-        context.queue.sync { if context.active { ioctl(context.fd, TIOCGPGRP, &foreground) } }
+        context.queue.sync { if context.active { _ = ioctl(context.fd, TIOCGPGRP, &foreground) } }
         var path = [CChar](repeating: 0, count: 4096)
         guard herd_cwd(foreground > 0 ? foreground : context.pid, &path, Int32(path.count)) != 0 else { return nil }
         return String(cString: path)

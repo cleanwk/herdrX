@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "action": "Native Cmd-D after clicking terminal on disposable local w3. Immediate keys after an AX-only sidebar click did not activate; verified after actual terminal click.",
+  "newPanes": [
+    {
+      "pane_id": "w3:p2",
+      "terminal_id": "term_65d7763ac56b17",
+      "workspace_id": "w3",
+      "tab_id": "w3:t1",
+      "focused": false,
+      "cwd": "/private/tmp/herdrx-fixture/atlas",
+      "foreground_cwd": "/private/tmp/herdrx-fixture/atlas",
+      "terminal_title": "kai@kaideMacBook-Pro:/private/tmp/herdrx-fixture/atlas",
+      "terminal_title_stripped": "kai@kaideMacBook-Pro:/private/tmp/herdrx-fixture/atlas",
+      "agent_status": "unknown",
+      "scroll": {
+        "offset_from_bottom": 0,
+        "max_offset_from_bottom": 0,
+        "viewport_rows": 33
+      },
+      "revision": 1
+    }
+  ]
+}
