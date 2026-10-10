@@ -15,8 +15,8 @@ def cask(release, metadata):
     filename = f"Herd-X-{version}-universal.zip"
     if metadata.get("version") != version or metadata.get("filename") != filename:
         raise ValueError("Release version or asset filename mismatch")
-    if metadata.get("notarized") is not True or set(metadata.get("architectures", [])) != {"arm64", "x86_64"}:
-        raise ValueError("Universal notarized release required")
+    if type(metadata.get("notarized")) is not bool or set(metadata.get("architectures", [])) != {"arm64", "x86_64"}:
+        raise ValueError("Universal release with explicit notarization status required")
     if metadata.get("min_macos") != "14.0":
         raise ValueError("Review cask minimum macOS before publishing")
     digest = metadata.get("sha256", "")
@@ -28,6 +28,12 @@ def cask(release, metadata):
     expected = f"https://github.com/{REPO}/releases/download/{tag}/{filename}"
     if assets[0].get("browser_download_url") != expected:
         raise ValueError("Unexpected download origin")
+    notice = "" if metadata["notarized"] else '''
+  caveats <<~EOS
+    Herd-X uses ad-hoc signing and is not notarized by Apple.
+    If macOS blocks the first launch, use System Settings > Privacy & Security > Open Anyway.
+  EOS
+'''
     return f'''cask "herd-x" do
   version "{version}"
   sha256 "{digest}"
@@ -41,6 +47,7 @@ def cask(release, metadata):
   depends_on macos: ">= :sonoma"
   app "Herd-X.app"
 
+{notice}
   zap trash: "~/Library/Application Support/Herd-X"
 end
 '''

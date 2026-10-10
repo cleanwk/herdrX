@@ -8,14 +8,14 @@
 
 ## 安装与升级
 
-主要分发渠道是现有的 [cleanwk/homebrew-tap](https://github.com/cleanwk/homebrew-tap)。**首个经过 Developer ID 签名及 Apple 公证的稳定版本发布后**，tap 会自动生成 `herd-x` cask：
+主要分发渠道是现有的 [cleanwk/homebrew-tap](https://github.com/cleanwk/homebrew-tap)。**首个稳定版本发布后**，tap 会自动生成 `herd-x` cask：
 
 ```sh
 brew install --cask cleanwk/tap/herd-x
 brew update && brew upgrade --cask herd-x
 ```
 
-目前仓库是首版实现，尚未发布经过公证的稳定包。CI 的预览包用于开发验证，不会同步到正式 cask。发布配置见 [Release](docs/Release.md)。
+默认版本采用 ad-hoc 签名，不需要 Apple Developer ID 或公证凭据。首次打开若被 macOS 拦截，先尝试启动，再到系统设置 → 隐私与安全 → 仍要打开。Brew 保留正常 quarantine 检查，应用更新后可能需要再次确认。CI 的预览包不作为正式版本同步；版本 tag 发布的稳定包才同步到 cask。见 [Release](docs/Release.md)。
 
 ## 使用
 
