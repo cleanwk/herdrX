@@ -15,7 +15,7 @@ brew install --cask cleanwk/tap/herdrx
 brew update && brew upgrade --cask herdrx
 ```
 
-默认版本采用 ad-hoc 签名，不需要 Apple Developer ID 或公证凭据。首次打开若被 macOS 拦截，先尝试启动，再到系统设置 → 隐私与安全 → 仍要打开。Brew 保留正常 quarantine 检查，应用更新后可能需要再次确认。若明确接受当前未公证版本，可用 `brew install --cask --no-quarantine cleanwk/tap/herdrx` 安装；已安装时只对本 App 执行 `xattr -dr com.apple.quarantine /Applications/HerdrX.app`，无需关闭全局 Gatekeeper。CI 的预览包不作为正式版本同步；版本 tag 发布的稳定包才同步到 cask。见 [Release](docs/Release.md)。
+默认版本采用 ad-hoc 签名，不需要 Apple Developer ID 或公证凭据。首次打开若被 macOS 拦截，先尝试启动，再到系统设置 → 隐私与安全 → 仍要打开。Brew 保留正常 quarantine 检查，应用更新后可能需要再次确认。若明确接受当前未公证版本，安装后只对本 App 执行 `xattr -dr com.apple.quarantine /Applications/HerdrX.app`，无需关闭全局 Gatekeeper。CI 的预览包不作为正式版本同步；版本 tag 发布的稳定包才同步到 cask。见 [Release](docs/Release.md)。
 
 ## 使用
 
