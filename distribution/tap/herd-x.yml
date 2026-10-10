@@ -1,0 +1,30 @@
+name: Update Herd-X
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: update-herd-x
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read latest verified release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/update-herd-x.py
+      - name: Commit cask if changed
+        run: |
+          if [[ -f Casks/herd-x.rb ]]; then
+            git add Casks/herd-x.rb
+            if ! git diff --cached --quiet; then
+              git config user.name 'github-actions[bot]'
+              git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+              git commit -m 'Update Herd-X cask'
+              git push
+            fi
+          fi

@@ -1,0 +1,81 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: xcode-27
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate version and signing configuration
+        env:
+          TAG: ${{ github.ref_name }}
+          P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          SIGN_IDENTITY: ${{ vars.MACOS_SIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          [[ "${TAG#v}" == "$(cat VERSION)" ]] || { echo 'Tag must match VERSION'; exit 1; }
+          for required in P12 P12_PASSWORD SIGN_IDENTITY APPLE_ID APPLE_TEAM_ID APPLE_APP_PASSWORD; do
+            [[ -n "${!required}" ]] || { echo "Missing release setting: $required"; exit 1; }
+          done
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+          echo "BUILD_NUMBER=$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+      - run: brew install xcodegen
+      - name: Import signing certificate
+        env:
+          P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/herdx-signing.keychain-db"
+          password=$(openssl rand -hex 32)
+          echo "::add-mask::$password"
+          printf '%s' "$P12" | base64 --decode > "$RUNNER_TEMP/herdx-cert.p12"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security import "$RUNNER_TEMP/herdx-cert.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain"
+      - name: Build universal app
+        env:
+          SIGN_IDENTITY: ${{ vars.MACOS_SIGN_IDENTITY }}
+          SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_KEY }}
+        run: scripts/build.sh
+      - name: Notarize and package
+        env:
+          NOTARIZE: '1'
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: scripts/package.sh
+      - name: Generate optional signed appcast
+        env:
+          SPARKLE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_KEY }}
+        run: |
+          if [[ -n "$SPARKLE_KEY" || -n "$SPARKLE_PUBLIC_KEY" ]]; then
+            [[ -n "$SPARKLE_KEY" && -n "$SPARKLE_PUBLIC_KEY" ]] || { echo 'Both Sparkle keys are required'; exit 1; }
+            printf '%s' "$SPARKLE_KEY" > "$RUNNER_TEMP/sparkle-key"
+            tool=$(find build/release/SourcePackages/artifacts -path '*/bin/generate_appcast' -type f -print -quit)
+            [[ -n "$tool" ]] || { echo 'Missing Sparkle appcast tool'; exit 1; }
+            "$tool" --ed-key-file "$RUNNER_TEMP/sparkle-key" --download-url-prefix "https://github.com/cleanwk/herdrX/releases/download/v${VERSION}/" build/dist
+          fi
+      - name: Publish verified release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v${VERSION}" build/dist/* --verify-tag --title "Herd-X ${VERSION}" --generate-notes
+      - name: Clean signing material
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/herdx-signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/herdx-cert.p12" "$RUNNER_TEMP/sparkle-key"

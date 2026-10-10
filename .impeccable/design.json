@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-09T18:04:17.711937+00:00",
+  "title": "Design System: Herd-X",
+  "extensions": {
+    "colorMeta": {
+      "terminal-dark-background": {
+        "role": "neutral",
+        "displayName": "Terminal Dark Surface"
+      },
+      "terminal-dark-foreground": {
+        "role": "neutral",
+        "displayName": "Terminal Dark Text"
+      }
+    },
+    "typographyMeta": {
+      "tab": {
+        "displayName": "Tab",
+        "purpose": "Unselected AppKit tab label."
+      },
+      "tab-selected": {
+        "displayName": "Selected Tab",
+        "purpose": "Selected AppKit tab label."
+      },
+      "metadata": {
+        "displayName": "Metadata",
+        "purpose": "Status bar and space detail."
+      },
+      "section-label": {
+        "displayName": "Section Label",
+        "purpose": "Uppercase sidebar group heading."
+      },
+      "terminal": {
+        "displayName": "Terminal Default",
+        "purpose": "User-configurable fixed-pitch terminal text."
+      }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [],
+    "nativePlatform": {
+      "measurementUnit": "pt",
+      "dynamicColors": {
+        "accent": "Color.accentColor / NSColor.controlAccentColor",
+        "windowSurface": "NSColor.windowBackgroundColor",
+        "separator": "NSColor.separatorColor",
+        "secondaryText": ".secondary",
+        "positiveState": "Color.green",
+        "attentionState": "Color.orange"
+      },
+      "appearance": "macOS light/dark; terminal light palette owned by Ghostty .alabaster",
+      "componentPreview": "Native SwiftUI/AppKit descriptions only. No HTML/CSS preview is supplied because platform semantic values, material and native control states have no faithful drop-in CSS equivalent.",
+      "captureMode": "Scan mode from native source; reference-based documenter fallback, no named shipped documenter role available."
+    }
+  },
+  "components": [
+    {
+      "name": "Toolbar Button",
+      "kind": "button",
+      "description": "Borderless native SF Symbol button with action and shortcut tooltip."
+    },
+    {
+      "name": "Jump Field",
+      "kind": "input",
+      "description": "Native rounded-border text field; initial focus, Return activation and Escape cancellation."
+    },
+    {
+      "name": "Sidebar Navigation",
+      "kind": "nav",
+      "description": "Plain full-width rows with system-accent selection at 0.14 opacity and six-point corners."
+    },
+    {
+      "name": "Terminal Tab",
+      "kind": "nav",
+      "description": "AppKit tab: 150-point slot, 142 by 30-point button, 12-point system type; selected weight semibold, accent wash and subtle outline.",
+      "refersTo": "tab"
+    },
+    {
+      "name": "Reconnect Overlay",
+      "kind": "custom",
+      "description": "Native regular-material overlay with 12-point padding, eight-point radius and Reconnect action.",
+      "refersTo": "reconnect"
+    },
+    {
+      "name": "Terminal Canvas",
+      "kind": "custom",
+      "description": "Mounted Ghostty terminal surfaces, separator gutters, six-point resize handles and accent focus boundary."
+    },
+    {
+      "name": "Status Bar",
+      "kind": "custom",
+      "description": "26-point native bar, 11-point system text, six-point state dot plus readable connection label."
+    }
+  ],
+  "narrative": {
+    "northStar": "Native workbench",
+    "overview": "A simple, clean native macOS workbench. Terminals own the visual field; system controls and compact navigation make sessions easy to reach. SwiftUI and AppKit supply dynamic colors, system typography and familiar keyboard behavior. The original ivory H-shaped herd animal on charcoal remains the app identity.",
+    "keyCharacteristics": [
+      "Terminal-first density with restrained chrome.",
+      "Appearance-aware system surfaces and accent selection.",
+      "Familiar native controls, SF Symbols and keyboard access.",
+      "Flat navigation with clear selected-space and focused-pane states."
+    ],
+    "rules": [
+      {
+        "name": "The Semantic Color Rule",
+        "body": "Keep chrome bound to platform semantic colors. Do not freeze a screenshot appearance into a new palette.",
+        "section": "colors"
+      },
+      {
+        "name": "The Reading Rule",
+        "body": "Preserve terminal legibility and native text metrics; truncate long navigation labels instead of shrinking their type.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do use semantic system colors and verify both macOS appearances.",
+      "Do keep terminal content dominant and controls compact.",
+      "Do pair status color with readable text and preserve native keyboard focus.",
+      "Do retain the recognizable original app icon."
+    ],
+    "donts": [
+      "Don’t replace native controls with a web-style component theme.",
+      "Don’t invent fixed equivalents for dynamic colors or platform text styles.",
+      "Don’t add decorative shadows, oversized branding or card chrome around terminal panes.",
+      "Don’t hide long labels behind controls; retain truncation and tooltips."
+    ]
+  }
+}
