@@ -47,7 +47,7 @@ def cask(release, metadata):
   app "HerdrX.app"
 
 {notice}
-  zap trash: "~/Library/Application Support/Herd-X"
+  zap trash: "~/Library/Application Support/HerdrX"
 end
 '''
 
