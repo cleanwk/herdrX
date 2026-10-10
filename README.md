@@ -78,6 +78,8 @@ brew update && brew upgrade --cask herdrx
 >    xattr -dr com.apple.quarantine /Applications/HerdrX.app
 >    ```
 
+从 **0.1.8** 起，应用内更新入口位于 **HerdrX 菜单 → 检查更新** 和 **设置 → 关于**：支持每天自动检查，以及可选的后台下载、退出时安装。Brew 安装与直接下载使用同一套签名验证。v0.1.7 用户需先通过 Brew 升级到 0.1.8。此版本也修正了主题的文字层级、整页泛蓝和部分浅色主题的差异块可读性，详见[版本说明](docs/releases/0.1.8.md)。
+
 发布历史与分发细节参见 [Release 文档](docs/Release.md)。
 
 ---

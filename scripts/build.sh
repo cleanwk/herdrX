@@ -17,7 +17,7 @@ xcodebuild -project HerdrX.xcodeproj -scheme HerdrX -configuration Release \
   MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$build" \
   CODE_SIGN_IDENTITY="$identity" CODE_SIGN_STYLE=Manual \
   ENABLE_HARDENED_RUNTIME="$runtime" \
-  SPARKLE_PUBLIC_KEY="${SPARKLE_PUBLIC_KEY:-}" ONLY_ACTIVE_ARCH=NO 'ARCHS=arm64 x86_64'
+  ONLY_ACTIVE_ARCH=NO 'ARCHS=arm64 x86_64'
 app='build/release/Build/Products/Release/HerdrX.app'
 codesign --verify --deep --strict "$app"
 if [[ "$identity" != '-' ]]; then

@@ -94,7 +94,7 @@ struct Tabs: NSViewRepresentable {
             }
             for (index, entry) in entries.enumerated() where buttons.indices.contains(index) && selected == entry.id {
                 let path = NSBezierPath(roundedRect: buttons[index].frame.insetBy(dx: 0.5, dy: 0.5), xRadius: 5, yRadius: 5)
-                Theme.accent.withAlphaComponent(effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? 0.20 : 0.18).setFill(); path.fill(); Theme.accent.withAlphaComponent(0.22).setStroke(); path.lineWidth = 1; path.stroke()
+                Theme.selection.withAlphaComponent(effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? 0.20 : 0.18).setFill(); path.fill(); Theme.selection.withAlphaComponent(0.22).setStroke(); path.lineWidth = 1; path.stroke()
             }
             if let insertion { let x = insertion < buttons.count ? buttons[insertion].frame.minX : buttons.last?.frame.maxX ?? 0; Theme.accent.setFill(); NSRect(x: x, y: 2, width: 2, height: 24).fill() }
         }

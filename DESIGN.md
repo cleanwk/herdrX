@@ -6,10 +6,27 @@ colors:
   catppuccin-light-foreground: "#4C4F69"
   catppuccin-dark-background: "#1E1E2E"
   catppuccin-dark-foreground: "#CDD6F4"
+  tokyo-light-foreground: "#4C5269"
+  tokyo-light-ansi-bright-black: "#6B7089"
+  tokyo-dark-foreground: "#C0CAF5"
+  gruvbox-light-foreground: "#3C3836"
+  gruvbox-dark-foreground: "#EBDBB2"
+  one-light-foreground: "#383A42"
+  one-dark-foreground: "#DCDFE4"
+  solarized-light-foreground: "#586E75"
+  solarized-dark-foreground: "#93A1A1"
+  kanagawa-light-foreground: "#545464"
+  kanagawa-dark-foreground: "#DCD7BA"
+  rose-pine-light-foreground: "#575279"
+  rose-pine-dark-foreground: "#E0DEF4"
   dracula-companion-background: "#F4F3F7"
   dracula-companion-foreground: "#514761"
+  dracula-dark-foreground: "#F8F8F2"
+  nord-light-foreground: "#2E3440"
+  nord-dark-foreground: "#D8DEE9"
   vesper-companion-background: "#FAF8F5"
   vesper-companion-foreground: "#504B44"
+  vesper-dark-foreground: "#FFFFFF"
   accent-blue-light: "#2463EB"
   accent-blue-dark: "#82AAFF"
   accent-graphite-light: "#494A50"
@@ -226,49 +243,55 @@ SwiftUI and AppKit provide system type, controls and keyboard behavior; Ghostty 
 
 The current authority is [PRODUCT.md](PRODUCT.md), [ACCM DIRECTION.md](docs/accm-fidelity/DIRECTION.md) and the [workbench surface brief](.impeccable/surfaces/app-workbench-swift.md). This replaces the earlier neutral grey direction. Independent local Shells and their list/create entry points are removed; Space-owned ordinary sessions, Agents, tabs and splits remain. Earlier removals of the Agent launcher, file tree, previews, transfer and attachment delivery still apply.
 
-Tokens are source-observed native points and colors from `App/Theme.swift`, the pinned GhosttyTheme definitions, `Workbench.swift`, `Sidebar.swift`, `Tabs.swift`, `Terminal.swift`, `Preferences.swift`, `PreferenceMenu.swift`, `DeviceSwitcher.swift`, `SearchInput.swift` and `WindowBehavior.swift`. The JSON sidecar records derived colors, state rules and native behavior that do not fit the frontmatter schema. It does not provide HTML/CSS replicas of native controls.
+Tokens are source-observed native points and color seeds from `App/Theme.swift`, `ThemeColors.swift`, the pinned GhosttyTheme definitions, `Workbench.swift`, `Sidebar.swift`, `Tabs.swift`, `Terminal.swift`, `Preferences.swift`, `PreferenceMenu.swift`, `DeviceSwitcher.swift`, `SearchInput.swift` and `WindowBehavior.swift`. Foreground, accent and state seeds undergo the contrast derivation below; they are not unconditional rendered values. The JSON sidecar records these derivations, state rules and native behavior that do not fit the frontmatter schema. It does not provide HTML/CSS replicas of native controls.
 
-Evidence is in [native-checks.json](docs/accm-fidelity/evidence/native-checks.json), [theme-menu.json](docs/accm-fidelity/evidence/theme-menu.json), [space-actions-rpc.json](docs/accm-fidelity/evidence/space-actions-rpc.json) and the [finish review](docs/accm-fidelity/FINISH-REVIEW.md). The isolated fixture uses synthetic Agent names, states and illustrative output over real PTY/attach/RPC. Visual inspection covers [Catppuccin light](docs/accm-fidelity/screenshots/workbench-light.png) and [Tokyo Night dark](docs/accm-fidelity/screenshots/workbench-tokyo-dark.png); all twelve palette choices were selected through the native menu, which does not certify every palette visually. The documenter inspected those workbenches and the Appearance/Terminal captures, read source and evidence, and did not independently operate the app. Build/test records and the reviewer determine acceptance; this document does not certify literal pixel identity, every accent's contrast, live SSH/Tailcat, notification permission/delivery, VoiceOver, IME or older macOS. No new release is established.
+The current [theme validation](docs/theme-correction/VALIDATION.md) records all ten families in light/dark, Default, Follow Herdr, all nine accent captures, hidden-pane restoration, reattach continuity and 3,600 computed semantic text/surface pairs. The [updater validation](docs/app-updates/VALIDATION.md) records signed fixture installation, relaunch, automatic download/install on quit, cancellation and signed-feed rejection. Earlier [native checks](docs/accm-fidelity/evidence/native-checks.json) and [Space RPC checks](docs/accm-fidelity/evidence/space-actions-rpc.json) remain historical evidence for navigation geometry and actions. Fixtures contain synthetic names and illustrative output over real PTY/attach/RPC. The documenter read source/evidence and opened representative supplied captures, without operating the app. Reviewer verdicts govern acceptance. OS-driven System appearance changes, arbitrary terminal color pairs, live SSH/Tailcat, notification delivery, VoiceOver, IME, English updater layout and older macOS remain outside the completed evidence. These local changes are not a published release.
 
 ## Colors
 
-The selected Ghostty palette supplies both terminal and workbench ground/text, while independent accents identify selection and focus.
+The selected family supplies the shared terminal/workbench ground. Explicit per-family navigation text roles keep ordinary labels restrained; independent accents identify selection and focus. Terminal ANSI colors remain a separate set of roles.
 
 ### Primary
 
-- **Blue, Graphite, Green, Cyan, Purple, Amber, Pink, Red and Orange:** the paired light/dark frontmatter tokens are explicit app-defined accents, not aliases for AppKit system colors. Follow Theme chooses Amber for Gruvbox/Vesper, Pink for Rosé Pine, Purple for Dracula, Cyan for Nord and Blue for the remaining families.
+- **Blue, Graphite, Green, Cyan, Purple, Amber, Pink, Red and Orange:** the paired light/dark frontmatter tokens are explicit app-defined seeds, not aliases for AppKit system colors. Raw `Theme.selection` keeps the chosen hue for translucent fills; `Theme.accent` adjusts its shade for readable text, focus and native control tint. Follow Theme chooses Amber for Gruvbox/Vesper, Pink for Rosé Pine, Purple for Dracula, Cyan for Nord and Blue for the remaining families.
 - **Space selection:** accent fill at 0.13 light / 0.20 dark with a one-point outline at 0.24. **Agent selection:** stronger fill at 0.25 light / 0.30 dark without a visible outline. Hover uses theme foreground at 0.05.
 - **Tab selection:** accent fill at 0.18 light / 0.20 dark with a one-point outline at 0.22. Search selection uses 0.14. Active pane outlines and their semibold main titles use accent only while the window is key; inactive titles use theme secondary.
 
 ### Secondary
 
-- **Success green:** completed/idle Agent state words and connected-device dots. Done/idle glyphs remain subdued secondary outlines, so the row does not duplicate a large green signal.
+- **Success green:** completed/idle Agent state words and connected-device dots. Done/idle glyphs remain subdued secondary outlines, so the row does not duplicate a large green signal. Success, warning and failure seeds use the same contrast-aware surface checks as app text.
 - **Warning amber:** blocked/waiting-input state words and glyphs. **Failure red:** offline-device dots. Working or unread state words use accent; unknown state uses theme secondary. Readable text and different glyph shapes accompany these colors.
 
 ### Neutral
 
 - **Catppuccin ground and text:** HerdrX Default currently resolves to Latte/Mocha, as does the explicit Catppuccin family. The prior white/grey default tokens are obsolete.
-- **Palette-derived chrome:** `Theme.content` and `Theme.foreground` use the selected definition's background/foreground. Secondary text blends foreground toward background by 0.20 light / 0.22 dark. The tab-strip chrome blends background toward foreground by 0.025 light / 0.06 dark. Unfocused pane borders use foreground at 0.16. Native window separators and settings controls retain their platform rendering.
-- **Dracula and Vesper light companions:** the frontmatter holds HerdrX-authored ground/text pairs. Their ANSI palette brightness is capped at 0.55, selection uses the source-defined companion color, and cursor follows foreground. These companions are not upstream official light variants.
+- **Semantic text and palette-derived chrome:** `Theme.content` uses the selected definition's background; navigation foreground starts from the family's explicit frontmatter foreground seed. Chrome blends background toward that seed by 0.025 light / 0.06 dark. Secondary starts from a 0.20 blend of that seed toward background in both appearances. `ThemeColors.readable` then adjusts foreground, secondary, accent and state roles toward black or white only as needed to reach 4.5:1 against canvas, chrome, hover and the strongest sidebar/tab selections. Unfocused pane borders use adjusted foreground at 0.16. Native settings controls retain platform text and rendering; app tint follows the selected accent.
+- **Tokyo Day slate:** HerdrX adapts the upstream blue default to the `tokyo-light-foreground` token for terminal default, cursor, selection foreground and ANSI 0, with `tokyo-light-ansi-bright-black` for ANSI 8. Cursor text uses the background. This is an authored adaptation, not an incorrectly copied upstream definition.
+- **Gruvbox Light and Rosé Pine Dawn:** the named HerdrX light definitions set ANSI 0 to each upstream default foreground so black text remains dark on pale diff fills.
+- **Dracula and Vesper light companions:** the frontmatter holds HerdrX-authored ground/text pairs. Source ANSI brightness is first capped at 0.55, selection uses the source-defined companion color, and cursor follows foreground. The chromatic adjustment below then applies. These companions are not upstream official light variants.
 
 | Family | Light / dark definition | Follow Theme accent |
 | --- | --- | --- |
 | HerdrX Default / Catppuccin | Catppuccin Latte / Mocha | Blue |
-| Tokyo Night | Day / Night | Blue |
-| Gruvbox | Light / Dark | Amber |
+| Tokyo Night | HerdrX Day adaptation / Night | Blue |
+| Gruvbox | HerdrX Light ANSI-0 adaptation / Dark | Amber |
 | One | One Half Light / Dark | Blue |
 | Solarized | iTerm2 Solarized Light / Dark | Blue |
 | Kanagawa | Lotus / Wave | Blue |
-| Rosé Pine | Dawn / Rosé Pine | Pink |
+| Rosé Pine | HerdrX Dawn ANSI-0 adaptation / Rosé Pine | Pink |
 | Dracula | HerdrX Dracula Light / Dracula | Purple |
 | Nord | Nord Light / Nord | Cyan |
 | Vesper | HerdrX Vesper Light / Vesper | Amber |
 
-Ghostty owns the complete upstream ANSI, cursor and selection palettes; do not duplicate them as sampled screenshots. Follow Herdr reads local `~/.config/herdr/config.toml` `[theme].name`, resolves a supported family and falls back to Catppuccin for absent/unrecognized names. It does not edit Herdr configuration. System/Light/Dark controls appearance independently from family and accent.
+Pinned Ghostty definitions remain the source for each palette, with the named HerdrX adaptations above. Chromatic ANSI slots 1–6 and 9–14 receive hue-preserving shade adjustments toward 4.5:1 against the terminal canvas; changing a palette slot also changes it when a program uses that slot as a background. Slots 0/7/8/15 stay source-defined except the named light adaptations. Ghostty minimum contrast is 1, faint opacity is 0.85, and cursor text is mapped when supplied. Raising Ghostty's minimum contrast to 4.5 replaces failing colors with black/white in the pinned renderer and loses hue distinctions. Explicit indexed colors outside the adapted ANSI slots, RGB output and arbitrary foreground/background pairs retain application meaning and are not universally contrast-certified.
+
+Follow Herdr reads local `~/.config/herdr/config.toml` `[theme].name`, resolves a supported family and falls back to Catppuccin for absent/unrecognized names. It does not edit Herdr configuration. System/Light/Dark controls appearance independently from family and accent. System selection and the native callback are evidenced; a macOS-driven appearance transition was not exercised.
 
 **The Theme Continuity Rule.** Apply the selected family to chrome and terminal together, preserve independent appearance/accent preferences, and keep existing sessions mounted when colors change.
 
 **The State Meaning Rule.** Keep selection, pane focus, Agent execution and device connection as distinct signals, with state text and glyphs alongside color.
+
+**The Text Role Rule.** Use semantic app roles for navigation and status, keep raw selection hue separate from readable accent text, and do not recolor arbitrary terminal output to claim universal contrast.
 
 ## Typography
 
@@ -330,7 +353,9 @@ Search uses a borderless native AppKit field, stable result identities, two-line
 
 The six top-level tabs are Appearance, Terminal, Connections, Notifications, Tailcat and About. Connections contains Devices and Advanced: Plugins. Appearance separates mode, palette, accent and language. `PreferenceMenu` uses an actual `NSPopUpButton`; the palette menu contains twelve choices and a separator after Default/Follow Herdr. Its update comparison excludes separator items so an unchanged menu is not rebuilt during ordinary view updates. Native keyboard, focus, disabled and popup behavior remain intact.
 
-Terminal preferences and its actual-font preview follow Typography. Notifications has a dedicated native page; Tailcat has its own identity/connection page. About keeps version, installation context, update eligibility and notices. Page screenshots establish layout, not successful external connections, notifications or updating.
+Terminal preferences and its actual-font preview follow Typography. Notifications has a dedicated native page; Tailcat has its own identity/connection page. About uses the 420×410pt content frame for version/project, updates and notices. Native controls present automatic checks, optional automatic download/install, status, last check, failure details, manual update action and release notes. A spinner appears only for a pending manual check; canceled checks/downloads clear progress and leave retry available. Status copy distinguishes a downloaded/verified update from one ready to install on quit.
+
+One app-lifetime Sparkle updater serves both the application-menu Check for Updates action and About. Automatic checks default on at a 24-hour interval while the app runs; automatic downloads default off and persist after opt-in. Both Homebrew and direct installations use this flow. Background downloads install on quit; Herdr-owned sessions continue independently. Development builds disable updates unless the isolated fixture environment enables them. The release pipeline requires signed feed and archive verification; this is separate from Apple Developer ID signing/notarization and does not mean these changes have been published. See [updater validation](docs/app-updates/VALIDATION.md) for runtime proof and remaining limits.
 
 ## Do's and Don'ts
 
@@ -341,6 +366,8 @@ Terminal preferences and its actual-font preview follow Typography. Notification
 - Do keep ten theme families plus Default/Follow Herdr, with appearance and accent independent.
 - Do preserve saved sidebar width, terminal preferences, Space sessions, Agent navigation, tabs and splits.
 - Do distinguish Space selection, Agent selection, pane focus, execution status and device connectivity.
+- Do derive app text and state colors against the authored surfaces while preserving independent palette and accent choices.
+- Do keep automatic installation opt-in, expose manual update access and report canceled or failed updates as retryable.
 - Do keep source facts, synthetic fixture content, screenshots and completed runtime checks separate.
 
 ### Don't:
@@ -350,4 +377,5 @@ Terminal preferences and its actual-font preview follow Typography. Notification
 - Don't replace native controls or real terminals with web styling, raster mockups or simulated terminals.
 - Don't restore a second fixed toolbar or persistent bottom status bar.
 - Don't add decorative shadows, oversized branding or card containers around terminal panes.
-- Don't claim pixel identity, production Agent activity, every palette's contrast, external-service acceptance or a new release from this evidence.
+- Don't substitute terminal ANSI foreground for every app label or use secondary text as a global control tint.
+- Don't claim universal terminal contrast, an OS-driven appearance-transition pass, production Agent activity, external-service acceptance or a published release from this evidence.

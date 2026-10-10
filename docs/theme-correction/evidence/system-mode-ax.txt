@@ -1,0 +1,43 @@
+Window: "外观", App: HerdrX.
+0 标准窗口 外观, ID: com_apple_SwiftUI_Settings_window, Secondary Actions: Raise
+	1 container
+		2 文本 主题
+		3 主题
+			4 单选按钮 Description: 系统, Value: 1
+			5 单选按钮 Description: 浅色, Value: 0
+			6 单选按钮 Description: 深色, Value: 0
+		7 text 会话外观跟随应用主题。 配色
+		8 弹出式按钮 Description: 配色, Value: Catppuccin
+		9 文本 主题色
+		10 按钮 蓝
+		11 按钮 石墨
+		12 按钮 绿
+		13 按钮 青蓝
+		14 按钮 紫
+		15 按钮 琥珀
+		16 按钮 粉
+		17 按钮 红
+		18 按钮 (selected) 橙
+		19 按钮 跟随主题
+		20 text 用于聚焦面板边框、当前标签页和选中状态。 语言
+		21 弹出式按钮 Description: 语言, Value: 简体中文
+	22 工具栏
+		23 按钮 外观, Secondary Actions: 移到下一项, 从工具栏移除
+		24 按钮 终端, Secondary Actions: 移到上一项, 移到下一项, 从工具栏移除
+		25 按钮 连接, Secondary Actions: 移到上一项, 移到下一项, 从工具栏移除
+		26 按钮 通知, Secondary Actions: 移到上一项, 移到下一项, 从工具栏移除
+		27 按钮 Tailcat, Secondary Actions: 移到上一项, 移到下一项, 从工具栏移除
+		28 按钮 关于, Secondary Actions: 移到上一项, 从工具栏移除
+	29 关闭按钮
+	30 缩放按钮 (disabled)
+	31 文本 外观
+32 menu bar
+	33 HerdrX
+	34 文件
+	35 编辑
+	36 显示
+	37 工作区
+	38 窗口
+	39 帮助
+
+The focused UI element is 0 标准窗口 外观, ID: com_apple_SwiftUI_Settings_window, Secondary Actions: Raise

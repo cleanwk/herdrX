@@ -167,7 +167,16 @@ final class Desk: ObservableObject {
         setRatio(divider, ratio: divider.ratio + (["right", "down"].contains(direction) ? 0.05 : -0.05))
     }
     private let saveURL = Desk.support.appendingPathComponent("devices.json")
-    static var support: URL { if let path = ProcessInfo.processInfo.environment["HERDRX_STATE_DIR"] { return URL(fileURLWithPath: path) }; return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/HerdrX") }
+    static var support: URL {
+        if let path = ProcessInfo.processInfo.environment["HERDRX_STATE_DIR"] { return URL(fileURLWithPath: path) }
+        #if DEBUG
+        // Sparkle relaunch does not preserve test environment variables.
+        let directory = "Library/Application Support/HerdrX Development"
+        #else
+        let directory = "Library/Application Support/HerdrX"
+        #endif
+        return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(directory)
+    }
     var currentDevice: Device? { devices.first { $0.id == selectedDevice } }
     var currentPane: Item? { guard let focused else { return nil }; return sessions[focused.device]?.panes.first { $0.id == focused.pane } }
     var activeRects: [(PaneKey, CGRect)] {

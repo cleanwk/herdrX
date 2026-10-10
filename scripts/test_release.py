@@ -25,6 +25,14 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn("Open Anyway", text)
         self.assertNotIn("xattr", text)
         self.assertNotIn("spctl", text)
+    def test_self_updating_release_requires_matching_feed(self):
+        self.metadata.update(signed_updates=True, appcast_sha256="c" * 64)
+        with self.assertRaises(ValueError): tap.cask(self.release, self.metadata)
+        self.release["assets"].append(dict(name="appcast.xml", digest="sha256:" + "c" * 64,
+            browser_download_url="https://github.com/cleanwk/herdrX/releases/download/v1.2.3/appcast.xml"))
+        self.assertIn("auto_updates true", tap.cask(self.release, self.metadata))
+        self.release["assets"][-1]["digest"] = "sha256:" + "d" * 64
+        with self.assertRaises(ValueError): tap.cask(self.release, self.metadata)
     def test_reject_incomplete_and_mismatched_releases(self):
         for field, bad in [("notarized", "false"), ("sha256", "b" * 64), ("version", "1.2.4"), ("architectures", ["arm64"])]:
             with self.subTest(field=field):

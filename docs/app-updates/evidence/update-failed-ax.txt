@@ -1,0 +1,42 @@
+Window: "关于", App: HerdrX.
+0 标准窗口 关于, ID: com_apple_SwiftUI_Settings_window, Secondary Actions: Raise
+	1 滚动区 Secondary Actions: Scroll Up, Scroll Down
+		2 标题 HerdrX
+		3 container
+			4 文本 版本 0.1.7（9）
+			5 link Description: 项目, Value: github.com/cleanwk/herdrX
+		6 标题 更新
+		7 container
+			8 转换 自动检查更新, Value: off
+			9 文本 HerdrX 运行期间每天检查一次。
+			10 转换 (disabled) 自动下载并安装更新, Value: off
+			11 text 在后台下载，退出时安装。Herdr 会话会继续运行。 未能完成更新，请重试。 上次检查：2026年10月10日 19:52 The update feed is improperly signed and could not be validated. Please try again later or contact the app developer.
+			12 按钮 查看并安装更新…
+			13 link Description: 更新说明, Value: github.com/cleanwk/herdrX/releases/latest
+		14 显示三角形 Description: 开源声明, Value: off
+		15 滚动条 (settable, float) 0
+			16 值指示器 (settable, float) 0
+			17 增箭头按钮
+			18 减箭头按钮
+			19 增页面按钮
+			20 减页面按钮
+	21 工具栏
+		22 按钮 外观, Secondary Actions: 移到下一项, 从工具栏移除
+		23 按钮 终端, Secondary Actions: 移到上一项, 移到下一项, 从工具栏移除
+		24 按钮 连接, Secondary Actions: 移到上一项, 移到下一项, 从工具栏移除
+		25 按钮 通知, Secondary Actions: 移到上一项, 移到下一项, 从工具栏移除
+		26 按钮 Tailcat, Secondary Actions: 移到上一项, 移到下一项, 从工具栏移除
+		27 按钮 关于, Secondary Actions: 移到上一项, 从工具栏移除
+	28 关闭按钮
+	29 缩放按钮 (disabled)
+	30 文本 关于
+31 menu bar
+	32 HerdrX
+	33 文件
+	34 编辑
+	35 显示
+	36 工作区
+	37 窗口
+	38 帮助
+
+The focused UI element is 0 标准窗口 关于, ID: com_apple_SwiftUI_Settings_window, Secondary Actions: Raise

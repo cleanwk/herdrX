@@ -28,6 +28,15 @@ def cask(release, metadata):
     expected = f"https://github.com/{REPO}/releases/download/{tag}/{filename}"
     if assets[0].get("browser_download_url") != expected:
         raise ValueError("Unexpected download origin")
+    automatic = ""
+    if "signed_updates" in metadata:
+        if metadata["signed_updates"] is not True:
+            raise ValueError("Signed updates must be explicitly verified")
+        feed_digest = metadata.get("appcast_sha256", "")
+        feeds = [a for a in release["assets"] if a["name"] == "appcast.xml"]
+        if not re.fullmatch(r"[a-f0-9]{64}", feed_digest) or len(feeds) != 1 or feeds[0].get("digest") != "sha256:" + feed_digest or feeds[0].get("browser_download_url") != f"https://github.com/{REPO}/releases/download/{tag}/appcast.xml":
+            raise ValueError("Missing or mismatched signed appcast")
+        automatic = "  auto_updates true\n"
     notice = "" if metadata["notarized"] else '''
   caveats <<~EOS
     HerdrX uses ad-hoc signing and is not notarized by Apple.
@@ -43,7 +52,7 @@ def cask(release, metadata):
   desc "Native macOS workspace for Herdr terminals and coding agents"
   homepage "https://github.com/cleanwk/herdrX"
 
-  depends_on macos: :sonoma
+{automatic}  depends_on macos: :sonoma
   app "HerdrX.app"
 
 {notice}
