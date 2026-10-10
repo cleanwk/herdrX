@@ -12,6 +12,9 @@ enum Theme {
         return name == "herdr" ? UserDefaults.standard.string(forKey: "resolvedHerdrTheme") ?? "catppuccin" : name
     }
     static func definition(dark: Bool) -> GhosttyThemeDefinition {
+        definition(family: family, dark: dark)
+    }
+    private static func definition(family: String, dark: Bool) -> GhosttyThemeDefinition {
         switch family {
         case "tokyo-night": dark ? .tokyoNight_Night : tokyoDay
         case "gruvbox": dark ? .gruvbox_Dark : lightBlack(.gruvbox_Light)
@@ -72,7 +75,8 @@ enum Theme {
             foreground: "4c5269", cursorColor: "4c5269", cursorText: source.background,
             selectionBackground: source.selectionBackground, selectionForeground: "4c5269", palette: palette)
     }
-    static var accentName: String {
+    static var accentName: String { accentName(family: family) }
+    private static func accentName(family: String) -> String {
         let choice = UserDefaults.standard.string(forKey: "accent") ?? "theme"
         guard choice == "theme" else { return choice }
         switch family {
@@ -83,8 +87,26 @@ enum Theme {
         default: return "blue"
         }
     }
+    private struct RoleKey: Equatable { let family: String; let accent: String }
+    private static let roleLock = NSLock()
+    private static var roleKey: RoleKey?
+    private static var roleCache: [Bool: ThemeColors] = [:]
+
     static func roles(dark: Bool) -> ThemeColors {
-        let definition = definition(dark: dark)
+        let family = family
+        let key = RoleKey(family: family, accent: accentName(family: family))
+        // Dynamic NSColors can resolve many times per draw. Retain only the two
+        // appearances for the current preferences, and check the key on every
+        // read so Follow Herdr and accent changes never require manual invalidation.
+        roleLock.lock(); defer { roleLock.unlock() }
+        if roleKey != key { roleKey = key; roleCache.removeAll(keepingCapacity: true) }
+        if let cached = roleCache[dark] { return cached }
+        let colors = makeRoles(family: family, accent: key.accent, dark: dark)
+        roleCache[dark] = colors
+        return colors
+    }
+    private static func makeRoles(family: String, accent name: String, dark: Bool) -> ThemeColors {
+        let definition = definition(family: family, dark: dark)
         // Explicit navigation roles: a palette may use a chromatic terminal
         // default without turning every task name and toolbar label that color.
         let text: String
@@ -102,7 +124,7 @@ enum Theme {
         }
         let appearance = NSAppearance(named: dark ? .darkAqua : .aqua)!
         var selectedAccent = NSColor.black
-        appearance.performAsCurrentDrawingAppearance { selectedAccent = accent(accentName).usingColorSpace(.sRGB)! }
+        appearance.performAsCurrentDrawingAppearance { selectedAccent = accent(name).usingColorSpace(.sRGB)! }
         return ThemeColors(background: color(definition.background), foreground: color(text), accent: selectedAccent, dark: dark)
     }
     static var content: NSColor { dynamic { roles(dark: $0).background } }

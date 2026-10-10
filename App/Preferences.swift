@@ -48,7 +48,7 @@ private struct Devices: View {
                 ForEach(desk.devices) { device in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
-                            Text(device.displayName).fontWeight(.medium); Spacer()
+                            Text(device.displayName).fontWeight(.medium).lineLimit(1).truncationMode(.middle).help(device.displayName); Spacer()
                             Button("Edit") { draft = ConnectionDraft(device); error = nil }.disabled(device.endpoint.kind == "tailcat")
                             Button("Retry") { desk.connect(device) }
                             Button("Remove") {
@@ -91,6 +91,7 @@ private struct TerminalSettings: View {
     @State private var importError: String?
     @State private var families: [String] = ["SF Mono"]
     var body: some View {
+        ScrollView {
         VStack(alignment: .leading, spacing: 12) {
             Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 7) {
                 GridRow {
@@ -107,7 +108,7 @@ private struct TerminalSettings: View {
                 }
                 GridRow {
                     Text("Weight")
-                    Picker("Weight", selection: $weight) { Text("Light weight").tag("Light"); Text("Regular").tag("Regular"); Text("Medium").tag("Medium") }.labelsHidden().pickerStyle(.segmented).frame(width: 150).disabled(family != "SF Mono").help("Font weight is available for SF Mono.")
+                    Picker("Weight", selection: $weight) { Text("Light weight").tag("Light"); Text("Regular").tag("Regular"); Text("Medium").tag("Medium") }.labelsHidden().pickerStyle(.segmented).frame(minWidth: 150, alignment: .leading).fixedSize().disabled(family != "SF Mono").help("Font weight is available for SF Mono.")
                 }
                 GridRow {
                     Text("Line spacing")
@@ -131,8 +132,8 @@ private struct TerminalSettings: View {
                 Text("Preview").font(.system(size: 11)).foregroundStyle(.secondary)
                 Text("❯ herdr agent attach w1:p1 — 中文 ABC 0123").font(previewFont).lineLimit(2).lineSpacing(CGFloat((spacing - 1) * size)).padding(10).frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(Color(nsColor: Theme.foreground)).background(Color(nsColor: Theme.content), in: RoundedRectangle(cornerRadius: 7))
             }.padding(.top, 3)
-            Spacer(minLength: 0)
-        }.padding(.horizontal, 17).padding(.top, 20).padding(.bottom, 17).font(.system(size: 13)).onAppear {
+        }.padding(.horizontal, 17).padding(.top, 20).padding(.bottom, 17).font(.system(size: 13))
+        }.onAppear {
             if families.count == 1 { families = Array(Set(NSFontManager.shared.availableFontFamilies.filter { NSFont(name: $0, size: 12)?.isFixedPitch == true } + ["SF Mono", family])).sorted() }
             apply()
         }.onChange(of: size) { apply() }.onChange(of: family) { apply() }.onChange(of: spacing) { apply() }.onChange(of: thin) { apply() }.onChange(of: copy) { apply() }.onChange(of: weight) { apply() }
@@ -170,6 +171,7 @@ private struct TerminalSettings: View {
 }
 private struct Updates: View {
     @EnvironmentObject var updater: AppUpdater
+    private static let notices = Bundle.main.url(forResource: "Notices", withExtension: "txt").flatMap { try? String(contentsOf: $0, encoding: .utf8) }
     var body: some View {
         Form {
             Section("HerdrX") {
@@ -182,11 +184,11 @@ private struct Updates: View {
             Section("Updates") {
                 VStack(alignment: .leading, spacing: 3) {
                     Toggle("Automatically check for updates", isOn: Binding(get: { updater.automaticChecks }, set: updater.setAutomaticChecks)).disabled(!updater.ready)
-                    Text("Check once a day while HerdrX is running.").font(.caption).foregroundStyle(.secondary).padding(.leading, 20)
+                    Text("Check once a day while HerdrX is running.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 VStack(alignment: .leading, spacing: 3) {
                     Toggle("Automatically download and install updates", isOn: Binding(get: { updater.automaticDownloads }, set: updater.setAutomaticDownloads)).disabled(!updater.ready || !updater.allowsAutomaticUpdates)
-                    Text("Download in the background and install when you quit. Herdr sessions keep running.").font(.caption).foregroundStyle(.secondary).padding(.leading, 20)
+                    Text("Download in the background and install when you quit. Herdr sessions keep running.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
@@ -202,7 +204,7 @@ private struct Updates: View {
                 }
             }
             DisclosureGroup("Open Source Notices") {
-                Text((try? String(contentsOf: Bundle.main.url(forResource: "Notices", withExtension: "txt") ?? URL(fileURLWithPath: "/nonexistent"), encoding: .utf8)) ?? L("See Resources/Notices.txt and Resources/Licenses in the source distribution.")).font(.caption).textSelection(.enabled)
+                Text(Self.notices ?? L("See Resources/Notices.txt and Resources/Licenses in the source distribution.")).font(.caption).textSelection(.enabled)
             }
         }.formStyle(.grouped)
     }
@@ -214,31 +216,45 @@ private struct Appearance: View {
     @AppStorage("accent") private var accent = "theme"
     @AppStorage("language") private var language = "system"
     var body: some View {
+        ScrollView {
         VStack(alignment: .leading, spacing: 7) {
             row("Color mode") {
                 VStack(alignment: .leading, spacing: 4) {
-                    Picker("Color mode", selection: $appearance) { Text("System mode").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark") }.labelsHidden().pickerStyle(.segmented).frame(width: 150)
+                    Picker("Color mode", selection: $appearance) { Text("System mode").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark") }.labelsHidden().pickerStyle(.segmented).frame(minWidth: 150, alignment: .leading).fixedSize()
                     Text("Session appearance follows the app theme.").font(.system(size: 11)).foregroundStyle(.secondary)
                 }
             }
             row("Palette") { PreferenceMenu(label: "Palette", items: Theme.palettes, selection: $palette).frame(width: 120, height: 24) }
             row("Accent") {
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        ForEach(Theme.accents, id: \.self) { name in
-                            Button { accent = name } label: {
-                                Circle().fill(Color(nsColor: Theme.accent(name))).frame(width: 16, height: 16).padding(3)
-                                    .overlay(Circle().stroke(accent == name ? Color(nsColor: Theme.accent(name)) : .clear, lineWidth: 1.5))
-                            }.buttonStyle(.plain).help(L(name.capitalized)).accessibilityLabel(L(name.capitalized)).accessibilityAddTraits(accent == name ? .isSelected : [])
-                        }
-                        Button("Follow theme") { accent = "theme" }.buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(.secondary).fixedSize().accessibilityAddTraits(accent == "theme" ? .isSelected : [])
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 6) { accentSwatches; followThemeButton }.fixedSize()
+                        VStack(alignment: .leading, spacing: 4) { accentSwatches; followThemeButton }
                     }
                     Text("Pane focus, active tabs and selection.").font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
             row("Language") { PreferenceMenu(label: "Language", items: [("system", "System"), ("zh-Hans", "简体中文"), ("en", "English")], selection: $language).frame(width: 100, height: 24) }
-            Spacer(minLength: 0)
-        }.font(.system(size: 13)).padding(.horizontal, 25).padding(.top, 20)
+        }.font(.system(size: 13)).padding(.horizontal, 25).padding(.top, 20).padding(.bottom, 16)
+        }
+    }
+    private var accentSwatches: some View {
+        HStack(spacing: 6) {
+            ForEach(Theme.accents, id: \.self) { name in
+                Button { accent = name } label: {
+                    Circle().fill(Color(nsColor: Theme.accent(name))).frame(width: 16, height: 16).padding(3)
+                        .overlay(Circle().stroke(accent == name ? Color(nsColor: Theme.accent(name)) : .clear, lineWidth: 1.5))
+                }.buttonStyle(.plain).help(L(name.capitalized)).accessibilityLabel(L(name.capitalized)).accessibilityAddTraits(accent == name ? .isSelected : [])
+            }
+        }
+    }
+    private var followThemeButton: some View {
+        Button { accent = "theme" } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "checkmark").opacity(accent == "theme" ? 1 : 0).accessibilityHidden(true)
+                Text("Follow theme")
+            }
+        }.buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(.secondary).fixedSize().accessibilityAddTraits(accent == "theme" ? .isSelected : [])
     }
     func row<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
         HStack(alignment: .top, spacing: 10) {
@@ -260,7 +276,7 @@ private struct Notifications: View {
             Text(LocalizedStringKey(status)).font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Button("Open Notification Settings") { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!) }.tint(.primary)
             Spacer(minLength: 0)
-        }.toggleStyle(.checkbox).font(.system(size: 13)).padding(24).onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in Task { await permission() } }.task { await permission() }.onChange(of: enabled) { _, value in
+        }.toggleStyle(.checkbox).font(.system(size: 13)).frame(maxWidth: .infinity, alignment: .leading).padding(24).onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in Task { await permission() } }.task { await permission() }.onChange(of: enabled) { _, value in
             Task { if value { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) }; await permission() }
         }
     }

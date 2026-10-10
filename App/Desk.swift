@@ -51,9 +51,9 @@ indirect enum Layout {
         }
     }
 }
-struct AgentRow: Identifiable { let device: String; let pane: Item; var id: PaneKey { PaneKey(device: device, pane: pane.id) } }
+struct AgentRow: Identifiable, Equatable { let device: String; let pane: Item; var id: PaneKey { PaneKey(device: device, pane: pane.id) } }
 struct SpaceRequest: Identifiable { let id = UUID(); let device: String? }
-struct JumpRow: Identifiable { let id: String; let device: String?; let space: String?; let tab: String?; let pane: String?; let label: String; let detail: String }
+struct JumpRow: Identifiable, Equatable { let id: String; let device: String?; let space: String?; let tab: String?; let pane: String?; let label: String; let detail: String }
 
 @MainActor
 final class Desk: ObservableObject {
@@ -124,6 +124,7 @@ final class Desk: ObservableObject {
     @Published var search = Search([])
     @Published var agents: [AgentRow] = []
     @Published var jumpRows: [String: JumpRow] = [:]
+    private var indexedRows: [JumpRow] = []
     var terminals: [PaneKey: Terminal] = [:]
     private var notificationRouter: NotificationRouter?
     private var tailcats: [String: TailcatConnection] = [:]
@@ -486,24 +487,34 @@ final class Desk: ObservableObject {
     func reindex() {
         let ordered = devices.flatMap { device -> [AgentRow] in
             guard let session = sessions[device.id] else { return [] }
-            return session.spaces.flatMap { space in session.tabs.filter { $0.workspace == space.id }.flatMap { tab in session.panes.filter { $0.tab == tab.id && $0.agent != nil }.map { AgentRow(device: device.id, pane: $0) } } }
+            let tabs = Dictionary(grouping: session.tabs, by: \.workspace)
+            let panes = Dictionary(grouping: session.panes.filter { $0.agent != nil }, by: \.tab)
+            return session.spaces.flatMap { space in (tabs[space.id] ?? []).flatMap { tab in (panes[tab.id] ?? []).map { AgentRow(device: device.id, pane: $0) } } }
         }
-        agents = ordered.enumerated().sorted { (rank($0.element.pane.status), $0.offset) < (rank($1.element.pane.status), $1.offset) }.map(\.element)
+        let ranked = ordered.enumerated().sorted { (rank($0.element.pane.status), $0.offset) < (rank($1.element.pane.status), $1.offset) }.map(\.element)
+        if agents != ranked { agents = ranked }
         var rows: [JumpRow] = []
+        var ranks: [String: Int] = [:]
         for device in devices {
             guard let session = sessions[device.id] else { continue }
             rows += session.spaces.map { JumpRow(id: "space|" + device.id + "|" + $0.id, device: device.id, space: $0.id, tab: nil, pane: nil, label: $0.label, detail: DisplayTitle.detail([device.displayName, spacePath(device: device.id, space: $0.id), branches[device.id + "|" + $0.id]])) }
             rows += session.panes.map { pane in JumpRow(id: "pane|" + device.id + "|" + pane.id, device: device.id, space: pane.workspace, tab: pane.tab, pane: pane.id, label: title(device: device.id, pane: pane), detail: DisplayTitle.detail([device.displayName, session.spaces.first { space in space.id == pane.workspace }?.label, pane.agent ?? L("Terminal"), pane.cwd])) }
+            for pane in session.panes { ranks["pane|" + device.id + "|" + pane.id] = rank(pane.status) }
         }
         rows.sort { left, right in
-            let a = left.device.flatMap { sessions[$0]?.panes.first { $0.id == left.pane } }.map { rank($0.status) } ?? 3
-            let b = right.device.flatMap { sessions[$0]?.panes.first { $0.id == right.pane } }.map { rank($0.status) } ?? 3
+            let a = ranks[left.id] ?? 3, b = ranks[right.id] ?? 3
             let leftType = left.id.hasPrefix("space|") ? 0 : left.pane == nil ? 2 : 1
             let rightType = right.id.hasPrefix("space|") ? 0 : right.pane == nil ? 2 : 1
             return (leftType, a, -(searchActivity[left.id] ?? 0), left.label, left.id) < (rightType, b, -(searchActivity[right.id] ?? 0), right.label, right.id)
         }
-        jumpRows = Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
-        search.update(documents: rows.map { Search.Document(id: $0.id, name: $0.label, context: $0.detail) })
+        // Branch refreshes and opening Search can reindex identical documents.
+        // Only publish derived state when content or search ordering changes.
+        if indexedRows != rows {
+            indexedRows = rows
+            let lookup = Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
+            if jumpRows != lookup { jumpRows = lookup }
+            search.update(documents: rows.map { Search.Document(id: $0.id, name: $0.label, context: $0.detail) })
+        }
     }
     func jump(_ value: String) {
         if let row = jumpRows[value] {

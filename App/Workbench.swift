@@ -12,7 +12,7 @@ struct Workbench: View {
             if showSidebar {
                 VStack(spacing: 0) {
                     HStack { Spacer(); Button { showSidebar = false } label: { Image(systemName: "sidebar.left") }.help("Toggle Sidebar · ⌘B").accessibilityLabel("Hide Sidebar") }
-                        .buttonStyle(.borderless).padding(.leading, 78).padding(.trailing, 12).frame(height: 28)
+                        .buttonStyle(.borderless).padding(.leading, 78).padding(.trailing, 12).frame(height: TabMetrics.barHeight)
                     HStack(spacing: 5) {
                         Button { desk.quickSpace() } label: { Label("New", systemImage: "plus") }.disabled(desk.creatingSpace).help(desk.creationHelp)
                         Menu { Button("New Space with Name and Directory…") { desk.showSpaceForm() } } label: { Image(systemName: "chevron.down") }.menuIndicator(.hidden).fixedSize().accessibilityLabel("Space Options")
@@ -38,7 +38,7 @@ struct Workbench: View {
                         Button("Split Down") { desk.split(horizontal: false) }.disabled(!desk.canSplit(horizontal: false))
                         Button(LocalizedStringKey(desk.zoomed ? "Restore Pane" : "Zoom Pane")) { desk.zoomed.toggle() }.disabled(desk.focused == nil)
                     } label: { Image(systemName: "rectangle.split.2x1") }.menuIndicator(.hidden).frame(width: 22).accessibilityLabel("Pane Layout").help("Splits require room for at least 24 columns and 6 rows per pane.")
-                }.font(.system(size: 12)).buttonStyle(.borderless).padding(.trailing, 8).frame(height: 28).background(Color(nsColor: Theme.chrome)).zIndex(1)
+                }.font(.system(size: 12)).buttonStyle(.borderless).padding(.trailing, 8).frame(height: TabMetrics.barHeight).background(Color(nsColor: Theme.chrome)).zIndex(1)
                 Divider()
                 ZStack(alignment: .bottom) {
                     TerminalCanvas(terminals: desk.canvas, focused: desk.focused, dividers: desk.dividers, setRatio: desk.setRatio, previewRatio: desk.previewRatio, titles: desk.paneTitles, close: { desk.closePane($0) }, zoomed: desk.zoomed, restore: { desk.zoomed = false }, focusRevision: desk.focusRevision, minimumPaneSize: desk.minimumPaneSize, actions: WorkbenchActions(perform: command, enabled: enabled), roundLeft: !showSidebar)
@@ -69,8 +69,9 @@ struct Workbench: View {
         .focusedSceneValue(\.workbenchActions, WorkbenchActions(perform: command, enabled: enabled))
     }
     var tabs: [TabEntry] {
-        if let device = desk.selectedDevice { return desk.orderedTabs(device: device, space: desk.selectedSpace).map { tab in TabEntry(id: tab.id, title: tab.label, count: desk.sessions[device]?.panes.filter { $0.tab == tab.id }.count ?? 0) } }
-        return []
+        guard let device = desk.selectedDevice else { return [] }
+        let counts = (desk.sessions[device]?.panes ?? []).reduce(into: [String: Int]()) { $0[$1.tab, default: 0] += 1 }
+        return desk.orderedTabs(device: device, space: desk.selectedSpace).map { TabEntry(id: $0.id, title: $0.label, count: counts[$0.id, default: 0]) }
     }
     func reorder(_ source: String, _ insertion: Int) {
         desk.reorderTab(source, insertion: insertion)
@@ -83,7 +84,7 @@ struct Workbench: View {
                 let agents = desk.agents.filter { desk.deviceFilter.isEmpty || $0.device == desk.deviceFilter }
                 SidebarGroup(title: L("Agents"), id: "agents", empty: agents.isEmpty) { ForEach(agents) { row in agentRow(row) } }
 
-            }.padding(.horizontal, 10).padding(.bottom, 8)
+            }.padding(.horizontal, 10).padding(.bottom, 8).background(SidebarScrollStyle())
         }.onChange(of: desk.sidebarReveal) { _, value in if let value { reader.scrollTo(value) } } }
     }
     func deviceGroup(_ device: Device) -> some View {
@@ -130,7 +131,7 @@ struct Workbench: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) { Text(desk.title(device: row.device, pane: row.pane)).font(.system(size: 13)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading); AgentStatus(status: row.pane.status, unread: unread).accessibilityHidden(true) }
                 HStack(spacing: 5) {
-                    Label(context, systemImage: AgentToolIcon.symbol(for: row.pane.agent)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(Color(nsColor: Theme.secondary))
+                    HStack(spacing: 4) { AgentIcon(tool: row.pane.agent); Text(context).lineLimit(1) }.frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(Color(nsColor: Theme.secondary))
                     Text(L(unread ? "Completed, unread" : row.pane.stateLabel)).lineLimit(1).foregroundStyle(AgentStatus.color(row.pane.status, unread: unread)).fixedSize(horizontal: true, vertical: false)
                 }.font(.system(size: 11))
             }.padding(.leading, 18)
@@ -204,7 +205,10 @@ struct Jump: View {
                         let pane = row.device.flatMap { desk.sessions[$0]?.panes.first { $0.id == row.pane } }
                         Button { open(id) } label: {
                             HStack(spacing: 8) {
-                                Image(systemName: pane?.agent != nil ? AgentToolIcon.symbol(for: pane?.agent) : row.pane != nil || row.tab != nil ? "terminal" : "square.stack.3d.up").foregroundStyle(.secondary).frame(width: 20).accessibilityHidden(true)
+                                Group {
+                                    if let agent = pane?.agent { AgentIcon(tool: agent, size: 14) }
+                                    else { Image(systemName: row.pane != nil || row.tab != nil ? "terminal" : "square.stack.3d.up").foregroundStyle(.secondary) }
+                                }.frame(width: 20).accessibilityHidden(true)
                                 VStack(alignment: .leading, spacing: 1) { Text(row.label).lineLimit(1); Text(row.detail).font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1) }
                                 Spacer(minLength: 0)
                                 if let pane, let device = row.device, pane.agent != nil { AgentStatus(status: pane.status, unread: desk.attentionState.unread.contains(PaneKey(device: device, pane: pane.id))) }
