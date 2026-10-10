@@ -1,5 +1,5 @@
 ---
-name: Herd-X
+name: HerdrX
 description: A clean native macOS workbench for terminals and coding agents.
 colors:
   terminal-dark-background: "#101012"
@@ -50,7 +50,7 @@ components:
     padding: "12pt"
 ---
 
-# Design System: Herd-X
+# Design System: HerdrX
 
 ## Overview
 

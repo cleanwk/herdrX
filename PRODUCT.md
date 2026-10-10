@@ -1,4 +1,4 @@
-# Herd-X
+# HerdrX
 <!-- impeccable:product-schema 1 -->
 
 ## Platform
@@ -16,4 +16,4 @@ Keep terminal byte traffic out of observable UI state. Preserve server sessions 
 The latest user instruction removes built-in file trees, directory browsing, file previews and the independent file window. Keep the host focused on terminal work and Herdr extensions.
 
 ## Brand commitments
-Herd-X. Simple, recognizable icon, inspired by Ghostty's clarity with original artwork and native macOS packaging. Distribution primarily uses cleanwk/homebrew-tap, with GitHub Actions release packaging.
+HerdrX. Simple, recognizable icon, inspired by Ghostty's clarity with original artwork and native macOS packaging. Distribution primarily uses cleanwk/homebrew-tap, with GitHub Actions release packaging.

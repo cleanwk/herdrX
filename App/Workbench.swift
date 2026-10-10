@@ -10,7 +10,7 @@ struct Workbench: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text("Herd-X").font(.headline).padding(.leading, 80)
+                Text("HerdrX").font(.headline).padding(.leading, 80)
                 Spacer()
                 Button { desk.showSearch = true } label: { Label("Jump", systemImage: "magnifyingglass") }.help("Jump to a pane · ⌘K")
                 Menu { ForEach(["codex", "claude", "pi", "cursor"], id: \.self) { agent in Button(agent) { desk.create(agent: agent) } }; Divider(); Button("New Shell") { desk.create() }; Button("New Space") { desk.create(space: true) } } label: { Label("New", systemImage: "plus") }
@@ -47,7 +47,7 @@ struct Workbench: View {
         .sheet(isPresented: $newAgent) {
             VStack(alignment: .leading, spacing: 16) { Text("New Agent").font(.title2); ForEach(["codex", "claude", "pi", "cursor"], id: \.self) { agent in Button(agent) { desk.create(agent: agent); newAgent = false } }; Button("Cancel") { newAgent = false } }.padding(24).frame(width: 320)
         }
-        .alert("Herd-X", isPresented: Binding(get: { desk.message != nil }, set: { if !$0 { desk.message = nil } })) { Button("OK") { desk.message = nil } } message: { Text(desk.message ?? "") }
+        .alert("HerdrX", isPresented: Binding(get: { desk.message != nil }, set: { if !$0 { desk.message = nil } })) { Button("OK") { desk.message = nil } } message: { Text(desk.message ?? "") }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in desk.shutdown() }
         .background(shortcuts)
     }

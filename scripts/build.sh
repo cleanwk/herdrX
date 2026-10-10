@@ -12,19 +12,19 @@ runtime=YES
 scripts/icon.sh
 xcodegen generate
 swift test --package-path Core -c release
-xcodebuild -project HerdX.xcodeproj -scheme HerdX -configuration Release \
+xcodebuild -project HerdrX.xcodeproj -scheme HerdrX -configuration Release \
   -derivedDataPath build/release -destination 'generic/platform=macOS' \
   MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$build" \
   CODE_SIGN_IDENTITY="$identity" CODE_SIGN_STYLE=Manual \
   ENABLE_HARDENED_RUNTIME="$runtime" \
   SPARKLE_PUBLIC_KEY="${SPARKLE_PUBLIC_KEY:-}" ONLY_ACTIVE_ARCH=NO 'ARCHS=arm64 x86_64'
-app='build/release/Build/Products/Release/Herd-X.app'
+app='build/release/Build/Products/Release/HerdrX.app'
 codesign --verify --deep --strict "$app"
 if [[ "$identity" != '-' ]]; then
   app_team=$(codesign -dv "$app" 2>&1 | sed -n 's/^TeamIdentifier=//p')
   framework_team=$(codesign -dv "$app/Contents/Frameworks/Sparkle.framework" 2>&1 | sed -n 's/^TeamIdentifier=//p')
   [[ -n "$app_team" && "$app_team" != 'not set' && "$app_team" == "$framework_team" ]] || { echo 'Embedded framework signing team must match the app' >&2; exit 1; }
 fi
-architectures=$(lipo "$app/Contents/MacOS/Herd-X" -archs)
+architectures=$(lipo "$app/Contents/MacOS/HerdrX" -archs)
 [[ "$architectures" == 'arm64 x86_64' || "$architectures" == 'x86_64 arm64' ]] || { echo 'Universal app required' >&2; exit 1; }
 echo "$app"

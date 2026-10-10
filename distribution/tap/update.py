@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sync a verified, stable Herd-X release into the existing cleanwk tap."""
+"""Sync a verified, stable HerdrX release into the existing cleanwk tap."""
 import json
 import pathlib
 import re
@@ -12,7 +12,7 @@ def cask(release, metadata):
     if release.get("draft") or release.get("prerelease") or not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
         raise ValueError("Only stable versioned releases are supported")
     version = tag[1:]
-    filename = f"Herd-X-{version}-universal.zip"
+    filename = f"HerdrX-{version}-universal.zip"
     if metadata.get("version") != version or metadata.get("filename") != filename:
         raise ValueError("Release version or asset filename mismatch")
     if type(metadata.get("notarized")) is not bool or set(metadata.get("architectures", [])) != {"arm64", "x86_64"}:
@@ -30,21 +30,21 @@ def cask(release, metadata):
         raise ValueError("Unexpected download origin")
     notice = "" if metadata["notarized"] else '''
   caveats <<~EOS
-    Herd-X uses ad-hoc signing and is not notarized by Apple.
+    HerdrX uses ad-hoc signing and is not notarized by Apple.
     If macOS blocks the first launch, use System Settings > Privacy & Security > Open Anyway.
   EOS
 '''
-    return f'''cask "herd-x" do
+    return f'''cask "herdrx" do
   version "{version}"
   sha256 "{digest}"
 
-  url "https://github.com/cleanwk/herdrX/releases/download/v#{{version}}/Herd-X-#{{version}}-universal.zip"
-  name "Herd-X"
+  url "https://github.com/cleanwk/herdrX/releases/download/v#{{version}}/HerdrX-#{{version}}-universal.zip"
+  name "HerdrX"
   desc "Native macOS workspace for Herdr terminals and coding agents"
   homepage "https://github.com/cleanwk/herdrX"
 
   depends_on macos: :sonoma
-  app "Herd-X.app"
+  app "HerdrX.app"
 
 {notice}
   zap trash: "~/Library/Application Support/Herd-X"
@@ -62,7 +62,7 @@ def main():
             return
         raise RuntimeError(response.stderr.decode())
     release = json.loads(response.stdout)
-    target = pathlib.Path("Casks/herd-x.rb")
+    target = pathlib.Path("Casks/herdrx.rb")
     current = target.read_text() if target.exists() else ""
     tag = release["tag_name"]
     if not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
@@ -78,7 +78,7 @@ def main():
     content = cask(release, metadata)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(content)
-    print(f"Updated herd-x to {tag}")
+    print(f"Updated herdrx to {tag}")
 
 if __name__ == "__main__":
     main()

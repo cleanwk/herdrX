@@ -44,14 +44,14 @@ jobs:
           P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
           P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
         run: |
-          keychain="$RUNNER_TEMP/herdx-signing.keychain-db"
+          keychain="$RUNNER_TEMP/herdrx-signing.keychain-db"
           password=$(openssl rand -hex 32)
           echo "::add-mask::$password"
-          printf '%s' "$P12" | base64 --decode > "$RUNNER_TEMP/herdx-cert.p12"
+          printf '%s' "$P12" | base64 --decode > "$RUNNER_TEMP/herdrx-cert.p12"
           security create-keychain -p "$password" "$keychain"
           security set-keychain-settings -lut 21600 "$keychain"
           security unlock-keychain -p "$password" "$keychain"
-          security import "$RUNNER_TEMP/herdx-cert.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
+          security import "$RUNNER_TEMP/herdrx-cert.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
           security list-keychains -d user -s "$keychain"
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain"
       - name: Build universal app
@@ -81,9 +81,9 @@ jobs:
       - name: Publish verified release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "v${VERSION}" build/dist/* --verify-tag --title "Herd-X ${VERSION}" --generate-notes
+        run: gh release create "v${VERSION}" build/dist/* --verify-tag --title "HerdrX ${VERSION}" --generate-notes
       - name: Clean signing material
         if: always()
         run: |
-          security delete-keychain "$RUNNER_TEMP/herdx-signing.keychain-db" || true
-          rm -f "$RUNNER_TEMP/herdx-cert.p12" "$RUNNER_TEMP/sparkle-key"
+          security delete-keychain "$RUNNER_TEMP/herdrx-signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/herdrx-cert.p12" "$RUNNER_TEMP/sparkle-key"

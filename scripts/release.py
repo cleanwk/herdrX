@@ -10,9 +10,9 @@ import subprocess
 if __name__ == "__main__":
     archive = pathlib.Path(sys.argv[1])
     notarized = sys.argv[2] == "1"
-    info = plistlib.loads(pathlib.Path("build/release/Build/Products/Release/Herd-X.app/Contents/Info.plist").read_bytes())
-    architectures = subprocess.check_output(["lipo", "build/release/Build/Products/Release/Herd-X.app/Contents/MacOS/Herd-X", "-archs"], text=True).split()
-    if set(architectures) != {"arm64", "x86_64"} or archive.name != f'Herd-X-{info["CFBundleShortVersionString"]}-universal.zip':
+    info = plistlib.loads(pathlib.Path("build/release/Build/Products/Release/HerdrX.app/Contents/Info.plist").read_bytes())
+    architectures = subprocess.check_output(["lipo", "build/release/Build/Products/Release/HerdrX.app/Contents/MacOS/HerdrX", "-archs"], text=True).split()
+    if set(architectures) != {"arm64", "x86_64"} or archive.name != f'HerdrX-{info["CFBundleShortVersionString"]}-universal.zip':
         raise ValueError("Archive or architecture mismatch")
     digest = hashlib.file_digest(archive.open("rb"), "sha256").hexdigest()
     metadata = dict(version=info["CFBundleShortVersionString"], build=info["CFBundleVersion"],

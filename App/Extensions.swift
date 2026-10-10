@@ -49,7 +49,7 @@ struct ExtensionSettings: View {
                     }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            Text("Herdr runs and manages extensions. Herd-X displays their actions, logs and terminal panels.").font(.caption).foregroundStyle(.secondary)
+            Text("Herdr runs and manages extensions. HerdrX displays their actions, logs and terminal panels.").font(.caption).foregroundStyle(.secondary)
         }.onAppear { if deviceID.isEmpty { deviceID = desk.selectedDevice ?? desk.devices.first?.id ?? "" } }
         .task(id: deviceID) { installed = []; logs = []; selected = nil; await refresh() }
         .task(id: selected) {
