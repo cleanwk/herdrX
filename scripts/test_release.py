@@ -18,8 +18,15 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn('version "1.2.3"', text)
         self.assertIn('app "Herd-X.app"', text)
         self.assertNotIn("auto_updates", text)
-    def test_reject_incomplete_unsigned_and_mismatched_releases(self):
-        for field, bad in [("notarized", False), ("sha256", "b" * 64), ("version", "1.2.4"), ("architectures", ["arm64"])]:
+    def test_ad_hoc_release(self):
+        self.metadata["notarized"] = False
+        text = tap.cask(self.release, self.metadata)
+        self.assertIn("not notarized", text)
+        self.assertIn("Open Anyway", text)
+        self.assertNotIn("xattr", text)
+        self.assertNotIn("spctl", text)
+    def test_reject_incomplete_and_mismatched_releases(self):
+        for field, bad in [("notarized", "false"), ("sha256", "b" * 64), ("version", "1.2.4"), ("architectures", ["arm64"])]:
             with self.subTest(field=field):
                 metadata = dict(self.metadata); metadata[field] = bad
                 with self.assertRaises(ValueError): tap.cask(self.release, metadata)
