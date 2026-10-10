@@ -5,12 +5,16 @@
       "layers": [
         {
           "image-name": "Artwork.png",
-          "name": "HerdrX"
+          "name": "HerdrX",
+          "position": {
+            "scale": 1.225,
+            "translation-in-points": [0, 0]
+          }
         }
       ],
       "shadow": {
         "kind": "neutral",
-        "opacity": 0.5
+        "opacity": 0.0
       },
       "translucency": {
         "enabled": true,
