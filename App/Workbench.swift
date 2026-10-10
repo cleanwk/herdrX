@@ -42,7 +42,9 @@ struct Workbench: View {
                 Divider()
                 // Pane titles supply the top clearance; the other three sides use one shared inset.
                 ZStack(alignment: .bottom) {
-                    TerminalCanvas(terminals: desk.canvas, focused: desk.focused, dividers: desk.dividers, setRatio: desk.setRatio, previewRatio: desk.previewRatio, titles: desk.paneTitles, close: { desk.closePane($0) }, zoomed: desk.zoomed, restore: { desk.zoomed = false }, focusRevision: desk.focusRevision, minimumPaneSize: desk.minimumPaneSize, actions: WorkbenchActions(perform: command, enabled: enabled))
+                    GeometryReader { geo in
+                        TerminalCanvas(terminals: desk.canvas, focused: desk.focused, dividers: desk.dividers, setRatio: desk.setRatio, previewRatio: desk.previewRatio, titles: desk.paneTitles, close: { desk.closePane($0) }, zoomed: desk.zoomed, restore: { desk.zoomed = false }, focusRevision: desk.focusRevision, minimumPaneSize: desk.minimumPaneSize, actions: WorkbenchActions(perform: command, enabled: enabled), corners: paneCorners(geo))
+                    }
                     if let key = desk.focused, desk.ended.contains(key) {
                         HStack { Text(desk.recoveryLabel(key)); Button("Reconnect") { desk.reconnect(key) }.disabled(!desk.canWrite(key.device)) }.padding(12).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 8)).padding(20)
                     }
@@ -74,6 +76,24 @@ struct Workbench: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didUnhideNotification)) { _ in desk.applicationShown() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in desk.shutdown() }
         .focusedSceneValue(\.workbenchActions, WorkbenchActions(perform: command, enabled: enabled))
+    }
+    private func paneCorners(_ geometry: GeometryProxy) -> PaneCorners {
+        var resolvedRadii = true
+        #if DEBUG
+        // Exercise the macOS 26 public-inset path in the isolated native fixture.
+        resolvedRadii = ProcessInfo.processInfo.environment["HERDRX_CORNER_INSETS"] != "1"
+        #endif
+        if #available(macOS 27.0, *), resolvedRadii, let radii = geometry.concentricCornerRadii {
+            return PaneCorners(left: showSidebar ? 0 : radii.bottomLeading, right: radii.bottomTrailing)
+        }
+        if #available(macOS 26.0, *) {
+            let insets = geometry.containerCornerInsets
+            return PaneCorners(left: showSidebar ? 0 : min(insets.bottomLeading.width, insets.bottomLeading.height),
+                               right: min(insets.bottomTrailing.width, insets.bottomTrailing.height))
+        }
+        // Older AppKit windows have a 10pt corner; subtract the existing outer gutter.
+        let radius = max(0, 10 - PaneMetrics.edgeInset)
+        return PaneCorners(left: showSidebar ? 0 : radius, right: radius)
     }
     private var unavailableDevice: Device? {
         let visible = desk.devices.filter { desk.deviceFilter.isEmpty || $0.id == desk.deviceFilter }

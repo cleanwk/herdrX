@@ -35,3 +35,19 @@ enum PaneMetrics {
                       height: max(0, top - frame.minY - inset))
     }
 }
+
+/// Radii at the canvas boundary, before the stroke or terminal content inset.
+struct PaneCorners: Equatable {
+    var left: CGFloat = 0
+    var right: CGFloat = 0
+
+    func inset(by amount: CGFloat) -> Self {
+        Self(left: max(0, left - amount), right: max(0, right - amount))
+    }
+
+    func forPane(_ rect: CGRect, fullScreen: Bool) -> Self {
+        guard !fullScreen, rect.maxY > 0.999 else { return Self() }
+        return Self(left: rect.minX < 0.001 ? left : 0,
+                    right: rect.maxX > 0.999 ? right : 0)
+    }
+}

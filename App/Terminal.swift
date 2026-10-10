@@ -121,13 +121,16 @@ struct TerminalCanvas: NSViewRepresentable {
     let focusRevision: Int
     let minimumPaneSize: CGSize
     let actions: WorkbenchActions
+    let corners: PaneCorners
     func makeNSView(context: Context) -> Canvas { Canvas() }
     func updateNSView(_ canvas: Canvas, context: Context) {
-        canvas.actions = actions; canvas.focusRevision = focusRevision; canvas.minimumPaneSize = minimumPaneSize
+        canvas.corners = corners; canvas.actions = actions; canvas.focusRevision = focusRevision; canvas.minimumPaneSize = minimumPaneSize
         canvas.titles = titles; canvas.close = close; canvas.entries = terminals; canvas.focused = focused; canvas.dividers = dividers; canvas.setRatio = setRatio; canvas.previewRatio = previewRatio; canvas.zoomed = zoomed; canvas.restore = restore; canvas.needsLayout = true; canvas.needsDisplay = true
     }
     final class Canvas: NSView {
         var actions: WorkbenchActions?
+        var corners = PaneCorners()
+        private var fullScreenObservers: [NSObjectProtocol] = []
         var entries: [(PaneKey, Terminal, CGRect)] = []
         var focusRevision = 0
         private var appliedFocusRevision = -1
@@ -139,12 +142,21 @@ struct TerminalCanvas: NSViewRepresentable {
             accessibilityObserver = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.updateCloseButtons() }
             }
+            for name in [NSWindow.didEnterFullScreenNotification, NSWindow.didExitFullScreenNotification] {
+                fullScreenObservers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
+                    MainActor.assumeIsolated {
+                        guard let self, (note.object as? NSWindow) === self.window else { return }
+                        self.needsDisplay = true; self.needsLayout = true
+                    }
+                })
+            }
             activation = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { [weak self] note in
                 MainActor.assumeIsolated { if let self, (note.object as? NSWindow) === self.window { self.needsDisplay = true; self.needsLayout = true } }
             }
         }
         required init?(coder: NSCoder) { fatalError() }
         deinit {
+            for observer in fullScreenObservers { NotificationCenter.default.removeObserver(observer) }
             if let activation { NotificationCenter.default.removeObserver(activation) }
             if let accessibilityObserver { NSWorkspace.shared.notificationCenter.removeObserver(accessibilityObserver) }
         }
@@ -196,7 +208,8 @@ struct TerminalCanvas: NSViewRepresentable {
                     context.saveGState()
                     context.setStrokeColor((active ? Theme.accent : Theme.foreground.withAlphaComponent(0.28)).cgColor)
                     context.setLineWidth(PaneMetrics.borderWidth(scale: window?.backingScaleFactor ?? 2))
-                    context.addRect(frame)
+                    let radii = paneCorners(rect).inset(by: PaneMetrics.borderWidth(scale: window?.backingScaleFactor ?? 2) / 2)
+                    context.addPath(PaneShape.path(in: frame, corners: radii))
                     context.strokePath(); context.restoreGState()
                 }
                 let title = titles[key] ?? PaneTitle(main: L("Terminal"), context: "")
@@ -216,6 +229,13 @@ struct TerminalCanvas: NSViewRepresentable {
             // Keep the backing opaque while the button glyph fades across the title outline.
             Theme.content.setFill()
             for button in closeButtons.values where !button.isHidden { button.frame.fill() }
+        }
+        override func viewDidChangeBackingProperties() {
+            super.viewDidChangeBackingProperties()
+            needsDisplay = true; needsLayout = true
+        }
+        private func paneCorners(_ rect: CGRect) -> PaneCorners {
+            corners.forPane(rect, fullScreen: window?.styleMask.contains(.fullScreen) == true)
         }
         func paneFrame(_ rect: CGRect) -> CGRect {
             PaneMetrics.frame(rect, in: bounds.size, scale: window?.backingScaleFactor ?? 2)
@@ -305,8 +325,13 @@ struct TerminalCanvas: NSViewRepresentable {
                     button.setAccessibilityLabel(button.toolTip)
                     let contentFrame = CGRect(x: frame.minX + PaneMetrics.contentInset, y: frame.minY + PaneMetrics.contentInset, width: max(0, frame.width - PaneMetrics.horizontalOverhead), height: max(0, frame.height - PaneMetrics.verticalOverhead))
                     if terminal.view.frame != contentFrame { terminal.view.frame = contentFrame }
-                    // Pane frames are inset from the window on every side; all pane corners stay square.
-                    terminal.view.layer?.mask = nil
+                    let radii = paneCorners(rect).inset(by: PaneMetrics.contentInset)
+                    if radii.left > 0 || radii.right > 0 {
+                        terminal.view.wantsLayer = true
+                        let mask = (terminal.view.layer?.mask as? CAShapeLayer) ?? CAShapeLayer()
+                        mask.path = PaneShape.path(in: CGRect(origin: .zero, size: contentFrame.size), corners: radii)
+                        terminal.view.layer?.mask = mask
+                    } else { terminal.view.layer?.mask = nil }
                     if focused == key, appliedFocusRevision != focusRevision, window?.isKeyWindow == true, window?.attachedSheet == nil {
                         if window?.makeFirstResponder(terminal.view) == true { appliedFocusRevision = focusRevision }
                     }
@@ -320,7 +345,7 @@ struct TerminalCanvas: NSViewRepresentable {
             restoreButton.toolTip = L("Restore Pane · ⌘⇧Return"); restoreButton.invoke = { [weak self] in self?.restore?() }
             #if DEBUG
             if let path = ProcessInfo.processInfo.environment["HERDRX_DIAGNOSTICS"] {
-                let report: [String: Any] = ["window": [window?.frame.width ?? 0, window?.frame.height ?? 0], "canvas": [bounds.width, bounds.height], "panes": entries.map { key, terminal, rect -> [String: Any] in ["device": key.device, "pane": key.pane, "surface": terminal.surface.map { String(describing: ObjectIdentifier($0)) } ?? "pending", "visible": rect.width > 0, "resizeCount": terminal.process.resizeCount, "frame": [terminal.view.frame.minX, terminal.view.frame.minY, terminal.view.frame.width, terminal.view.frame.height]] }]
+                let report: [String: Any] = ["window": [window?.frame.width ?? 0, window?.frame.height ?? 0], "canvas": [bounds.width, bounds.height], "corners": [corners.left, corners.right], "fullScreen": window?.styleMask.contains(.fullScreen) == true, "panes": entries.map { key, terminal, rect -> [String: Any] in ["device": key.device, "pane": key.pane, "surface": terminal.surface.map { String(describing: ObjectIdentifier($0)) } ?? "pending", "visible": rect.width > 0, "resizeCount": terminal.process.resizeCount, "frame": [terminal.view.frame.minX, terminal.view.frame.minY, terminal.view.frame.width, terminal.view.frame.height]] }]
                 if let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]), let file = FileHandle(forWritingAtPath: path) { _ = try? file.seekToEnd(); try? file.write(contentsOf: data + Data("\n".utf8)); try? file.close() }
             }
             #endif

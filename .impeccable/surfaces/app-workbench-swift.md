@@ -55,3 +55,8 @@ Keep tab document height equal to its viewport and lock all vertical origins to 
 ## 2026-10-10 pane spacing follow-up
 
 The latest explicit native-Herdr direction supersedes the earlier shared-edge/window-flush geometry. Keep independent square pane outlines, 8pt inner gutters and an 8pt outer inset at the left/right/bottom even when the sidebar is hidden. The existing approximately 11pt title reserve supplies the top perimeter gap; remove the extra 6pt canvas band. Pane outlines are 1.5pt at 2× and pixel-quantized to 2pt at 1×. Preserve the requested 28pt/22pt tab geometry, existing title and close actions, and authoritative Herdr rectangles/RPC. Check all four sides together, not only the changed edge. Current evidence and inline finish verdict: [validation](../../docs/pane-spacing/VALIDATION.md), [review](../../docs/pane-spacing/FINISH-REVIEW.md). No shipping raster assets added.
+
+
+## 2026-10-11 window corner correction
+
+Supersedes the all-square outer corners above. Preserve the 8pt outer inset and internal gutters, four-side breathing room and pixel-aligned 1.5pt Retina border. Only window-adjacent bottom corners use continuous curves derived from public SwiftUI window geometry. Beside the visible sidebar the left corner remains square; all internal/top/full-screen corners remain square. The outline and terminal mask share one contour, inset by half the stroke and by 4pt respectively. Current native checks, screenshots and bounded inline finish verdict: [validation](../../docs/pane-corners/VALIDATION.md). No new domain capability or shipping raster asset.
