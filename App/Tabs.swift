@@ -21,18 +21,65 @@ struct Tabs: NSViewRepresentable {
     let rename: (String) -> Void
     let close: (String) -> Void
     let writable: Bool
-    func makeNSView(context: Context) -> NSScrollView { let scroll = NSScrollView(); scroll.hasHorizontalScroller = false; scroll.drawsBackground = false; scroll.documentView = Strip(); return scroll }
-    func updateNSView(_ scroll: NSScrollView, context: Context) {
+    func makeNSView(context: Context) -> HorizontalScrollView { let scroll = HorizontalScrollView(); scroll.documentView = Strip(); return scroll }
+    func updateNSView(_ scroll: HorizontalScrollView, context: Context) {
         guard let strip = scroll.documentView as? Strip else { return }
         let navigate = strip.scope != scope || strip.selected != selected
         if strip.scope != scope { strip.stopDrag() }; strip.scope = scope; strip.writable = writable
         strip.entries = entries; strip.selected = selected; strip.select = select; strip.move = move; strip.rename = rename; strip.close = close
         strip.syncButtons()
-        strip.frame.size = NSSize(width: max(scroll.bounds.width, (strip.buttons.last?.frame.maxX ?? 0) + TabMetrics.inset), height: TabMetrics.barHeight)
+        scroll.fitDocument()
         strip.needsDisplay = true
         if navigate { strip.revealSelection() }
     }
+    /// A tab bar has one scrolling axis, including momentum and programmatic reveals.
+    final class HorizontalScrollView: NSScrollView {
+        private var viewportSize: NSSize = .zero
+        override init(frame frameRect: NSRect) {
+            super.init(frame: frameRect)
+            contentView = HorizontalClipView()
+            drawsBackground = false; contentView.drawsBackground = false
+            hasHorizontalScroller = false; hasVerticalScroller = false
+            horizontalScrollElasticity = .none; verticalScrollElasticity = .none
+            automaticallyAdjustsContentInsets = false; contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+            borderType = .noBorder
+        }
+        required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+        override func layout() {
+            super.layout(); fitDocument()
+            if viewportSize != contentSize {
+                viewportSize = contentSize
+                (documentView as? Strip)?.revealSelection()
+            }
+        }
+        func fitDocument() {
+            guard let strip = documentView as? Strip else { return }
+            let size = NSSize(width: max(contentSize.width, (strip.buttons.last?.frame.maxX ?? 0) + TabMetrics.inset), height: contentSize.height)
+            if strip.frame.size != size { strip.setFrameSize(size); strip.syncButtons() }
+            scrollHorizontally(to: contentView.bounds.minX)
+        }
+        func scrollHorizontally(to x: CGFloat) {
+            let limit = max(0, (documentView?.frame.width ?? 0) - contentSize.width)
+            contentView.scroll(to: NSPoint(x: min(max(0, x), limit), y: 0))
+            reflectScrolledClipView(contentView)
+        }
+        override func scrollWheel(with event: NSEvent) {
+            let delta = event.scrollingDeltaX != 0 ? event.scrollingDeltaX : event.modifierFlags.contains(.shift) ? event.scrollingDeltaY : 0
+            guard delta != 0 else { return }
+            scrollHorizontally(to: contentView.bounds.minX - delta * (event.hasPreciseScrollingDeltas ? 1 : 10))
+        }
+    }
+    final class HorizontalClipView: NSClipView {
+        override func constrainBoundsRect(_ proposedBounds: NSRect) -> NSRect {
+            var constrained = super.constrainBoundsRect(proposedBounds)
+            constrained.origin.y = 0
+            return constrained
+        }
+        override func setBoundsOrigin(_ newOrigin: NSPoint) { super.setBoundsOrigin(NSPoint(x: newOrigin.x, y: 0)) }
+        override func scroll(to newOrigin: NSPoint) { super.scroll(to: NSPoint(x: newOrigin.x, y: 0)) }
+    }
     final class Strip: NSView {
+        override var isFlipped: Bool { true }
         var scope = ""
         var entries: [TabEntry] = []; var selected = ""; var writable = true
         private var edgeTimer: Timer?
@@ -64,7 +111,7 @@ struct Tabs: NSViewRepresentable {
                 button.font = .systemFont(ofSize: 12, weight: selected == entries[index].id ? .semibold : .regular)
                 button.contentTintColor = selected == entries[index].id ? Theme.foreground : Theme.secondary
                 let width = min(200, max(40, (button.title as NSString).size(withAttributes: [.font: button.font!]).width + 18))
-                button.frame = NSRect(x: x, y: (TabMetrics.barHeight - TabMetrics.height) / 2, width: width, height: TabMetrics.height); x += width + TabMetrics.gap
+                button.frame = NSRect(x: x, y: max(0, (bounds.height - TabMetrics.height) / 2), width: width, height: TabMetrics.height); x += width + TabMetrics.gap
                 button.setAccessibilityRole(.radioButton); button.setAccessibilityLabel(entries[index].title); button.setAccessibilityValue(selected == entries[index].id ? 1 : 0); button.setAccessibilityHelp(LF("%d panes", entries[index].count)); button.toolTip = entries[index].title
             }
         }
@@ -86,7 +133,13 @@ struct Tabs: NSViewRepresentable {
             menu.addItem(ActionMenuItem("Close Tab…", enabled: writable) { close?(id) })
             return menu
         }
-        func revealSelection() { if let index = entries.firstIndex(where: { $0.id == selected }), buttons.indices.contains(index) { scrollToVisible(buttons[index].frame.insetBy(dx: -TabMetrics.inset, dy: 0)) } }
+        func revealSelection() {
+            guard let scroll = enclosingScrollView as? HorizontalScrollView,
+                  let index = entries.firstIndex(where: { $0.id == selected }), buttons.indices.contains(index) else { return }
+            let rect = buttons[index].frame.insetBy(dx: -TabMetrics.inset, dy: 0), visible = scroll.contentView.bounds
+            if rect.minX < visible.minX { scroll.scrollHorizontally(to: rect.minX) }
+            else if rect.maxX > visible.maxX { scroll.scrollHorizontally(to: rect.maxX - visible.width) }
+        }
         func stopDrag() { source = nil; insertion = nil; edgeTimer?.invalidate(); edgeTimer = nil; needsDisplay = true }
         override func viewWillMove(toWindow newWindow: NSWindow?) { if newWindow == nil { stopDrag() }; super.viewWillMove(toWindow: newWindow) }
         private func scrollEdge() {
@@ -109,7 +162,7 @@ struct Tabs: NSViewRepresentable {
             if let insertion {
                 let x = insertion < buttons.count ? buttons[insertion].frame.minX - TabMetrics.gap / 2 : (buttons.last?.frame.maxX ?? 0) + TabMetrics.gap / 2
                 Theme.accent.setFill()
-                NSRect(x: x - 1, y: (TabMetrics.barHeight - TabMetrics.height) / 2, width: 2, height: TabMetrics.height).fill()
+                NSRect(x: x - 1, y: max(0, (bounds.height - TabMetrics.height) / 2), width: 2, height: TabMetrics.height).fill()
             }
         }
         override func mouseDown(with event: NSEvent) { renaming = event.clickCount == 2; origin = convert(event.locationInWindow, from: nil).x; source = buttons.firstIndex { $0.frame.minX <= origin && origin <= $0.frame.maxX }.map { entries[$0].id }; dragged = false; if renaming, writable, let source { rename?(source); stopDrag() } }

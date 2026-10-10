@@ -1,0 +1,61 @@
+import AppKit
+import SwiftUI
+
+// The production tab view is compiled directly; only app-wide presentation dependencies are stubbed.
+func L(_ value: String) -> String { value }
+func LF(_ value: String, _ count: Int) -> String { String(format: value, count) }
+enum Theme {
+    static let foreground = NSColor.labelColor, secondary = NSColor.secondaryLabelColor, accent = NSColor.systemBlue
+}
+final class ActionMenuItem: NSMenuItem {
+    init(_ title: String, enabled: Bool, action: @escaping () -> Void) { super.init(title: title, action: nil, keyEquivalent: ""); isEnabled = enabled }
+    required init(coder: NSCoder) { fatalError() }
+}
+
+@main struct TabScrollTests {
+    @MainActor static func main() {
+        _ = NSApplication.shared
+        let scroll = Tabs.HorizontalScrollView(frame: NSRect(x: 0, y: 0, width: 260, height: 28))
+        let strip = Tabs.Strip(); scroll.documentView = strip
+        strip.entries = (0..<20).map { TabEntry(id: String($0), title: "Tab \($0)", count: 1) }
+        strip.selected = "0"; strip.syncButtons(); scroll.layout()
+        func centered(_ label: String) {
+            precondition(scroll.contentView.bounds.minY == 0, label + ": vertical origin moved")
+            precondition(strip.frame.height == scroll.contentSize.height, label + ": document height drifted")
+            for button in strip.buttons {
+                precondition(button.frame.height == 22 && button.frame.minY == 3, label + ": pill is not centered")
+            }
+        }
+        func wheel(x: Int32, y: Int32, unit: CGScrollEventUnit = .pixel, shift: Bool = false, target: NSView? = nil) {
+            // Input is sent only to this offscreen view, never posted to the system event queue.
+            let cg = CGEvent(scrollWheelEvent2Source: nil, units: unit, wheelCount: 2, wheel1: y, wheel2: x, wheel3: 0)!
+            if shift { cg.flags = .maskShift }
+            (target ?? scroll).scrollWheel(with: NSEvent(cgEvent: cg)!)
+        }
+        centered("initial")
+        for delta: Int32 in [1, -1, 300, -300] { wheel(x: 0, y: delta); centered("vertical wheel") }
+        precondition(scroll.contentView.bounds.minX == 0, "Vertical input changed horizontal position")
+        wheel(x: -90, y: 200); centered("diagonal trackpad")
+        precondition(scroll.contentView.bounds.minX > 0, "Horizontal overflow cannot scroll")
+        let beforeButton = scroll.contentView.bounds.minX
+        wheel(x: -40, y: 0, target: strip.buttons[0]); centered("button input")
+        precondition(scroll.contentView.bounds.minX > beforeButton, "Tab button swallowed horizontal input")
+        let x = scroll.contentView.bounds.minX
+        wheel(x: 0, y: -1, unit: .line, shift: true); centered("shift wheel")
+        precondition(scroll.contentView.bounds.minX > x, "Shift wheel cannot scroll horizontally")
+        scroll.contentView.scroll(to: NSPoint(x: x, y: 99)); centered("programmatic scroll")
+        scroll.scrollHorizontally(to: .greatestFiniteMagnitude); centered("right boundary")
+        precondition(scroll.contentView.bounds.maxX <= strip.bounds.maxX, "Scrolled beyond trailing edge")
+        strip.selected = "19"; strip.revealSelection()
+        scroll.setFrameSize(NSSize(width: 180, height: 28)); scroll.layout(); centered("resize")
+        precondition(scroll.contentView.bounds.contains(strip.buttons[19].frame), "Resize hid the selected tab")
+        strip.selected = "0"; strip.revealSelection(); centered("selection reveal")
+        precondition(scroll.contentView.bounds.minX == 0, "First tab did not reveal")
+        strip.entries = Array(strip.entries.prefix(2)); strip.syncButtons(); scroll.fitDocument(); centered("short strip")
+        wheel(x: -500, y: -500); centered("no overflow")
+        precondition(scroll.contentView.bounds.minX == 0, "A short strip scrolled")
+        strip.entries = []; strip.syncButtons(); scroll.fitDocument(); centered("empty strip")
+        precondition(scroll.contentView.bounds.origin == .zero, "Empty strip retained an offset")
+        print("PASS: tab vertical lock, horizontal/diagonal/Shift input, boundaries, resize, selection, short/empty strips; 28pt bar / 22pt pills / 3pt insets")
+    }
+}

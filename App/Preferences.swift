@@ -50,14 +50,14 @@ private struct Devices: View {
                         HStack {
                             Text(device.displayName).fontWeight(.medium).lineLimit(1).truncationMode(.middle).help(device.displayName); Spacer()
                             Button("Edit") { draft = ConnectionDraft(device); error = nil }.disabled(device.endpoint.kind == "tailcat")
-                            Button("Retry") { desk.connect(device) }
                             Button("Remove") {
                                 let alert = NSAlert(); alert.messageText = LF("Forget %@?", device.displayName); alert.informativeText = L("Only this connection is removed. Server sessions and processes continue."); alert.addButton(withTitle: L("Forget Connection")); alert.addButton(withTitle: L("Cancel"))
                                 if alert.runModal() == .alertFirstButtonReturn { desk.remove(device.id); if draft.id == device.id { reset() } }
                             }
                         }
                         Text(DisplayTitle.detail([device.endpoint.target, device.endpoint.socketPath])).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
-                        Text(L(desk.connections[device.id] ?? "Disconnected")).font(.caption).foregroundStyle(.secondary)
+                        if desk.canWrite(device.id) { Text("Connected").font(.caption).foregroundStyle(.secondary) }
+                        else { ConnectionRecovery(device: device, showsSettings: false).padding(.top, 4) }
                     }
                 }
             }

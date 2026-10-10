@@ -157,12 +157,12 @@
       "failure-light": {
         "role": "secondary",
         "displayName": "Failure Light",
-        "purpose": "Offline-device dots. Seed is adjusted by ThemeColors.readable against authored app surfaces."
+        "purpose": "Failure accent seed; expected stopped/unavailable local sessions use neutral device dots, while connection failures use the warning role."
       },
       "failure-dark": {
         "role": "secondary",
         "displayName": "Failure Dark",
-        "purpose": "Offline-device dots. Seed is adjusted by ThemeColors.readable against authored app surfaces."
+        "purpose": "Failure accent seed; expected stopped/unavailable local sessions use neutral device dots, while connection failures use the warning role."
       },
       "tokyo-light-foreground": {
         "role": "neutral",
@@ -906,6 +906,12 @@
       "sheetWidth": "400pt",
       "authority": "Existing Herdr tab.rename and refreshed snapshot; serial UI queue, no optimistic label or separate persistence",
       "validation": "Reject blank and unchanged names; inline failure with retry"
+    },
+    "connectionRecovery": {
+      "nativeSource": "App/ConnectionRecovery.swift; Core/Sources/HerdCore/ConnectionState.swift",
+      "presentation": "Short status and primary action, guidance/diagnostics in info popover; centered empty-canvas group and wrapping actions at 200pt sidebar width.",
+      "ownership": "User-requested native Herdr CLI launch for canonical local sessions; existing RPC snapshots confirm readiness.",
+      "validation": "docs/connection-recovery/VALIDATION.md"
     }
   },
   "components": [
@@ -933,7 +939,7 @@
       "name": "Terminal Tab",
       "kind": "nav",
       "refersTo": "tab",
-      "description": "22pt native tabs in a shared 28pt bar; 3pt vertical / 8pt leading insets, 4pt gaps, 9pt text padding. 11% selected accent wash and 6% inactive neutral wash.",
+      "description": "22pt native tabs in a shared 28pt bar; 3pt vertical / 8pt leading insets, 4pt gaps, 9pt text padding. 11% selected accent wash and 6% inactive neutral wash. Horizontal overflow only; zero vertical offset across input, selection and resize; no elastic bounce.",
       "nativeSource": "App/Tabs.swift: Tabs.Strip"
     },
     {

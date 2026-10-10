@@ -1,175 +1,72 @@
 # HerdrX
 
-<p align="center">
-  <img src="Resources/Icon/Preview.png" alt="HerdrX Icon" width="128" height="128">
-</p>
+A native macOS GUI for [Herdr](https://herdr.dev). Work with local and remote terminal spaces, tabs, split panes, and coding agents in one window.
 
-<p align="center">
-  <strong>专为 macOS 打造的原生终端工作台</strong><br>
-  在一处无缝掌控本机与远端设备上的 Space 工作区、分屏终端与编码 Agent
-</p>
+Herdr owns sessions, processes, layouts, and agent state. HerdrX presents them through the existing Herdr API, with SwiftUI, AppKit, and a Ghostty terminal surface. Closing the GUI leaves Herdr sessions running.
 
-<p align="center">
-  <a href="#安装与升级">安装</a> •
-  <a href="#核心特性">特性</a> •
-  <a href="#快速上手">快速上手</a> •
-  <a href="#快捷键速查">快捷键</a> •
-  <a href="#构建与开发">构建</a>
-</p>
+![HerdrX workbench](docs/accm-fidelity/screenshots/workbench-tokyo-dark.png)
 
-<p align="center">
-  <img src="docs/accm-fidelity/screenshots/workbench-tokyo-dark.png" alt="HerdrX Space workbench in Tokyo Night dark appearance" width="100%">
-</p>
+## Install
 
-<p align="center"><small>当前开发版原生截图；Agent 名称、状态和示例输出为合成测试内容，PTY 与 Space 会话真实运行。</small></p>
-
----
-
-## 什么是 HerdrX？
-
-**HerdrX** 是一款专为高效开发者打造的 macOS 原生终端工作台（macOS 14+，通用架构同时支持 Apple Silicon 与 Intel）。
-
-它结合了 **SwiftUI & AppKit** 的原生精致质感与 **Ghostty** 的硬件加速终端渲染能力，作为 [Herdr](https://github.com/herdrdev/herdr) 服务的现代化客户端，为你提供统一管理本机进程、SSH 远程主机、分屏会话与 Coding Agent 的全功能开发控制台。
-
-无论日常本地写代码，还是同时调度多台服务器与后台 AI 编码代理，HerdrX 都能带来沉浸、流畅且低开销的操作体验。
-
----
-
-> 0.1.6 移除 Agent 启动器、文件树、预览、传输和附件投递，聚焦终端工作台。详见 [版本说明](docs/releases/0.1.6.md)与[实现和验收记录](docs/ux-audit/RESULTS.md)。
-
-0.1.7 按 ACCM 参考调整原生界面，移除独立本机 Shell 与终端列表入口，保留 Space 内的普通会话、Agent、标签和分屏。支持十个配色主题族，以及默认和跟随 Herdr；系统 / 浅色 / 深色与强调色可以分别选择。详见 [版本说明](docs/releases/0.1.7.md)、[改版方向](docs/accm-fidelity/DIRECTION.md)和[验证记录](docs/accm-fidelity/evidence/native-checks.json)。
-
-## 核心特性
-
-- **⚡️ 极致原生与 Ghostty 渲染**  
-  纯正 macOS 原生架构，集成 libghostty 终端引擎直接渲染原始 ANSI 字节流。GPU 加速绘制，终端字节流与 UI 状态分离。性能测量口径与限制见本轮验收记录。
-
-- **🌐 跨设备与持久化会话拓扑**  
-  一站式管理 Local 及多台远程 SSH 设备。会话状态由服务端（Herdr）持久托管，退出窗口或断开连接绝不意外终止远端服务，支持随时平滑接管与重新附着。
-
-- **🤖 为 Coding Agent 深度定制**  
-  原生集成 Herdr Agent 状态感知（运行中、等待输入、完成），告别轮询盲等。拥有精准的系统通知、未读状态标记与一键聚焦跳转（`⌘⇧J`）。
-
-- **🪟 灵活自由的工作区与分屏**  
-  支持 Space 多工作区隔离与多标签页管理。任意方向（向右 / 向下）随心分屏，快捷调整分屏比例，支持单键最大化聚焦（`⌘⇧Return`），更有快捷全局搜索（`⌘K`）快速定位目标。
-
-- **🧩 兼容 Herdr 原生扩展生态**  
-  沿用 Herdr 原生 TOML 插件契约，图形化管理插件启停、执行动作、阅读执行日志或以独立标签打开扩展终端面板。
-
----
-
-0.1.9 优化紧凑标签栏、分屏关闭交互与连续圆角，恢复 Agent 品牌配色，并完善标签重命名的校验和服务端同步。HerdrX 保持 Herdr GUI 定位，复用已有 RPC。详见[版本说明](docs/releases/0.1.9.md)。
-
-## 安装与升级
-
-HerdrX 通过官方 [cleanwk/homebrew-tap](https://github.com/cleanwk/homebrew-tap) 分发，支持一键安装与升级：
+Requires macOS 14 or later. Universal builds support Apple Silicon and Intel.
 
 ```sh
-# 安装
 brew install --cask cleanwk/tap/herdrx
+```
 
-# 升级
+Update from **HerdrX → Check for Updates…**, or run:
+
+```sh
 brew update && brew upgrade --cask herdrx
 ```
 
-> **macOS 首次打开提示**  
-> 当前版本采用本地签名分发。若首次启动被 macOS 安全策略拦截：  
-> 1. 打开 **系统设置** → **隐私与安全**，滚动到底部点击 **仍要打开**；  
-> 2. 或在终端执行单应用放行命令：  
->    ```sh
->    xattr -dr com.apple.quarantine /Applications/HerdrX.app
->    ```
+[Direct downloads and release notes](https://github.com/cleanwk/herdrX/releases/latest) are also available. Releases use signed Sparkle updates but are not yet notarized by Apple. If macOS blocks the first launch, use **System Settings → Privacy & Security → Open Anyway**.
 
-从 **0.1.8** 起，应用内更新入口位于 **HerdrX 菜单 → 检查更新** 和 **设置 → 关于**：支持每天自动检查，以及可选的后台下载、退出时安装。Brew 安装与直接下载使用同一套签名验证。v0.1.7 用户需先通过 Brew 升级到 0.1.8。此版本也修正了主题的文字层级、整页泛蓝和部分浅色主题的差异块可读性，详见[版本说明](docs/releases/0.1.8.md)。
+## Get started
 
-发布历史与分发细节参见 [Release 文档](docs/Release.md)。
+1. [Install Herdr](https://herdr.dev/docs/install/) 0.9.3 or later on each device you want to use.
+2. Open HerdrX. If local Herdr is stopped, click **Start Herdr**. This runs the existing `herdr server` command in the background. You can also start Herdr yourself.
+3. Select or create a Space, then run `claude`, `codex`, or another CLI in its terminal. Herdr detects agents and reports their state.
 
----
+Use **Settings → Connections** to add SSH devices or discover local named sessions. SSH uses your existing keys and configuration; Herdr must be running on the remote device. The default local socket is `~/.config/herdr/herdr.sock`.
 
-## 快速上手
+Stopped local sessions show a start action. Custom socket paths show connection settings instead of guessing which server to launch. Temporary disconnections reconnect automatically; the info button exposes diagnostics when needed.
 
-1. **准备 Herdr**：在要使用的本机或远端设备运行 Herdr。HerdrX 中的终端属于 Herdr Space；启动应用后选择或新建 Space，不再自动创建独立本机 Shell。
-2. **连接 Herdr 与远端**：
-   - 打开 **Settings (⌘,)** → **Connections（连接）**，即可添加本机命名会话或远程 SSH 连接。
-   - 本机默认读取 `~/.config/herdr/herdr.sock`（需对应设备运行 Herdr 0.9.3+）。
-   - SSH 连接直接使用系统原生 `ssh` 命令、现有密钥和 `~/.ssh/config` 配置。
-3. **新建与协同**：
-   - 在终端直接启动 `codex`、`claude` 等 CLI；Herdr 自动识别后，侧栏显示任务标题、状态和所属设备。
-   - 按 **⌘T** 在当前空间新建终端标签页。
-   - 按 **⌘⇧N** 快速基于当前目录新建 Space 工作区。
+## Everyday controls
 
----
+| Shortcut | Action |
+| --- | --- |
+| ⌘T | New terminal tab |
+| ⌘⇧N | New Space |
+| ⌘D / ⌘⇧D | Split right / down |
+| ⌘⌥ arrows | Focus another pane |
+| ⌘⇧Return | Zoom / restore pane |
+| ⌘⌥R | Rename tab; also available by double-click or context menu |
+| ⌘K | Search spaces, terminals, and agents |
+| ⌘⇧J | Jump to an agent needing attention |
+| ⌘⇧W / ⌘⌥W | Close pane / tab |
+| ⌘, | Settings |
 
-## 快捷键速查
+Settings also provides themes, terminal preferences, notifications, Tailcat connections, and access to Herdr plugins.
 
-| 快捷键 | 功能说明 |
-| :--- | :--- |
-| **⌘T** | 在当前 Space 新建终端标签页 |
-| **⌘⇧N** | 继承当前目录新建 Space；目标不明确时选择设备 |
-| **⌘D** / **⌘⇧D** | 向右分屏 / 向下分屏（继承当前目录） |
-| **⌘⌥ 方向键** | 在分屏间切换焦点 |
-| **⌘⌃ 方向键** | 动态调整分屏比例 |
-| **⌘⇧Return** | 最大化 / 还原当前分屏 Pane |
-| **⌘1 … ⌘9** | 快速切换至第 1 ~ 9 个标签 |
-| **⌘⌥R** | 重命名当前 Tab（也支持双击或右键标签） |
-| **⌘⇧[** / **⌘⇧]** | 左右轮换标签 |
-| **⌘K** | 全局搜索 Space、内部终端与 Agent（支持拼音与首字母） |
-| **⌘⇧J** | 一键跳转至等待输入或完成未读的 Agent |
-| **⌘B** | 显示 / 隐藏侧边栏 |
-| **⌘⇧R** | 恢复终端输入模式（不发送 Ctrl-C） |
-| **⌘W** | 关闭弹窗或当前 Pane |
-| **⌘⌥W** / **⌘⇧W** | 关闭当前 Tab / 关闭当前 Pane |
+## Development
 
----
-
-## 构建与开发
-
-### 环境要求
-
-- macOS 14.0+
-- Xcode 15+（推荐最新版本）
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) 与 [Go](https://go.dev/)（用于 Tailcat helper 通道构建）
+Use Xcode 27+, XcodeGen, and Go 1.27.1+ (for the Tailcat helper).
 
 ```sh
 brew install xcodegen go
-```
-
-### 构建与打包
-
-```sh
-# 生成工程并编译
 scripts/build.sh
-
-# 生成分发打包产物 (.app 及 zip 包)
+scripts/test-pty.sh
+scripts/test-tabs.sh
+python3 -m unittest discover -s scripts -p 'test_*.py'
 scripts/package.sh
 ```
 
-生成的 App 产物位于 `build/release/Build/Products/Release/HerdrX.app`，打包好的归档与校验文件位于 `build/dist/`。
+The build script runs Core tests and produces a universal app in `build/release/Build/Products/Release/`. Packaged archives go to `build/dist/`. For Xcode debugging, run `xcodegen generate` and open `HerdrX.xcodeproj`.
 
-### 日常调试与测试
+- [Architecture](docs/Architecture.md) · [Product scope](PRODUCT.md) · [Design](DESIGN.md)
+- [Validation](docs/Validation.md) · [Release process](docs/Release.md) · [Contributor guidance](AGENTS.md)
 
-生成工程后直接使用 Xcode 打开：
+## License
 
-```sh
-xcodegen generate
-open HerdrX.xcodeproj
-```
-
-运行核心单元测试与协议集成测试：
-
-```sh
-# 核心数据与协议测试
-swift test --package-path Core -c release
-
-# PTY 与 SSH 传输测试
-scripts/test-pty.sh
-scripts/test-ssh.sh
-```
-
-更多架构设计请参阅 [Architecture](docs/Architecture.md) 与 [Validation](docs/Validation.md)。
-
----
-
-## 开源许可
-
-本项目基于 [MIT License](LICENSE) 开源。第三方组件许可参见 [Notices.txt](Resources/Notices.txt)。
+[MIT](LICENSE). Third-party licenses are listed in [Notices.txt](Resources/Notices.txt).

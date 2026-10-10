@@ -18,6 +18,7 @@ jobs:
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - run: scripts/build.sh
       - run: scripts/test-pty.sh
+      - run: scripts/test-tabs.sh
       - run: scripts/package.sh
       - uses: actions/upload-artifact@v4
         with:

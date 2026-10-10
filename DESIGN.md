@@ -357,7 +357,7 @@ Compact borderless native buttons use SF Symbols with localized labels/help. New
 
 ### Agent rows and device status
 
-Task titles share the pane display-title source. Context combines tool, Space and device when multiple devices are visible. Working uses a half-filled circle; blocked/unread uses a filled circle; other states use an outline. State text carries the semantic color rules above. Codex, Claude, Cursor, Gemini, Grok, Kimi, OpenCode, Pi/Oh My Pi and Copilot use native SF Symbol pictograms; these are not vendor logos. Device status is separate: green connected/red offline, with accessible status and adjacent error/retry context. A failed connection can retain a clearly marked cached snapshot.
+Task titles share the pane display-title source. Context combines tool, Space and device when multiple devices are visible. Working uses a half-filled circle; blocked/unread uses a filled circle; other states use an outline. State text carries the semantic color rules above. Codex, Claude, Cursor, Gemini, Grok, Kimi, OpenCode, Pi/Oh My Pi and Copilot use native SF Symbol pictograms; these are not vendor logos. Device status is separate: green when connected, neutral while connecting or when local Herdr is stopped, and warning for connection failures. Accessible status text and adjacent recovery actions carry the meaning. A failed connection can retain a clearly marked cached snapshot.
 
 ### Tabs, pane titles and splitters
 
@@ -412,3 +412,13 @@ The sidebar's own native scroll view uses overlay scrollers, small control size 
 ### Tab rename and Herdr ownership
 
 Double-click, the Tab context menu and Terminal → Rename Tab… (⌘⌥R) open a 400pt sheet with focused, selected text. Blank/unchanged names cannot submit; Enter saves, Esc cancels. A serial queue wraps the existing Herdr `tab.rename` RPC and subsequent snapshot refresh. The captured device, endpoint, workspace and Tab ID define the target; navigation cannot redirect the request. RPC failure retains the original server-backed label and shows an inline error with retry. There is no parallel client-owned naming/session model or new Herdr protocol. See `docs/ui-five/VALIDATION.md` for evidence and remaining manual checks.
+
+### Connection recovery
+
+A missing or refused local socket is an expected stopped-session state, identified by its POSIX error code. Show a short status such as “Herdr is not running” and Start Herdr. Put guidance, paths and raw diagnostics behind the accessible info button in a selectable Connection Details popover. Connecting and Starting Herdr use a small native progress indicator. Background retries keep the last useful explanation stable, with no static countdown or repeated status flashing. Reuse the same recovery view in the sidebar, empty canvas and Connections settings, with wrapping actions at the 200pt sidebar minimum. Center the empty-canvas status, device name and actions as one group; constrain long device names to two lines with full identity in help. Existing terminal surfaces and cached snapshots stay mounted and are marked offline.
+
+Start Herdr invokes the installed Herdr CLI only after a user action, for the captured default or valid named local session. It does not guess custom socket mappings, launch remote services, install a daemon manager or stop a server when the GUI quits. A valid server snapshot confirms readiness. Duplicate starts are suppressed; editing/removing a connection invalidates its pending UI result. Failure retains an actionable explanation and diagnostic details; a missing CLI links to Herdr installation. Custom paths lead to Connections settings, and SSH authentication errors ask the user to authenticate in Terminal. English and Simplified Chinese use the same state model. Verification is recorded in `docs/connection-recovery/VALIDATION.md`.
+
+### Tab scroll containment
+
+The 28pt tab bar scrolls horizontally only. Its document height tracks the viewport; 22pt pills stay centered with 3pt vertical insets. Ordinary vertical wheel input is ignored. Horizontal, diagonal and Shift-wheel input, selection reveals, edge dragging and window resize all retain a zero vertical offset. Both elastic axes are disabled and horizontal offsets are clamped to the actual overflow. Regression coverage compiles the production AppKit view directly in `scripts/test-tabs.sh`.

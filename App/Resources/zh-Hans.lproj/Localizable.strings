@@ -342,3 +342,24 @@
 "Could not rename the tab: %@" = "无法重命名标签页：%@";
 
 "The tab is no longer available. Reconnect and try again." = "该标签页已不可用。请重新连接后再试。";
+
+"SSH sign-in required" = "需要 SSH 登录验证";
+"Check connection settings" = "请检查连接设置";
+"Herdr could not start" = "Herdr 启动失败";
+"Install Herdr to continue" = "请先安装 Herdr";
+"Start Herdr to open your local spaces." = "启动 Herdr 后即可打开本机空间。";
+"Start this session in Herdr, or check its path in Connections." = "请在 Herdr 中启动此会话，或在连接设置中检查路径。";
+"Connect to this host in Terminal, then retry." = "请先在终端连接此主机，完成验证后重试。";
+"Check that Herdr is running on this device. We’ll reconnect automatically." = "请确认此设备上的 Herdr 正在运行，客户端会自动重连。";
+"Review this device in Connections, then retry." = "请在连接设置中检查此设备，然后重试。";
+"Check the details, then try starting Herdr again." = "请查看详情，然后重试启动 Herdr。";
+"Install the Herdr CLI, then return here to start it." = "安装 Herdr CLI 后，回到这里启动。";
+"Starting Herdr…" = "正在启动 Herdr…";
+"Start Herdr" = "启动 Herdr";
+"Install Herdr…" = "安装 Herdr…";
+"Connection Details" = "连接详情";
+"Copy Details" = "复制详情";
+"Connections…" = "连接设置…";
+"Herdr is not running" = "Herdr 未启动";
+"Session unavailable" = "会话不可用";
+"Unable to connect" = "暂未连接";

@@ -45,3 +45,8 @@ User follow-up: tool icons and the sidebar scrollbar follow the supplied 508×20
 ## 2026-10-10 five-point UI follow-up
 
 The explicit follow-up supersedes older tab/icon/pane geometry above: 28pt bar, 22pt tabs, 3pt vertical inset, 8pt leading inset, 4pt gap and 9pt text padding. 11% active accent/6% inactive wash. Shared internal borders are straight 1pt lines; outer bottom corners use continuous 11pt curves and matching terminal masks. Close is 22pt, 50% focused/100% hovered or VoiceOver, with 150ms ease-out and no hidden hit target. Agent vectors resolve original color first, official monochrome fallback second, SF terminal last. Tab renaming has a 400pt sheet, existing Herdr RPC, a serial submit queue and inline recovery. Herdr remains authoritative; do not introduce client-owned domain capabilities. Current checks and limits: `docs/ui-five/VALIDATION.md`.
+
+
+## 2026-10-10 recovery and scroll follow-up
+
+Keep tab document height equal to its viewport and lock all vertical origins to zero, including wheel input, automatic reveals and resize. Horizontal overflow and Shift-wheel remain usable; no elastic bounce. Connection recovery uses short status text, one primary action and an accessible info button. Center the empty-canvas group, constrain long names, and preserve the 200pt sidebar minimum. Startup reuses native Herdr CLI commands only for recognized local sessions; snapshots remain authoritative. Current evidence and bounded inline finish verdict: [validation](../../docs/connection-recovery/VALIDATION.md), [review](../../docs/connection-recovery/FINISH-REVIEW.md). No new shipping raster assets.

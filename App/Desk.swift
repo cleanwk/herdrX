@@ -59,7 +59,8 @@ struct JumpRow: Identifiable, Equatable { let id: String; let device: String?; l
 final class Desk: ObservableObject {
     @Published var devices: [Device] = []
     @Published var sessions: [String: Session] = [:]
-    @Published var connections: [String: String] = [:]
+    @Published var connections: [String: ConnectionState] = [:]
+    private var localStarts: [String: Task<Void, Never>] = [:]
     @Published var selectedDevice: String?
     @Published var selectedSpace: String?
     @Published var selectedTab: String = ""
@@ -98,7 +99,7 @@ final class Desk: ObservableObject {
         focusReturn = nil
     }
     func openSearch() { captureFocus(); reindex(); showSearch = true }
-    func canWrite(_ device: String) -> Bool { connections[device] == "Connected" }
+    func canWrite(_ device: String) -> Bool { connections[device] == .connected }
     func begin(_ key: String, device: String) -> Bool { guard canWrite(device), !busy.contains(key) else { return false }; busy.insert(key); return true }
     func creationID(_ device: String, _ space: String) -> String { device + "|createTab|" + space }
     var canCreate: Bool { guard let id = selectedDevice, let space = selectedSpace else { return false }; return canWrite(id) && !busy.contains(creationID(id, space)) }
@@ -235,6 +236,7 @@ final class Desk: ObservableObject {
     }
     func add(_ device: Device) { devices.append(device); save(); connect(device) }
     private func detach(_ id: String) {
+        localStarts.removeValue(forKey: id)?.cancel()
         connectionIDs[id] = nil; refreshIDs[id] = nil
         polls.removeValue(forKey: id)?.cancel(); tailcats.removeValue(forKey: id)?.stop()
         if let tunnel = tunnels.removeValue(forKey: id), tunnel.isRunning { tunnel.terminate() }
@@ -245,12 +247,12 @@ final class Desk: ObservableObject {
         for key in Array(terminals.keys) where key.device == id { terminals.removeValue(forKey: key)?.process.stop(); ended.remove(key) }
         if selectedDevice == id { select(device: nil) }; save(); reindex()
     }
-    func connect(_ device: Device) {
-        detach(device.id); connections[device.id] = "Connecting…"
+    func connect(_ device: Device, preserving issue: ConnectionIssue? = nil) {
+        detach(device.id); connections[device.id] = issue.map(ConnectionState.failed) ?? .connecting
         guard device.endpoint.socketPath.hasPrefix("/"), !device.endpoint.socketPath.contains(where: { $0.isNewline || $0 == "\0" || $0 == ":" }),
-              ["local", "ssh", "tailcat"].contains(device.endpoint.kind) else { connections[device.id] = "Enter an absolute Herdr socket path without colons or control characters."; return }
+              ["local", "ssh", "tailcat"].contains(device.endpoint.kind) else { connections[device.id] = .failed(.init(.configuration, detail: "Enter an absolute Herdr socket path without colons or control characters.")); return }
         if device.endpoint.kind == "ssh" {
-            guard let target = device.endpoint.target, !target.isEmpty, !target.hasPrefix("-"), !target.contains(where: \.isWhitespace) else { connections[device.id] = "Enter a valid SSH host or config alias."; return }
+            guard let target = device.endpoint.target, !target.isEmpty, !target.hasPrefix("-"), !target.contains(where: \.isWhitespace) else { connections[device.id] = .failed(.init(.configuration, detail: "Enter a valid SSH host or config alias.")); return }
         }
         let generation = UUID(); connectionIDs[device.id] = generation
         polls[device.id] = Task { [weak self] in
@@ -312,13 +314,59 @@ final class Desk: ObservableObject {
                 catch {
                     guard !Task.isCancelled else { return }
                     guard self.connectionIDs[device.id] == generation else { return }
-                    if error.localizedDescription.localizedCaseInsensitiveContains("permission denied") || error.localizedDescription.localizedCaseInsensitiveContains("host key verification failed") {
-                        self.connections[device.id] = error.localizedDescription + " · " + L("Authenticate in Terminal, then retry."); return
-                    }
-                    self.connections[device.id] = error.localizedDescription + " · " + LF("Retrying in %ds", delay)
+                    let failure = ConnectionIssue(error: error, endpoint: device.endpoint)
+                    self.connections[device.id] = .failed(failure.kind == .localStopped ? issue ?? failure : failure)
+                    if !failure.automaticallyRetries { return }
                 }
                 do { try await Task.sleep(for: .seconds(delay)) } catch { return }
                 delay = min(30, delay * 2)
+            }
+        }
+    }
+    func startLocalHerdr(_ device: Device) {
+        guard devices.contains(where: { $0.id == device.id && $0.endpoint == device.endpoint }),
+              let target = LocalHerdrTarget(endpoint: device.endpoint),
+              connections[device.id]?.issue?.canStart == true,
+              !devices.contains(where: { $0.endpoint == device.endpoint && connections[$0.id] == .starting }) else { return }
+        detach(device.id)
+        let generation = UUID(); connectionIDs[device.id] = generation
+        connections[device.id] = .starting
+        localStarts[device.id] = Task { [weak self] in
+            guard let self else { return }
+            var launch: LocalHerdrLaunch?
+            do {
+                try Task.checkCancellation()
+                guard self.connectionIDs[device.id] == generation else { return }
+                launch = try LocalHerdrLaunch(target: target)
+                let deadline = Date().addingTimeInterval(10)
+                while Date() < deadline {
+                    try Task.checkCancellation()
+                    do {
+                        _ = try Session(try await RPC(path: device.endpoint.socketPath).call("session.snapshot", timeout: 1)["snapshot"])
+                        try Task.checkCancellation()
+                        guard self.connectionIDs[device.id] == generation,
+                              self.devices.contains(where: { $0.id == device.id && $0.endpoint == device.endpoint }) else { return }
+                        self.localStarts[device.id] = nil
+                        self.connect(device)
+                        return
+                    } catch is CancellationError { throw CancellationError() }
+                    catch {
+                        if let launch, !launch.process.isRunning {
+                            let detail = launch.diagnostic
+                            throw Failure(detail.isEmpty ? error.localizedDescription : detail)
+                        }
+                    }
+                    try await Task.sleep(for: .milliseconds(200))
+                }
+                let detail = launch?.diagnostic ?? ""
+                throw Failure(detail.isEmpty ? "Herdr did not become ready within 10 seconds." : detail)
+            } catch is CancellationError { return }
+            catch {
+                guard self.connectionIDs[device.id] == generation,
+                      self.devices.contains(where: { $0.id == device.id && $0.endpoint == device.endpoint }) else { return }
+                self.localStarts[device.id] = nil
+                let kind: ConnectionIssue.Kind = error is LocalHerdrLaunch.MissingExecutable ? .notInstalled : .startFailed
+                self.connect(device, preserving: .init(kind, detail: error.localizedDescription))
             }
         }
     }
@@ -332,7 +380,7 @@ final class Desk: ObservableObject {
         try Task.checkCancellation()
         guard connectionIDs[id] == connection, paths[id] == client.path, refreshIDs[id] == token, devices.contains(where: { $0.id == id }) else { return }
         if sessions[id] != snapshot { let old = sessions[id]; attentionState.update(device: id, old: old, new: snapshot); notifyChanges(device: id, old: old, new: snapshot); sessions[id] = snapshot; reconcile(id, previous: old); reindex() }
-        if connections[id] != "Connected" { connections[id] = "Connected" }
+        if connections[id] != .connected { connections[id] = .connected }
         if selectedDevice == nil, let space = snapshot.spaces.first { select(device: id, space: space.id) }
         if let device = devices.first(where: { $0.id == id }) { refreshBranches(device, snapshot: snapshot) }
     }

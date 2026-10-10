@@ -40,8 +40,8 @@ struct DeviceSwitcher: View {
         return DisplayTitle.detail([endpoint.target ?? device.displayName, endpoint.kind == "ssh" ? "SSH" : "Tailcat"])
     }
     func connectionDot(_ device: Device) -> some View {
-        Circle().fill(Color(nsColor: desk.canWrite(device.id) ? Theme.success : Theme.failure)).frame(width: 6, height: 6)
-            .accessibilityLabel(L(desk.canWrite(device.id) ? "Connected" : "Offline"))
+        Circle().fill((desk.connections[device.id] ?? .connecting).color).frame(width: 6, height: 6)
+            .accessibilityLabel(L((desk.connections[device.id] ?? .connecting).title))
     }
     func deviceRow(name: String, detail: String, symbol: String, id: String, device: Device?) -> some View {
         SidebarRow(selected: desk.deviceFilter == id, action: { desk.deviceFilter = id; showing = false }, verticalPadding: 7, radius: 7, filledSelection: true) {
