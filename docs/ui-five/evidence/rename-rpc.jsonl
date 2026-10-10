@@ -1,0 +1,3 @@
+{"id": "C37A48A7-E95D-4A13-880C-EDECD08E8340", "params": {"tab_id": "w1:t1", "label": "/ #42"}, "method": "tab.rename"}
+{"params": {"tab_id": "w1:t1", "label": "FAIL"}, "method": "tab.rename", "id": "BEE6A483-5A9F-406B-9127-CD099AEED70E"}
+{"params": {"tab_id": "w1:t1", "label": "中文 名称 / #42"}, "method": "tab.rename", "id": "975F6905-ED04-4E5B-B165-477F0F900BF7"}

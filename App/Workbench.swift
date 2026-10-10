@@ -60,6 +60,7 @@ struct Workbench: View {
         .overlay(alignment: .leading) { if showSidebar { ResizeStrip(width: $sidebar, limits: 200...480, reset: 260).frame(width: 7).offset(x: sidebar - 3) } }
         .background(Color(nsColor: Theme.content)).background(WindowBehavior()).ignoresSafeArea(.container, edges: .top)
         .sheet(isPresented: $desk.showSearch, onDismiss: desk.restoreFocus) { Jump().environmentObject(desk).environment(\.locale, locale).background(SheetCloseHandler { desk.showSearch = false }) }
+        .sheet(item: $desk.tabRenameRequest, onDismiss: desk.restoreFocus) { request in TabRenameSheet(request: request).environmentObject(desk).environment(\.locale, locale) }
         .sheet(item: $desk.spaceRequest, onDismiss: desk.restoreFocus) { request in SpaceCreate(initialDevice: request.device ?? "").environmentObject(desk).environment(\.locale, locale) }
         .alert("HerdrX", isPresented: Binding(get: { desk.message != nil }, set: { if !$0 { desk.message = nil } })) { Button("OK") { desk.message = nil } } message: { Text(desk.message ?? "") }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in Theme.apply(); desk.objectWillChange.send() }
@@ -143,7 +144,7 @@ struct Workbench: View {
         Button("Close Pane…") { desk.closePane(row.id) }.disabled(!desk.canAct(on: row.id))
     }
     func enabled(_ action: String) -> Bool {
-        if desk.spaceRequest != nil || desk.showSearch { return false }
+        if desk.spaceRequest != nil || desk.tabRenameRequest != nil || desk.showSearch { return false }
         if action == "attention" { return !desk.attentionCandidates.isEmpty }
         if action == "space" { return !desk.creatingSpace }
         if action == "terminal" || action == "tab" { return desk.canCreate }
@@ -152,6 +153,7 @@ struct Workbench: View {
         if action.hasPrefix("tab"), let number = Int(action.dropFirst(3)) { return number <= tabs.count }
         if ["close", "closePane"].contains(action) { return desk.focused.map(desk.canAct) ?? false }
         if ["zoom", "repair", "interrupt", "left", "right", "up", "down", "resizeLeft", "resizeRight", "resizeUp", "resizeDown"].contains(action) { return desk.focused != nil }
+        if action == "renameTab" { return desk.selectedDevice.map { desk.canAct(device: $0, object: "tab|" + desk.selectedTab) } == true && !tabs.isEmpty }
         if action == "closeTab" { return !tabs.isEmpty && (desk.selectedDevice.map(desk.canWrite) ?? false) }
         if ["previous", "next"].contains(action) { return !tabs.isEmpty }
         return true
@@ -164,6 +166,7 @@ struct Workbench: View {
         case "sidebar": showSidebar.toggle()
         case "search": desk.openSearch()
         case "close", "closePane": desk.closePane()
+        case "renameTab": desk.renameTab(desk.selectedTab)
         case "closeTab": desk.closeTab(desk.selectedTab)
         case "attention": desk.attention()
         case "splitRight": desk.split(horizontal: true)

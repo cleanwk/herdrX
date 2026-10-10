@@ -29,6 +29,9 @@ struct WorkbenchCommands: Commands {
             Divider()
             button("Toggle Sidebar", "sidebar", "b")
         }
+        CommandMenu(L("Terminal")) {
+            button("Rename Tab…", "renameTab", "r", [.command, .option])
+        }
         CommandMenu(L("Workspace")) {
             button("Search…", "search", "k")
             button("Next Agent Needing Attention", "attention", "j", [.command, .shift])

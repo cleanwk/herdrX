@@ -8,6 +8,8 @@ enum AgentToolIcon {
         case "claude", "claude-code": "agent-claude"
         case "cursor", "cursor-agent": "agent-cursor"
         case "gemini", "gemini-cli": "agent-gemini"
+        case "deepseek": "agent-deepseek"
+        case "pi", "omp", "oh-my-pi": "agent-pi"
         case "grok": "agent-grok"
         case "kimi", "kimi-cli": "agent-kimi"
         case "opencode": "agent-opencode"
@@ -17,20 +19,14 @@ enum AgentToolIcon {
         }
     }
 
-    static func symbol(for tool: String?) -> String {
-        switch tool?.lowercased() {
-        case "claude": "sun.max"
-        case "codex": "curlybraces"
-        case "cursor": "cursorarrow"
-        case "gemini": "sparkles"
-        case "grok": "asterisk"
-        case "kimi": "moon"
-        case "opencode": "chevron.left.forwardslash.chevron.right"
-        case "pi", "omp", "oh-my-pi": "function"
-        case "copilot": "airplane"
-        default: "terminal"
+    static func resource(for tool: String?) -> (image: NSImage, original: Bool)? {
+        guard let base = asset(for: tool) else { return nil }
+        for name in [base + "-color", base] {
+            if let image = NSImage(named: name) { return (image, name.hasSuffix("-color")) }
         }
+        return nil
     }
+
 }
 
 struct SidebarRow<Content: View>: View {
@@ -96,10 +92,11 @@ struct AgentIcon: View {
     var size: CGFloat = 12
     var body: some View {
         Group {
-            if let asset = AgentToolIcon.asset(for: tool) {
-                Image(asset).resizable().scaledToFit()
+            if let resource = AgentToolIcon.resource(for: tool) {
+                Image(nsImage: resource.image).resizable().renderingMode(resource.original ? .original : .template).scaledToFit()
+                    .background(resource.original && AgentToolIcon.asset(for: tool) == "agent-kimi" ? Color.black : Color.clear, in: RoundedRectangle(cornerRadius: 2))
             } else {
-                Image(systemName: AgentToolIcon.symbol(for: tool)).resizable().scaledToFit()
+                Image(systemName: "terminal").resizable().scaledToFit()
             }
         }.frame(width: size, height: size).foregroundStyle(Color(nsColor: Theme.foreground)).accessibilityHidden(true)
     }

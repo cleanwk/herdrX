@@ -2,52 +2,98 @@
   "project": "https://github.com/lobehub/lobe-icons",
   "commit": "c385b2b8d1f9e19aa86e628d4e23c91ee1111a47",
   "license": "MIT",
-  "adaptation": "currentColor resolved to black; Xcode template assets take semantic foreground tint at runtime",
+  "adaptation": "Intrinsic size normalized to 24px and path commands expanded (svg.path) for CoreSVG, which misreads compact arc flags. Geometry and brand colors preserved. Color assets render original; monochrome fallbacks replace currentColor with black and use template tint. Kimi has a black UI backing for its white mark.",
   "icons": [
     {
       "name": "codex",
       "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/codex.svg",
-      "sha256": "268d2539466df69e4defc0aec59bf2c65ca9124b5db3b8d0e711c0f8bdf586a7"
+      "sha256": "96506bc76f094d50db9e97d4f88287e9e5a694ef6f5891eacb5cdbf2af5280de"
     },
     {
       "name": "claude",
       "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/claude.svg",
-      "sha256": "cfa161e388edfe5877adc5095cbe11776dc84df9a29a586a85163445c64eea4b"
+      "sha256": "a84edfbdc74715d553d991fa7c6044fb474ef0abe9c1008825b36110f5fbf5cf"
     },
     {
       "name": "cursor",
       "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/cursor.svg",
-      "sha256": "6510b2a91d21e94ae9ea5491a4f6c3af0e9bcdc61e7d6165de7b832b54640b38"
+      "sha256": "7d8273a3dd89ed99a693771f4c84574e818fd259ae44c575b165c7c142a55b6f",
+      "rendering": "template"
     },
     {
       "name": "gemini",
       "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/gemini.svg",
-      "sha256": "8c59b526150e9bbe8ede872898991e082774ea321a667fdaf2a1c712d455fe2e"
+      "sha256": "2ede5fb941d09ce987eab60978b9de947c2779c11a87bf8aaeb6c95fa38c32da"
     },
     {
       "name": "grok",
       "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/grok.svg",
-      "sha256": "70c65581a2f3e83944663c1813f5956da0fb808dc588c7c9688df140a8fe586f"
+      "sha256": "34753e4b1887a1f1717d2526b8340bea755235235b834a46787716d94762353c",
+      "rendering": "template"
     },
     {
       "name": "kimi",
       "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/kimi.svg",
-      "sha256": "1a57c7b223b888e323b44edc816300640f7630d782c1b5032821868fe18ed59d"
+      "sha256": "9357150bcf7492152dbf3637dee4a70ba2cec54f0f9bde178a1e7b406027630c"
     },
     {
       "name": "opencode",
       "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/opencode.svg",
-      "sha256": "d11b7f3f78ed67d47c9851a11c92a69448c46f6e91156dbd3cff43f397360a50"
+      "sha256": "8ab5d9ccd6547ca4ebad1aa1036155a9f96ad3e71b01c48e4031acac4b284e7f",
+      "rendering": "template"
     },
     {
       "name": "githubcopilot",
       "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/githubcopilot.svg",
-      "sha256": "dd2ffd596ab4df6c09a6df41b1b85d954a6a8f86690c12c7f39fe3be7d6609e6"
+      "sha256": "7b54af536ad4dcfef67f534bc45bf43bd6d98124d38021aea99f1f1838a8f22d",
+      "rendering": "template"
     },
     {
       "name": "antigravity",
       "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/antigravity.svg",
-      "sha256": "00b26449ced11b2da873a3fcffa44ca9e478a8d96214b5cf703df85ff24b2123"
+      "sha256": "59c4721ef092d04ee87a466ba67dda6407b7d938b970fb69e519a2509da86978"
+    },
+    {
+      "name": "claude-color",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/claude-color.svg",
+      "sha256": "0012fd824f837079a8ea2fbc7cd1f40180248d8330f9f11cf50440daae739fa3",
+      "rendering": "original"
+    },
+    {
+      "name": "codex-color",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/codex-color.svg",
+      "sha256": "2253776500eeeeb024745a6d379eb3171dc3fdff467fdbaedc64c7906aa79ef8",
+      "rendering": "original"
+    },
+    {
+      "name": "gemini-color",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/gemini-color.svg",
+      "sha256": "14cbb7a96e0dc45f04b3f2f8f88411edc3498094494b9cc3025970cd3edba38c",
+      "rendering": "original"
+    },
+    {
+      "name": "deepseek-color",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/deepseek-color.svg",
+      "sha256": "2016e21796982159366779964da719d9a5ca2cc19f75db6c148b95f783610772",
+      "rendering": "original"
+    },
+    {
+      "name": "kimi-color",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/kimi-color.svg",
+      "sha256": "589c22e950b6c2e58b6adcc66aed1c5bbd396cb7c7575bf553cfa39f738a6b3e",
+      "rendering": "original"
+    },
+    {
+      "name": "pi",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/pi.svg",
+      "sha256": "60e73fd9c0b7027f02108cfcc30ecf02fc4af7f367d00881b998a16a4389cb32",
+      "rendering": "template"
+    },
+    {
+      "name": "antigravity-color",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/antigravity-color.svg",
+      "sha256": "ec71799cc514b2636aa80f20d58619b4c73ad416cd253f9365ba426ddc5a9c0b",
+      "rendering": "original"
     }
   ]
 }

@@ -3,10 +3,10 @@ import SwiftUI
 
 /// Shared with the SwiftUI host so tab content cannot touch the window edge.
 enum TabMetrics {
-    static let barHeight: CGFloat = 34
-    static let height: CGFloat = 24
-    static let inset: CGFloat = 6
-    static let gap: CGFloat = 6
+    static let barHeight: CGFloat = 28
+    static let height: CGFloat = 22
+    static let inset: CGFloat = 8
+    static let gap: CGFloat = 4
     static let radius: CGFloat = 5
 }
 
@@ -63,7 +63,7 @@ struct Tabs: NSViewRepresentable {
                 button.tag = index; button.title = entries[index].title + (entries[index].count > 1 ? "  \(entries[index].count)" : "")
                 button.font = .systemFont(ofSize: 12, weight: selected == entries[index].id ? .semibold : .regular)
                 button.contentTintColor = selected == entries[index].id ? Theme.foreground : Theme.secondary
-                let width = min(200, max(40, (button.title as NSString).size(withAttributes: [.font: button.font!]).width + 20))
+                let width = min(200, max(40, (button.title as NSString).size(withAttributes: [.font: button.font!]).width + 18))
                 button.frame = NSRect(x: x, y: (TabMetrics.barHeight - TabMetrics.height) / 2, width: width, height: TabMetrics.height); x += width + TabMetrics.gap
                 button.setAccessibilityRole(.radioButton); button.setAccessibilityLabel(entries[index].title); button.setAccessibilityValue(selected == entries[index].id ? 1 : 0); button.setAccessibilityHelp(LF("%d panes", entries[index].count)); button.toolTip = entries[index].title
             }
@@ -80,7 +80,7 @@ struct Tabs: NSViewRepresentable {
             guard let index = buttons.firstIndex(where: { $0.frame.minX <= x && x <= $0.frame.maxX }), entries.indices.contains(index) else { return nil }
             let menu = NSMenu(); menu.autoenablesItems = false
             let id = entries[index].id, rename = rename, close = close, move = move
-            menu.addItem(ActionMenuItem("Rename…", enabled: writable) { rename?(id) })
+            menu.addItem(ActionMenuItem("Rename Tab…", enabled: writable) { rename?(id) })
             menu.addItem(ActionMenuItem("Move Left", enabled: writable && index > 0) { move?(id, index - 1) })
             menu.addItem(ActionMenuItem("Move Right", enabled: writable && index + 1 < entries.count) { move?(id, index + 2) })
             menu.addItem(ActionMenuItem("Close Tab…", enabled: writable) { close?(id) })
@@ -99,13 +99,12 @@ struct Tabs: NSViewRepresentable {
             insertion = buttons.firstIndex { convert(pointer, from: nil).x < $0.frame.midX } ?? entries.count; needsDisplay = true
         }
         override func draw(_ dirtyRect: NSRect) {
-            if let hover, buttons.indices.contains(hover), entries.indices.contains(hover), selected != entries[hover].id {
-                Theme.foreground.withAlphaComponent(0.05).setFill()
-                NSBezierPath(roundedRect: buttons[hover].frame.insetBy(dx: 0.5, dy: 0.5), xRadius: TabMetrics.radius, yRadius: TabMetrics.radius).fill()
-            }
-            for (index, entry) in entries.enumerated() where buttons.indices.contains(index) && selected == entry.id {
+            for (index, entry) in entries.enumerated() where buttons.indices.contains(index) {
+                let active = selected == entry.id
                 let path = NSBezierPath(roundedRect: buttons[index].frame.insetBy(dx: 0.5, dy: 0.5), xRadius: TabMetrics.radius, yRadius: TabMetrics.radius)
-                Theme.selection.withAlphaComponent(effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? 0.20 : 0.18).setFill(); path.fill(); Theme.selection.withAlphaComponent(0.22).setStroke(); path.lineWidth = 1; path.stroke()
+                (active ? Theme.accent.withAlphaComponent(0.11) : Theme.foreground.withAlphaComponent(hover == index ? 0.09 : 0.06)).setFill()
+                path.fill()
+                if active { Theme.accent.withAlphaComponent(0.45).setStroke(); path.lineWidth = 1; path.stroke() }
             }
             if let insertion {
                 let x = insertion < buttons.count ? buttons[insertion].frame.minX - TabMetrics.gap / 2 : (buttons.last?.frame.maxX ?? 0) + TabMetrics.gap / 2

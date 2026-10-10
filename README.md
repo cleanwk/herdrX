@@ -58,6 +58,8 @@
 
 ---
 
+0.1.9 优化紧凑标签栏、分屏关闭交互与连续圆角，恢复 Agent 品牌配色，并完善标签重命名的校验和服务端同步。HerdrX 保持 Herdr GUI 定位，复用已有 RPC。详见[版本说明](docs/releases/0.1.9.md)。
+
 ## 安装与升级
 
 HerdrX 通过官方 [cleanwk/homebrew-tap](https://github.com/cleanwk/homebrew-tap) 分发，支持一键安装与升级：
@@ -109,6 +111,7 @@ brew update && brew upgrade --cask herdrx
 | **⌘⌃ 方向键** | 动态调整分屏比例 |
 | **⌘⇧Return** | 最大化 / 还原当前分屏 Pane |
 | **⌘1 … ⌘9** | 快速切换至第 1 ~ 9 个标签 |
+| **⌘⌥R** | 重命名当前 Tab（也支持双击或右键标签） |
 | **⌘⇧[** / **⌘⇧]** | 左右轮换标签 |
 | **⌘K** | 全局搜索 Space、内部终端与 Agent（支持拼音与首字母） |
 | **⌘⇧J** | 一键跳转至等待输入或完成未读的 Agent |

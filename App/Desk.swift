@@ -76,6 +76,8 @@ final class Desk: ObservableObject {
     @Published var deviceFilter = ""
     @Published var creatingSpace = false
     @Published var spaceRequest: SpaceRequest?
+    @Published var tabRenameRequest: TabRenameRequest?
+    let tabRenameQueue = SerialOperationQueue()
     @Published var busy: Set<String> = []
     @Published var focusRevision = 0
     @Published var sidebarReveal: String?

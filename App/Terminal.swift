@@ -143,14 +143,21 @@ struct TerminalCanvas: NSViewRepresentable {
         private var appliedFocusRevision = -1
         var minimumPaneSize: CGSize = .zero
         private var activation: NSObjectProtocol?
+        private var accessibilityObserver: NSObjectProtocol?
         override init(frame: NSRect) {
             super.init(frame: frame)
+            accessibilityObserver = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.updateCloseButtons() }
+            }
             activation = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { [weak self] note in
                 MainActor.assumeIsolated { if let self, (note.object as? NSWindow) === self.window { self.needsDisplay = true; self.needsLayout = true } }
             }
         }
         required init?(coder: NSCoder) { fatalError() }
-        deinit { if let activation { NotificationCenter.default.removeObserver(activation) } }
+        deinit {
+            if let activation { NotificationCenter.default.removeObserver(activation) }
+            if let accessibilityObserver { NSWorkspace.shared.notificationCenter.removeObserver(accessibilityObserver) }
+        }
         var focused: PaneKey?
         var dividers: [Layout.Divider] = []
         var setRatio: ((Layout.Divider, Double) -> Void)?
@@ -181,21 +188,30 @@ struct TerminalCanvas: NSViewRepresentable {
         private func updateCloseButtons() {
             for (key, button) in closeButtons {
                 let visible = visibleKeys.contains(key)
-                button.isHidden = !visible || (hovered != key && focused != key && !NSWorkspace.shared.isVoiceOverEnabled)
+                let revealed = hovered == key || button.pointerInside || NSWorkspace.shared.isVoiceOverEnabled
+                button.setVisibility(visible && (revealed || focused == key), opacity: revealed ? 1 : 0.5)
             }
+            needsDisplay = true
+        }
+        override func menu(for event: NSEvent) -> NSMenu? {
+            let point = convert(event.locationInWindow, from: nil)
+            return entries.first { $0.2.width > 0 && paneFrame($0.2).contains(point) }?.1.view.objectMenu?()
         }
         override func draw(_ dirtyRect: NSRect) {
             Theme.content.setFill(); bounds.fill()
-            for (key, _, rect) in entries where rect.width > 0 {
-                var frame = paneFrame(rect).insetBy(dx: 3.5, dy: 3.5)
-                // The 14pt title straddles the outline; reserve its full upper half.
-                frame.size.height = max(0, frame.height - 7.5)
-                let active = focused == key && window?.isKeyWindow == true
-                (active ? Theme.accent : Theme.separator).setStroke()
+            // Focused shared edges draw last, so adjacent panes cannot erase the accent.
+            let ordered = entries.filter { $0.2.width > 0 }.sorted { ($0.0 == focused ? 1 : 0) < ($1.0 == focused ? 1 : 0) }
+            for (key, _, rect) in ordered {
+                let frame = borderFrame(rect)
+                let active = focused == key
                 let corners = bottomCorners(rect)
-                let border = outline(frame, left: corners.left, right: corners.right)
-                border.lineWidth = 1
-                border.stroke()
+                if let context = NSGraphicsContext.current?.cgContext {
+                    context.saveGState()
+                    context.setStrokeColor((active ? Theme.accent : Theme.foreground.withAlphaComponent(0.28)).cgColor)
+                    context.setLineWidth(1)
+                    context.addPath(outline(frame, left: corners.left ? 11 : 0, right: corners.right ? 11 : 0))
+                    context.strokePath(); context.restoreGState()
+                }
                 let title = titles[key] ?? PaneTitle(main: L("Terminal"), context: "")
                 let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingTail
                 let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: active ? .semibold : .regular), .foregroundColor: active ? Theme.accent : Theme.secondary, .paragraphStyle: style]
@@ -204,23 +220,38 @@ struct TerminalCanvas: NSViewRepresentable {
                 let available = max(0, frame.width - (zoomed ? 82 : 56))
                 let mainWidth = min(available * (title.context.isEmpty ? 1 : 0.64), (title.main as NSString).size(withAttributes: attributes).width)
                 let contextWidth = min(max(0, available - mainWidth - 10), (title.context as NSString).size(withAttributes: secondary).width)
-                let box = NSRect(x: frame.minX + 9, y: frame.maxY - 7, width: mainWidth + (contextWidth > 0 ? contextWidth + 10 : 0) + 8, height: 14)
+                let box = NSRect(x: frame.minX + 9, y: frame.maxY - (rect.minY < 0.001 ? 7 : 19), width: mainWidth + (contextWidth > 0 ? contextWidth + 10 : 0) + 8, height: 14)
                 Theme.content.setFill(); box.fill()
                 (title.main as NSString).draw(in: NSRect(x: box.minX + 4, y: box.minY, width: mainWidth, height: 14), withAttributes: attributes)
                 if contextWidth > 0 { (title.context as NSString).draw(in: NSRect(x: box.minX + mainWidth + 14, y: box.minY, width: contextWidth, height: 14), withAttributes: secondary) }
 
             }
+            // Keep the backing opaque while the button glyph fades across the title outline.
+            Theme.content.setFill()
+            for button in closeButtons.values where !button.isHidden { button.frame.fill() }
         }
-        private func outline(_ rect: NSRect, left: Bool, right: Bool) -> NSBezierPath {
-            let path = NSBezierPath(), l: CGFloat = left ? 10 : 0, r: CGFloat = right ? 10 : 0
-            path.move(to: NSPoint(x: rect.minX, y: rect.maxY)); path.line(to: NSPoint(x: rect.maxX, y: rect.maxY))
-            path.line(to: NSPoint(x: rect.maxX, y: rect.minY + r))
-            path.curve(to: NSPoint(x: rect.maxX - r, y: rect.minY), controlPoint1: NSPoint(x: rect.maxX, y: rect.minY + r * 0.45), controlPoint2: NSPoint(x: rect.maxX - r * 0.45, y: rect.minY))
-            path.line(to: NSPoint(x: rect.minX + l, y: rect.minY))
-            path.curve(to: NSPoint(x: rect.minX, y: rect.minY + l), controlPoint1: NSPoint(x: rect.minX + l * 0.45, y: rect.minY), controlPoint2: NSPoint(x: rect.minX, y: rect.minY + l * 0.45))
-            path.close(); return path
+        /// SwiftUI's continuous shape is shared by the outline and the terminal mask.
+        private func outline(_ rect: CGRect, left: CGFloat, right: CGFloat) -> CGPath {
+            let shape = UnevenRoundedRectangle(bottomLeadingRadius: left, bottomTrailingRadius: right, style: .continuous)
+            let path = shape.path(in: CGRect(origin: .zero, size: rect.size)).cgPath
+            var transform = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: rect.minX, ty: rect.maxY)
+            return path.copy(using: &transform)!
         }
-        func paneFrame(_ rect: CGRect) -> CGRect { CGRect(x: bounds.width * rect.minX, y: bounds.height * (1 - rect.maxY), width: bounds.width * rect.width, height: bounds.height * rect.height) }
+        func paneFrame(_ rect: CGRect) -> CGRect {
+            // Round shared boundaries once in backing pixels; fractional split ratios stay crisp.
+            let scale = window?.backingScaleFactor ?? 2
+            func snap(_ value: CGFloat) -> CGFloat { (value * scale).rounded() / scale }
+            let x = snap(bounds.width * rect.minX), y = snap(bounds.height * (1 - rect.maxY))
+            return CGRect(x: x, y: y, width: snap(bounds.width * rect.maxX) - x, height: snap(bounds.height * (1 - rect.minY)) - y)
+        }
+        private func borderFrame(_ rect: CGRect) -> CGRect {
+            let frame = paneFrame(rect)
+            let left = frame.minX + (rect.minX < 0.001 ? 0.5 : 0)
+            let right = frame.maxX - (rect.maxX > 0.999 ? 0.5 : 0)
+            let bottom = frame.minY + (rect.maxY > 0.999 ? 0.5 : 0)
+            let top = frame.maxY - (rect.minY < 0.001 ? 11 : 0)
+            return CGRect(x: left, y: bottom, width: max(0, right - left), height: max(0, top - bottom))
+        }
         private func bottomCorners(_ rect: CGRect) -> (left: Bool, right: Bool) {
             let bottom = rect.maxY > 0.999 && window?.styleMask.contains(.fullScreen) != true
             return (bottom && roundLeft && rect.minX < 0.001, bottom && rect.maxX > 0.999)
@@ -228,7 +259,32 @@ struct TerminalCanvas: NSViewRepresentable {
         /// Small glyph, native button semantics and a stable 22pt hit target.
         final class CloseButton: NSButton {
             var invoke: (() -> Void)?
-            private var hovered = false
+            private(set) var pointerInside = false
+            var hoverChanged: (() -> Void)?
+            private var interactive = true
+            private var targetOpacity: CGFloat = -1
+            private var visibilityRevision = 0
+            func setVisibility(_ visible: Bool, opacity: CGFloat) {
+                interactive = visible
+                setAccessibilityElement(visible)
+                setAccessibilityRole(.button)
+                let target: CGFloat = visible ? opacity : 0
+                guard target != targetOpacity else { return }
+                targetOpacity = target; visibilityRevision += 1
+                let revision = visibilityRevision
+                if visible { isHidden = false }
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : 0.15
+                    context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                    animator().alphaValue = target
+                } completionHandler: { [weak self] in
+                    guard let self, self.visibilityRevision == revision else { return }
+                    self.isHidden = !visible
+                    self.superview?.needsDisplay = true
+                }
+            }
+            override func hitTest(_ point: NSPoint) -> NSView? { interactive ? super.hitTest(point) : nil }
+            override func menu(for event: NSEvent) -> NSMenu? { superview?.menu(for: event) }
             private var tracking: NSTrackingArea?
             init() {
                 super.init(frame: .zero)
@@ -244,15 +300,15 @@ struct TerminalCanvas: NSViewRepresentable {
                 let next = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self)
                 tracking = next; addTrackingArea(next)
             }
-            override func mouseEntered(with event: NSEvent) { hovered = true; needsDisplay = true }
-            override func mouseExited(with event: NSEvent) { hovered = false; needsDisplay = true }
+            override func mouseEntered(with event: NSEvent) { pointerInside = true; hoverChanged?(); needsDisplay = true }
+            override func mouseExited(with event: NSEvent) { pointerInside = false; hoverChanged?(); needsDisplay = true }
             override func draw(_ dirtyRect: NSRect) {
                 Theme.content.setFill(); bounds.fill()
-                if hovered || isHighlighted {
+                if pointerInside || isHighlighted {
                     Theme.foreground.withAlphaComponent(isHighlighted ? 0.14 : 0.07).setFill()
                     NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 4, yRadius: 4).fill()
                 }
-                contentTintColor = hovered ? Theme.foreground : Theme.secondary
+                contentTintColor = pointerInside ? Theme.foreground : Theme.secondary
                 super.draw(dirtyRect)
             }
             required init?(coder: NSCoder) { fatalError() }
@@ -273,6 +329,7 @@ struct TerminalCanvas: NSViewRepresentable {
                 let button = closeButtons[key] ?? CloseButton(); closeButtons[key] = button
                 if button.superview !== self { addSubview(button) }
                 button.invoke = { [weak self] in self?.close?(key) }
+                button.hoverChanged = { [weak self] in self?.updateCloseButtons() }
                 if visible {
                     let frame = paneFrame(rect)
                     button.frame = NSRect(x: frame.maxX - 30, y: frame.maxY - 22, width: 22, height: 22)
@@ -284,9 +341,11 @@ struct TerminalCanvas: NSViewRepresentable {
                     // The opaque terminal must follow the outline, or it paints over its curved corners.
                     let corners = bottomCorners(rect)
                     terminal.view.wantsLayer = true
-                    terminal.view.layer?.cornerRadius = 9.5
-                    terminal.view.layer?.maskedCorners = (corners.left ? CACornerMask.layerMinXMinYCorner : []).union(corners.right ? .layerMaxXMinYCorner : [])
-                    terminal.view.layer?.masksToBounds = corners.left || corners.right
+                    if corners.left || corners.right {
+                        let mask = (terminal.view.layer?.mask as? CAShapeLayer) ?? CAShapeLayer()
+                        mask.path = outline(CGRect(origin: .zero, size: contentFrame.size), left: corners.left ? 7.5 : 0, right: corners.right ? 7.5 : 0)
+                        terminal.view.layer?.mask = mask
+                    } else { terminal.view.layer?.mask = nil }
                     if focused == key, appliedFocusRevision != focusRevision, window?.isKeyWindow == true, window?.attachedSheet == nil {
                         if window?.makeFirstResponder(terminal.view) == true { appliedFocusRevision = focusRevision }
                     }

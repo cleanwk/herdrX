@@ -109,7 +109,7 @@ rounded:
   agent-selection: "7pt"
   font-preview: "7pt"
   reconnect: "8pt"
-  pane-outer-bottom: "10pt"
+  pane-outer-bottom: "11pt"
 spacing:
   sidebar-row-x: "8pt"
   sidebar-content-indent: "18pt"
@@ -122,9 +122,9 @@ spacing:
   toolbar-inset: "16pt"
   creation-inset: "24pt"
   canvas-top-clearance: "6pt"
-  tab-strip-inset-x: "6pt"
-  tab-strip-inset-y: "5pt"
-  tab-gap: "6pt"
+  tab-strip-inset-x: "8pt"
+  tab-strip-inset-y: "3pt"
+  tab-gap: "4pt"
   pane-outline-top: "11pt"
   terminal-content-inset: "4pt"
   appearance-row-gap: "7pt"
@@ -135,7 +135,7 @@ spacing:
   notifications-inset: "24pt"
 components:
   integrated-bar:
-    height: "34pt"
+    height: "28pt"
   sidebar:
     width: "260pt"
   sidebar-actions:
@@ -156,11 +156,11 @@ components:
   tab:
     typography: "{typography.tab}"
     rounded: "{rounded.tab}"
-    height: "24pt"
+    height: "22pt"
   tab-selected:
     typography: "{typography.tab-selected}"
     rounded: "{rounded.tab}"
-    height: "24pt"
+    height: "22pt"
   pane-title:
     typography: "{typography.pane-title}"
     height: "14pt"
@@ -331,7 +331,7 @@ The sidebar uses the default width token only when no saved width exists, persis
 
 Space and Agent text starts approximately 36pt from the window's left edge: sidebar inset + row padding + content indent. Two native text lines, their shared line gap and distinct vertical padding produce approximately 45pt Space and 51pt Agent fills. These are rendered targets, not additional fixed-height constraints. Device connection dots follow the device name. State words reserve their own width at the Agent row's trailing edge.
 
-Tabs use measured text plus 20pt, clamped to 40–200pt, inside a 34pt integrated bar shared with the sidebar header. Each tab remains 24pt high with 5pt above and below, 6pt horizontal strip insets and 6pt between tabs. Overflow scrolls horizontally; selection reveals the active tab. Pane frames follow normalized split rectangles with a 3.5pt base inset and another 7.5pt at the title edge, placing the top outline 11pt inside the canvas. Including the 34pt bar, 1pt divider and 6pt canvas clearance, the first outline is 52pt below the window top. These are source-derived positions awaiting the current visual confirmation.
+Tabs use measured text plus 18pt (9pt on each side), clamped to 40–200pt, inside a shared 28pt integrated bar. Each pill is 22pt high with 3pt above/below, 8pt leading inset and 4pt gaps. Active tabs have 11% accent wash and a 1pt accent outline; inactive tabs have 6% neutral wash and secondary text. Overflow scrolls horizontally; selection reveals the active tab. Split rectangles share pixel-aligned boundaries. Outer edges use a 0.5pt inset for the 1pt stroke; the first title outline remains 11pt inside the canvas (46pt below window top including bar/divider/clearance). Internal split edges coincide without rounded gaps.
 
 `PaneMetrics` owns the 4pt terminal content inset, 24pt header, 8pt horizontal overhead and 28pt vertical overhead. Terminal views use these same values as `Desk.minimumPaneSize` and split eligibility, keeping the space reserved for chrome consistent with the intended minimum of 24 columns and six rows. The minimum pane is `max(160, font × 0.65 × 24 + 8)` by `max(100, font × 1.5 × 6 + 28)` points, with a 13.5pt fallback font. Split handles are seven points wide; keyboard/accessibility adjustment moves five percentage points within those minimum bounds.
 
@@ -347,7 +347,7 @@ There is no authored shadow or motion vocabulary. Theme surfaces, thin outlines,
 
 ## Shapes
 
-Use the component-specific frontmatter radii for rows, tabs, preview, search and recovery. Pane top outlines and internal split boundaries remain rectangular. In windowed mode on all supported macOS versions, bottom panes use a 10pt radius at the right outer corner and at the left outer corner only when the sidebar is hidden; the visible sidebar keeps the left boundary straight. Full-screen panes use square corners. The opaque terminal surface masks the same corners with a 9.5pt radius so it does not cover the outline. This is source behavior awaiting the current visual confirmation, not an older-OS runtime pass. Agent glyphs use eight-point SF Symbols; connected/offline device dots are six-point filled circles. Accent controls are circular, with a 1.5pt selected ring. Native settings controls retain OS geometry.
+Use the component-specific frontmatter radii for rows, tabs, preview, search and recovery. Pane top and internal split edges are square. Windowed outer bottom corners use an 11pt continuous curve (`UnevenRoundedRectangle`), with the left corner rounded only when the sidebar is hidden. Full-screen corners remain square. The terminal layer uses the same continuous shape with a concentric 7.5pt mask (4pt content inset minus 0.5pt border inset). Shared split lines remain 1pt, with focused edges drawn last. Accent controls retain their native circular geometry.
 
 ## Components
 
@@ -363,7 +363,7 @@ Task titles share the pane display-title source. Context combines tool, Space an
 
 AppKit tabs combine native type, natural widths, accent selection and neutral theme hover. `TabMetrics` shares bar height, tab height, strip inset, gap and radius with the SwiftUI host. Reordering shows a two-point accent marker centered in the gap and edge scrolling. Tabs expose radio-button selection and pane-count help. Unchanged title/selection/count inputs reuse button layout; pane counts are grouped once per tab-list evaluation.
 
-Pane titles sit in a background-colored top-border cutout. The cutout begins nine points inside the pane frame, has four points before the main text and ten points between main/context runs. Main text receives at most 64% of available title width when context exists. Active key-window panes use accent outlines/titles; inactive panes use theme separator/secondary. Close appears for the focused pane, on hover, or when VoiceOver is enabled; zoom exposes Restore. Both use 22pt native button targets, with a 9pt semibold close symbol and a 10pt medium restore symbol. Hover/pressed fills use theme foreground at 0.07/0.14 with a 4pt corner radius inside a 2pt inset, and the controls retain native focus treatment. Full title/context remains attached to the terminal's help and accessibility label. Native splitters expose values, bounds and keyboard/accessibility adjustment.
+Pane titles sit in a background-colored top-border cutout. The cutout begins nine points inside the pane frame, has four points before the main text and ten points between main/context runs. Main text receives at most 64% of available title width when context exists. Focused panes use accent outlines/titles; inactive panes use foreground at 28% and secondary title text. Topmost titles retain the border cutout; internal-row titles sit below their straight shared edge. Close stays at 50% opacity for the focused pane and 100% during pane/button hover or VoiceOver. Visibility changes ease out over 150ms (immediate under Reduce Motion); invisible buttons do not hit-test or expose an accessibility element. The backing remains opaque during fades. Header context menus target the clicked pane, and ⌘⇧W invokes the existing Close Pane action; zoom exposes Restore. Both use 22pt native button targets, with a 9pt semibold close symbol and a 10pt medium restore symbol. Hover/pressed fills use theme foreground at 0.07/0.14 with a 4pt corner radius inside a 2pt inset, and the controls retain native focus treatment. Full title/context remains attached to the terminal's help and accessibility label. Native splitters expose values, bounds and keyboard/accessibility adjustment.
 
 Ghostty surfaces remain mounted as workspaces are hidden. Layout and explicit focus requests are separate, and hidden views are not assigned visible frames. Ended attachments offer Reconnect with ownership confirmation where required. Removing independent Shell support does not remove Space-owned PTYs or terminal settings.
 
@@ -404,6 +404,11 @@ One app-lifetime Sparkle updater serves both the application-menu Check for Upda
 
 ### Agent identity and sidebar scrolling (2026-10-10 follow-up)
 
-The supplied sidebar/tab screenshots refine the incumbent native visual direction. Agent metadata uses a 12pt template vector tool icon with a 4pt text gap; search uses the same component at 14pt. Codex, Claude, Cursor, Gemini, Grok, Kimi, OpenCode, Copilot and Antigravity/agy map to bundled assets; unknown tools retain the system-symbol fallback. The source commit, source URLs and adapted-file hashes are recorded in `Resources/Icon/AgentIcons.json`; the MIT license ships in `Resources/Licenses/LobeIcons.txt`. These are vector assets, with semantic foreground tint for both appearances, not generated raster artwork.
+Agent metadata uses a 12pt brand vector with a 4pt text gap; search uses the same component at 14pt. Resources resolve color first (`.original`), monochrome second (`.template`), then the terminal SF Symbol. The pinned LobeHub source offers color for Claude, Codex, Gemini, DeepSeek, Kimi and Antigravity. Cursor, Grok, Copilot, OpenCode and Pi retain upstream monochrome marks. SVG dimensions and compact arc flags are normalized for CoreSVG without changing geometry or colors. Kimi has a black backing for its white mark. Source URLs and adapted hashes are in `Resources/Icon/AgentIcons.json`; the MIT license remains bundled.
 
 The sidebar's own native scroll view uses overlay scrollers, small control size and automatic hiding, avoiding the legacy reserved gutter. This is scoped to sidebar content and does not change global macOS preferences. New icons and scroller behavior compile, but running-app visual acceptance will be performed by the user after the requested local update.
+
+
+### Tab rename and Herdr ownership
+
+Double-click, the Tab context menu and Terminal → Rename Tab… (⌘⌥R) open a 400pt sheet with focused, selected text. Blank/unchanged names cannot submit; Enter saves, Esc cancels. A serial queue wraps the existing Herdr `tab.rename` RPC and subsequent snapshot refresh. The captured device, endpoint, workspace and Tab ID define the target; navigation cannot redirect the request. RPC failure retains the original server-backed label and shows an inline error with retry. There is no parallel client-owned naming/session model or new Herdr protocol. See `docs/ui-five/VALIDATION.md` for evidence and remaining manual checks.

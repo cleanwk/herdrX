@@ -1,0 +1,86 @@
+Building for production...
+[Pre-planning 1 / 154]
+[Planning deferred tasks]
+[8 / 28] HerdCore
+[10 / 29] HerdCore
+[18 / 28] HerdCoreTests-product
+[20 / 29] HerdCoreTests-product
+[24 / 28] HerdCoreTests-product
+[26 / 28] HerdCoreTests-product
+Build complete! (6.98秒)
+Test Suite 'All tests' started at 2026-10-10 21:34:31.621.
+Test Suite 'HerdCoreTests.xctest' started at 2026-10-10 21:34:31.623.
+Test Suite 'AttentionTests' started at 2026-10-10 21:34:31.623.
+Test Case '-[HerdCoreTests.AttentionTests testOrderingDiffersFromAggregation]' started.
+Test Case '-[HerdCoreTests.AttentionTests testOrderingDiffersFromAggregation]' passed (0.002 seconds).
+Test Case '-[HerdCoreTests.AttentionTests testUnreadTransitionsAndDeviceIsolation]' started.
+Test Case '-[HerdCoreTests.AttentionTests testUnreadTransitionsAndDeviceIsolation]' passed (0.000 seconds).
+Test Suite 'AttentionTests' passed at 2026-10-10 21:34:31.626.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.002 (0.003) seconds
+Test Suite 'CoreTests' started at 2026-10-10 21:34:31.626.
+Test Case '-[HerdCoreTests.CoreTests testDeviceScopedPaneIdentity]' started.
+Test Case '-[HerdCoreTests.CoreTests testDeviceScopedPaneIdentity]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.CoreTests testFramingFragmentationAndLimits]' started.
+Test Case '-[HerdCoreTests.CoreTests testFramingFragmentationAndLimits]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.CoreTests testHerdrExtensionRecords]' started.
+Test Case '-[HerdCoreTests.CoreTests testHerdrExtensionRecords]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.CoreTests testIncompleteSnapshotIsRejected]' started.
+Test Case '-[HerdCoreTests.CoreTests testIncompleteSnapshotIsRejected]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.CoreTests testSearchNamePrecedesContextAndPinyinForms]' started.
+Test Case '-[HerdCoreTests.CoreTests testSearchNamePrecedesContextAndPinyinForms]' passed (0.055 seconds).
+Test Case '-[HerdCoreTests.CoreTests testSearchPinyinAndLimit]' started.
+/Users/kai/github/herdrX/Core/Tests/HerdCoreTests/CoreTests.swift:25: Test Case '-[HerdCoreTests.CoreTests testSearchPinyinAndLimit]' measured [Time, seconds] average: 0.001, relative standard deviation: 17.674%, values: [0.001613, 0.000980, 0.000945, 0.001006, 0.001184, 0.001032, 0.000959, 0.001144, 0.000972, 0.001005], performanceMetricID:com.apple.XCTPerformanceMetric_WallClockTime, baselineName: "", baselineAverage: , polarity: prefers smaller, maxPercentRegression: 10.000%, maxPercentRelativeStandardDeviation: 10.000%, maxRegression: 0.100, maxStandardDeviation: 0.100
+Test Case '-[HerdCoreTests.CoreTests testSearchPinyinAndLimit]' passed (0.403 seconds).
+Test Suite 'CoreTests' passed at 2026-10-10 21:34:32.086.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.460 (0.460) seconds
+Test Suite 'TabOrderTests' started at 2026-10-10 21:34:32.086.
+Test Case '-[HerdCoreTests.TabOrderTests testFailedFirstMoveKeepsLaterIntent]' started.
+Test Case '-[HerdCoreTests.TabOrderTests testFailedFirstMoveKeepsLaterIntent]' passed (0.000 seconds).
+Test Suite 'TabOrderTests' passed at 2026-10-10 21:34:32.086.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'TabRenameTests' started at 2026-10-10 21:34:32.086.
+Test Case '-[HerdCoreTests.TabRenameTests testNamesRejectBlankUnchangedAndMultilineButKeepUnicodeAndInteriorSpaces]' started.
+Test Case '-[HerdCoreTests.TabRenameTests testNamesRejectBlankUnchangedAndMultilineButKeepUnicodeAndInteriorSpaces]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.TabRenameTests testSuspendedFailureDoesNotOverlapOrPreventLaterRename]' started.
+Test Case '-[HerdCoreTests.TabRenameTests testSuspendedFailureDoesNotOverlapOrPreventLaterRename]' passed (0.000 seconds).
+Test Suite 'TabRenameTests' passed at 2026-10-10 21:34:32.087.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'ThemePreferenceTests' started at 2026-10-10 21:34:32.087.
+Test Case '-[HerdCoreTests.ThemePreferenceTests testHerdrThemeSectionAndAliases]' started.
+Test Case '-[HerdCoreTests.ThemePreferenceTests testHerdrThemeSectionAndAliases]' passed (0.001 seconds).
+Test Suite 'ThemePreferenceTests' passed at 2026-10-10 21:34:32.088.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'TransportTests' started at 2026-10-10 21:34:32.088.
+Test Case '-[HerdCoreTests.TransportTests testEventHistoryLossRequiresARefreshAndNewSubscription]' started.
+Test Case '-[HerdCoreTests.TransportTests testEventHistoryLossRequiresARefreshAndNewSubscription]' passed (0.001 seconds).
+Test Case '-[HerdCoreTests.TransportTests testResponseIdentityCannotCrossRequests]' started.
+Test Case '-[HerdCoreTests.TransportTests testResponseIdentityCannotCrossRequests]' passed (0.001 seconds).
+Test Case '-[HerdCoreTests.TransportTests testRPCReassemblesLargeFragmentedResponse]' started.
+Test Case '-[HerdCoreTests.TransportTests testRPCReassemblesLargeFragmentedResponse]' passed (0.004 seconds).
+Test Case '-[HerdCoreTests.TransportTests testUnsupportedSnapshotIsNotHiddenByLegacyFallback]' started.
+Test Case '-[HerdCoreTests.TransportTests testUnsupportedSnapshotIsNotHiddenByLegacyFallback]' passed (0.001 seconds).
+Test Suite 'TransportTests' passed at 2026-10-10 21:34:32.095.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.007 (0.007) seconds
+Test Suite 'UXTests' started at 2026-10-10 21:34:32.095.
+Test Case '-[HerdCoreTests.UXTests testClosingSelectionUsesSurvivingNeighbourWithoutChangingBackgroundSelection]' started.
+Test Case '-[HerdCoreTests.UXTests testClosingSelectionUsesSurvivingNeighbourWithoutChangingBackgroundSelection]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.UXTests testConnectionDraftResetDoesNotCarrySSHOptions]' started.
+Test Case '-[HerdCoreTests.UXTests testConnectionDraftResetDoesNotCarrySSHOptions]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.UXTests testSearchUpdateRetainsIdentityAndPinyinAcrossStatusReorders]' started.
+Test Case '-[HerdCoreTests.UXTests testSearchUpdateRetainsIdentityAndPinyinAcrossStatusReorders]' passed (0.001 seconds).
+Test Case '-[HerdCoreTests.UXTests testSelectionSurvivesReorderAndCannotEnterDeletedObject]' started.
+Test Case '-[HerdCoreTests.UXTests testSelectionSurvivesReorderAndCannotEnterDeletedObject]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.UXTests testShortcutsMatchCompleteModifiersAndExcludeRemovedCommands]' started.
+Test Case '-[HerdCoreTests.UXTests testShortcutsMatchCompleteModifiersAndExcludeRemovedCommands]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.UXTests testTitlesUseExplicitIdentityBeforeToolCommands]' started.
+Test Case '-[HerdCoreTests.UXTests testTitlesUseExplicitIdentityBeforeToolCommands]' passed (0.001 seconds).
+Test Suite 'UXTests' passed at 2026-10-10 21:34:32.098.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.002 (0.003) seconds
+Test Suite 'HerdCoreTests.xctest' passed at 2026-10-10 21:34:32.098.
+	 Executed 22 tests, with 0 failures (0 unexpected) in 0.472 (0.475) seconds
+Test Suite 'All tests' passed at 2026-10-10 21:34:32.098.
+	 Executed 22 tests, with 0 failures (0 unexpected) in 0.472 (0.477) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

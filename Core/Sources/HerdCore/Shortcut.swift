@@ -13,7 +13,7 @@ public enum WorkbenchShortcut {
             return ["t": "terminal", "w": "close", "d": "splitRight", "b": "sidebar", "k": "search"][key]
         }
         if modifiers == [.command, .shift] { return ["n": "space", "w": "closePane", "d": "splitDown", "j": "attention", "r": "repair", "[": "previous", "{": "previous", "]": "next", "}": "next", "\r": "zoom"][key] }
-        if modifiers == [.command, .option] { return ["w": "closeTab", "\u{f702}": "left", "\u{f703}": "right", "\u{f700}": "up", "\u{f701}": "down"][key] }
+        if modifiers == [.command, .option] { return ["r": "renameTab", "w": "closeTab", "\u{f702}": "left", "\u{f703}": "right", "\u{f700}": "up", "\u{f701}": "down"][key] }
         if modifiers == [.command, .control] { return ["\u{f702}": "resizeLeft", "\u{f703}": "resizeRight", "\u{f700}": "resizeUp", "\u{f701}": "resizeDown"][key] }
         return nil
     }
