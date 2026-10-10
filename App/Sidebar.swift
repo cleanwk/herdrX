@@ -51,11 +51,11 @@ struct SidebarGroup<Content: View>: View {
     let id: String
     let empty: Bool
     let status: String?
-    let connected: Bool
+    let statusColor: Color
     @ViewBuilder let content: () -> Content
     @AppStorage private var collapsed: Bool
-    init(title: String, id: String, empty: Bool, status: String? = nil, connected: Bool = false, @ViewBuilder content: @escaping () -> Content) {
-        self.title = title; self.id = id; self.empty = empty; self.content = content; self.status = status; self.connected = connected
+    init(title: String, id: String, empty: Bool, status: String? = nil, statusColor: Color = .secondary, @ViewBuilder content: @escaping () -> Content) {
+        self.title = title; self.id = id; self.empty = empty; self.content = content; self.status = status; self.statusColor = statusColor
         _collapsed = AppStorage(wrappedValue: false, "sidebarCollapsed." + id)
     }
     var body: some View {
@@ -67,7 +67,7 @@ struct SidebarGroup<Content: View>: View {
                     HStack(spacing: 5) {
                         Image(systemName: collapsed ? "chevron.right" : "chevron.down").font(.system(size: 9, weight: .medium)).frame(width: 12)
                         Text(title).font(.system(size: 11, weight: .semibold)).lineLimit(1)
-                        if let status { Circle().fill(Color(nsColor: connected ? Theme.success : Theme.failure)).frame(width: 6, height: 6).help(status).accessibilityHidden(true) }
+                        if let status { Circle().fill(statusColor).frame(width: 6, height: 6).help(status).accessibilityHidden(true) }
                         Spacer(minLength: 2)
                     }.foregroundStyle(Color(nsColor: Theme.secondary)).padding(.horizontal, 8).frame(height: 28).contentShape(Rectangle())
                 }.buttonStyle(.plain).background(Color(nsColor: Theme.content)).accessibilityLabel(title).accessibilityValue(DisplayTitle.detail([L(collapsed ? "Collapsed" : "Expanded"), status])).accessibilityHint(L(collapsed ? "Expand group" : "Collapse group"))

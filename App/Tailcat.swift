@@ -68,7 +68,7 @@ struct TailcatSettings: View {
                 Section("Saved devices") {
                     ForEach(desk.devices.filter { $0.endpoint.kind == "tailcat" }) { device in
                         HStack {
-                            VStack(alignment: .leading) { Text(device.displayName); Text(LocalizedStringKey(desk.connections[device.id] ?? "Disconnected")).font(.caption).foregroundStyle(.secondary) }
+                            VStack(alignment: .leading) { Text(device.displayName); Text(L((desk.connections[device.id] ?? .connecting).title)).font(.caption).foregroundStyle(.secondary) }
                             Spacer()
                             Button("Edit") { editing = device.id; name = device.displayName; token = "" }
                             Button("Retry") { desk.connect(device) }

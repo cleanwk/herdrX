@@ -48,9 +48,14 @@ struct Workbench: View {
                     if desk.activeRects.isEmpty {
                         VStack(spacing: 10) {
                             Image(systemName: "square.stack.3d.up").font(.system(size: 28, weight: .light)).foregroundStyle(Color(nsColor: Theme.secondary))
-                            Text("Choose a Space").font(.system(size: 17, weight: .medium))
-                            Text("Your spaces and agents appear in the sidebar.").font(.system(size: 12)).foregroundStyle(Color(nsColor: Theme.secondary))
-                            Button("New Space…") { desk.showSpaceForm() }.padding(.top, 4)
+                            if let device = unavailableDevice {
+                                Text(device.displayName).font(.system(size: 17, weight: .medium)).lineLimit(2).truncationMode(.middle).multilineTextAlignment(.center).frame(maxWidth: 300).help(device.displayName)
+                                ConnectionRecovery(device: device, centered: true).frame(maxWidth: 300).padding(.top, 4)
+                            } else {
+                                Text("Choose a Space").font(.system(size: 17, weight: .medium))
+                                Text("Your spaces and agents appear in the sidebar.").font(.system(size: 12)).foregroundStyle(Color(nsColor: Theme.secondary))
+                                Button("New Space…") { desk.showSpaceForm() }.padding(.top, 4)
+                            }
                         }.frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     }
@@ -68,6 +73,11 @@ struct Workbench: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didUnhideNotification)) { _ in desk.applicationShown() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in desk.shutdown() }
         .focusedSceneValue(\.workbenchActions, WorkbenchActions(perform: command, enabled: enabled))
+    }
+    private var unavailableDevice: Device? {
+        let visible = desk.devices.filter { desk.deviceFilter.isEmpty || $0.id == desk.deviceFilter }
+        if let device = visible.first(where: { $0.id == desk.selectedDevice }), !desk.canWrite(device.id) { return device }
+        return visible.contains(where: { desk.canWrite($0.id) }) ? nil : visible.first
     }
     var tabs: [TabEntry] {
         guard let device = desk.selectedDevice else { return [] }
@@ -89,13 +99,9 @@ struct Workbench: View {
         }.onChange(of: desk.sidebarReveal) { _, value in if let value { reader.scrollTo(value) } } }
     }
     func deviceGroup(_ device: Device) -> some View {
-        SidebarGroup(title: device.displayName, id: "device-" + device.id, empty: false, status: desk.connections[device.id] == "Connected" ? L("Connected") : L("Offline"), connected: desk.connections[device.id] == "Connected") {
-            if desk.connections[device.id] != "Connected" {
-                VStack(alignment: .leading, spacing: 4) {
-                    if desk.sessions[device.id] != nil { Text("Cached session data · offline").font(.caption) }
-                    Text(desk.connections[device.id] ?? L("Disconnected")).font(.caption).foregroundStyle(.secondary).lineLimit(2).help(desk.connections[device.id] ?? "")
-                    Button("Retry Connection") { desk.connect(device) }.buttonStyle(.borderless)
-                }.padding(8)
+        SidebarGroup(title: device.displayName, id: "device-" + device.id, empty: false, status: L((desk.connections[device.id] ?? .connecting).title), statusColor: (desk.connections[device.id] ?? .connecting).color) {
+            if !desk.canWrite(device.id) {
+                ConnectionRecovery(device: device).padding(.horizontal, 8).padding(.vertical, 6)
             }
             let spaces = desk.sessions[device.id]?.spaces ?? []
             ForEach(spaces) { space in
@@ -121,7 +127,10 @@ struct Workbench: View {
             if spaces.isEmpty, desk.canWrite(device.id) { Button("Create Space…") { desk.showSpaceForm(device: device.id) }.buttonStyle(.borderless).padding(8) }
         }.contextMenu {
             Button("New Space…") { desk.showSpaceForm(device: device.id) }.disabled(!desk.canWrite(device.id))
-            Button("Retry Connection") { desk.connect(device) }
+            if desk.connections[device.id]?.issue?.canStart == true, LocalHerdrTarget(endpoint: device.endpoint) != nil {
+                Button("Start Herdr") { desk.startLocalHerdr(device) }
+            }
+            Button("Retry Connection") { desk.connect(device) }.disabled(desk.connections[device.id]?.isBusy == true)
         }
     }
     func moveSpace(_ device: String, _ space: String, _ index: Int) { desk.objectAction(device: device, method: "workspace.move", params: ["workspace_id": .string(space), "insert_index": .number(Double(index))]) }

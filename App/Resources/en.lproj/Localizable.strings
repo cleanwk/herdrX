@@ -342,3 +342,24 @@
 "Could not rename the tab: %@" = "Could not rename the tab: %@";
 
 "The tab is no longer available. Reconnect and try again." = "The tab is no longer available. Reconnect and try again.";
+
+"SSH sign-in required" = "SSH sign-in required";
+"Check connection settings" = "Check connection settings";
+"Herdr could not start" = "Herdr could not start";
+"Install Herdr to continue" = "Install Herdr to continue";
+"Start Herdr to open your local spaces." = "Start Herdr to open your local spaces.";
+"Start this session in Herdr, or check its path in Connections." = "Start this session in Herdr, or check its path in Connections.";
+"Connect to this host in Terminal, then retry." = "Connect to this host in Terminal, then retry.";
+"Check that Herdr is running on this device. We’ll reconnect automatically." = "Check that Herdr is running on this device. We’ll reconnect automatically.";
+"Review this device in Connections, then retry." = "Review this device in Connections, then retry.";
+"Check the details, then try starting Herdr again." = "Check the details, then try starting Herdr again.";
+"Install the Herdr CLI, then return here to start it." = "Install the Herdr CLI, then return here to start it.";
+"Starting Herdr…" = "Starting Herdr…";
+"Start Herdr" = "Start Herdr";
+"Install Herdr…" = "Install Herdr…";
+"Connection Details" = "Connection Details";
+"Copy Details" = "Copy Details";
+"Connections…" = "Connections…";
+"Herdr is not running" = "Herdr is not running";
+"Session unavailable" = "Session unavailable";
+"Unable to connect" = "Unable to connect";

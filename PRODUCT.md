@@ -25,5 +25,7 @@ Interaction evidence lives in [docs/accm-fidelity/evidence/native-checks.json](d
 
 The 0.1.8 [app updater](docs/app-updates/VALIDATION.md) provides automatic checks, optional background download/install on quit, and manual checks from the app menu and About. Signed feed and archive verification precede installation. Automatic checks default on; automatic downloads default off.
 
+Local connection recovery can invoke Herdr’s existing headless server command on explicit user request for a recognized default or named session. It provides presentation, readiness checks and failure recovery, not a new session protocol, automatic service supervisor or installation system. Custom sockets and remote server lifecycle remain configured in Herdr. See [connection recovery validation](docs/connection-recovery/VALIDATION.md).
+
 ## Brand commitments
 HerdrX. Simple, recognizable icon, inspired by Ghostty's clarity with original artwork and native macOS packaging. Distribution primarily uses cleanwk/homebrew-tap, with GitHub Actions release packaging.

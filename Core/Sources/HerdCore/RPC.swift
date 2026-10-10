@@ -24,7 +24,7 @@ public struct RPC: Sendable {
             let result = withUnsafePointer(to: &address) { p in
                 p.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
             }
-            guard result == 0 else { throw Failure("Cannot connect to \(path): \(String(cString: strerror(errno)))") }
+            guard result == 0 else { throw SocketConnectionError(path: path, code: errno) }
             let id = UUID().uuidString
             let request = try JSONEncoder().encode(JSON.object(["id": .string(id), "method": .string(method), "params": .object(params)])) + Data([10])
             try request.withUnsafeBytes { raw in
