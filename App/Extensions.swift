@@ -65,14 +65,14 @@ struct ExtensionSettings: View {
         var context: [String: JSON] = ["invocation_source": .string("gui")]
         if desk.selectedDevice == deviceID {
             if let workspace = desk.selectedSpace { context["workspace_id"] = .string(workspace) }
-            context["tab_id"] = .string(desk.selectedTab)
+            if !desk.selectedTab.isEmpty { context["tab_id"] = .string(desk.selectedTab) }
             if let pane = desk.currentPane { context["focused_pane_id"] = .string(pane.id); context["focused_pane_cwd"] = pane.cwd.map(JSON.string) ?? .null; context["focused_pane_agent"] = pane.agent.map(JSON.string) ?? .null }
         }
         return context
     }
     func available(_ action: JSON) -> Bool {
         let scopes = action["contexts"].array.compactMap(\.string)
-        return scopes.isEmpty || scopes.contains("global") || (desk.selectedDevice == deviceID && (scopes.contains("workspace") || scopes.contains("tab") || (scopes.contains("pane") && desk.focused != nil)))
+        return scopes.isEmpty || scopes.contains("global") || (desk.selectedDevice == deviceID && ((scopes.contains("workspace") && desk.selectedSpace != nil) || (scopes.contains("tab") && !desk.selectedTab.isEmpty) || (scopes.contains("pane") && desk.currentPane != nil)))
     }
     func run(_ action: @escaping (RPC) async throws -> Void) {
         Task { busy = true; error = nil; do { try await action(desk.rpc(deviceID)); await refresh() } catch { self.error = error.localizedDescription }; busy = false }

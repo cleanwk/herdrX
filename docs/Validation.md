@@ -4,7 +4,7 @@
 
 ## 自动验证
 
-- 纯核心 release 测试 9 项通过：NDJSON 分片/限幅、设备隔离、Herdr 插件记录、400 条搜索及拼音、拒绝不完整快照、真实 Unix socket 大响应重组、响应身份拒绝、事务性降级、events_lost 报错。
+- 纯核心 release 测试 10 项通过：NDJSON 分片/限幅、设备隔离、Herdr 插件记录、400 条搜索及拼音、拒绝不完整快照、真实 Unix socket 大响应重组、响应身份拒绝、快照错误直接报告及 argv 参数边界、events_lost 报错。
 - 发布契约 Python 测试 4 项通过：有效 cask、接受明确标记的 ad-hoc 包，拒绝错误架构/错误版本/错误摘要、拒绝预览与注入 tag。
 - SwiftPM、Xcode 原生 Debug 和 universal Release 构建通过；真实二进制包含 arm64 与 x86_64，codesign --verify --deep --strict 通过。开发预览 ZIP 已生成，公证标记为 false；最终 universal 应用已实际启动，标签、分屏和终端输出正常，文件浏览入口已移除。
 - 原始插画、1024 图标输入及 native preview 都保留生成来源，Icon Composer 编译通过，legacy ICNS 含完整 16–1024 尺寸。
@@ -20,3 +20,7 @@
 未进行真实远端 SSH、第三方插件动作及面板执行、Intel 机器运行、macOS 14/15 运行、第三方语音输入法或全部 Agent TUI 的验收。Universal 架构验证不等同于 Intel 实机验证。400 条搜索测试不代表 400 个活跃终端的内存或吞吐指标。
 
 Developer ID 与公证凭据为可选；默认采用 ad-hoc 签名。正式 Release 与安装后 Brew 升级的端到端验证在首次版本发布后完成。发布同步脚本和门槛已通过本地契约测试。
+
+## Herdrm 对比后的验证
+
+实际 Brew 安装 v0.1.2，核对下载包与安装后的二进制一致；本 App 放行后冷启动、本地命令输出、分屏通过。没有关闭全局 Gatekeeper或使用管理员密码。新增功能与验收限制见 [Comparison](Comparison.md)。临时 Herdr 实例验证创建/重命名 Space、创建 Tab及工具目录，完成后已停止。真实 SSH 重连和通知点击仍需实际环境验收。

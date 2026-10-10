@@ -47,6 +47,12 @@ final class TerminalView: AppTerminalView {
     override func setFrameSize(_ size: NSSize) { if visible { super.setFrameSize(size) } }
     override func layout() { if visible { super.layout() } }
     override func becomeFirstResponder() -> Bool { let result = super.becomeFirstResponder(); if result { onFocus?() }; return result }
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        // Application menu shortcuts must reach AppKit before Ghostty's bindings.
+        if event.modifierFlags.intersection([.command, .control, .option, .shift]) == .command,
+           [12, 43].contains(event.keyCode) { return false } // ⌘Q and ⌘,
+        return super.performKeyEquivalent(with: event)
+    }
     override func keyUp(with event: NSEvent) {
         if event.modifierFlags.contains(.command) && event.keyCode == 9 { return }
         super.keyUp(with: event)

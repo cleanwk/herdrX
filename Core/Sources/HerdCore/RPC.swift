@@ -5,7 +5,7 @@ import Darwin
 public struct RPC: Sendable {
     public let path: String
     public init(path: String) { self.path = path }
-    public func call(_ method: String, _ params: [String: JSON] = [:]) async throws -> JSON {
+    public func call(_ method: String, _ params: [String: JSON] = [:], timeout: Int = 15) async throws -> JSON {
         let path = path
         return try await Task.detached {
             let fd = socket(AF_UNIX, SOCK_STREAM, 0)
@@ -14,7 +14,7 @@ public struct RPC: Sendable {
             _ = fcntl(fd, F_SETFD, FD_CLOEXEC)
             var noPipe: Int32 = 1
             setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &noPipe, 4)
-            var timeout = timeval(tv_sec: 15, tv_usec: 0)
+            var timeout = timeval(tv_sec: min(300, max(1, timeout)), tv_usec: 0)
             setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
             setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
             var address = sockaddr_un(); address.sun_family = sa_family_t(AF_UNIX)
