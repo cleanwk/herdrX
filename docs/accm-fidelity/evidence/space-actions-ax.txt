@@ -1,0 +1,67 @@
+Window: "HerdrX", App: HerdrX.
+0 标准窗口 HerdrX, ID: desk, Secondary Actions: Raise
+	1 container
+		2 按钮 Description: 隐藏侧栏, Help: 切换侧栏 · ⌘B
+		3 滚动区
+			4 单选按钮 收件箱, Help: 1 个面板, Value: 0
+			5 单选按钮 2  2, Description: 2, Help: 2 个面板, Value: 1
+		6 按钮 Description: 新建终端标签页, Help: 新建终端标签页 · ⌘T
+		7 菜单按钮 拆分为二乘一的矩形, Help: 分屏后每个面板至少需要容纳 24 列、6 行。, ID: rectangle.split.2x1
+		8 按钮 Description: 新建, Help: 在 Local 新建空间 · ⌘⇧N
+		9 菜单按钮 向下移动, ID: chevron.down
+		10 按钮 Description: 搜索, Help: 搜索 · ⌘K
+		11 滚动区
+			12 列表 Secondary Actions: AXScrollToTop, AXScrollToBottom
+				13 按钮 Description: acc_tool、main、工作中, Help: acc_tool · /private/tmp/herdrx-fidelity-content/0 · /private/tmp/herdrx-fidelity-content/0
+				14 按钮 (selected) Description: inbox、目录, Help: inbox · /private/tmp/herdrx-fidelity-content/1 · /private/tmp/herdrx-fidelity-content/1
+				15 按钮 Description: 主站重构、main、等待输入, Help: 主站重构 · /private/tmp/herdrx-fidelity-content/2 · /private/tmp/herdrx-fidelity-content/2
+				16 按钮 Description: 文档与快捷键、目录, Help: 文档与快捷键 · /private/tmp/herdrx-fidelity-content/3 · /private/tmp/herdrx-fidelity-content/3
+				17 按钮 Description: 长名称中文工作空间与 English Project、main, Help: 长名称中文工作空间与 English Project · /private/tmp/herdrx-fidelity-content/4 · /private/tmp/herdrx-fidelity-content/4
+				18 按钮 Description: 发布准备、目录, Help: 发布准备 · /private/tmp/herdrx-fidelity-content/5 · /private/tmp/herdrx-fidelity-content/5
+				19 按钮 Description: 修改页面交互、gemini · 主站重构、等待输入, Help: 修改页面交互
+Local
+/Users/kai/.config/herdr/sessions/herdrx-fidelity-20261010/herdr.sock
+主站重构
+/private/tmp/herdrx-fidelity-content/2
+				20 按钮 Description: session 支持评论、codex · acc_tool、忙碌, Help: session 支持评论
+Local
+/Users/kai/.config/herdr/sessions/herdrx-fidelity-20261010/herdr.sock
+acc_tool
+/private/tmp/herdrx-fidelity-content/0
+				21 按钮 Description: workrepo、claude · inbox、已完成, Help: workrepo
+Local
+/Users/kai/.config/herdr/sessions/herdrx-fidelity-20261010/herdr.sock
+inbox
+/private/tmp/herdrx-fidelity-content/1
+				22 按钮 Description: 快捷键与文档、codex · 文档与快捷键、已完成, Help: 快捷键与文档
+Local
+/Users/kai/.config/herdr/sessions/herdrx-fidelity-20261010/herdr.sock
+文档与快捷键
+/private/tmp/herdrx-fidelity-content/3
+				23 按钮 Description: 发布检查、gemini · 发布准备、已完成, Help: 发布检查
+Local
+/Users/kai/.config/herdr/sessions/herdrx-fidelity-20261010/herdr.sock
+发布准备
+/private/tmp/herdrx-fidelity-content/5
+				24 按钮 Description: 长名称中文 Agent 任务与 English layout、claude · 长名称中文工作空间与 English Project、未知, Help: 长名称中文 Agent 任务与 English layout
+Local
+/Users/kai/.config/herdr/sessions/herdrx-fidelity-20261010/herdr.sock
+长名称中文工作空间与 English Project
+/private/tmp/herdrx-fidelity-content/4
+				25 按钮 Description: Local, Help: 折叠分组, Value: 已展开 · 已连接
+				26 按钮 Description: Agent, Help: 折叠分组, Value: 已展开
+		27 按钮 Description: 设备筛选, Value: Local
+		28 按钮 Description: 设置, Help: 设置 · ⌘,
+		29 分离器 Description: 侧栏宽度, Value: 278, Secondary Actions: Increment, Decrement
+		30 分离器 Description: 调整面板宽度, Value: 50, Secondary Actions: Increment, Decrement
+	31 关闭按钮
+	32 全屏幕按钮 Help: 此按钮也可以执行缩放窗口的操作, Secondary Actions: 缩放窗口
+	33 最小化按钮
+34 menu bar
+	35 HerdrX
+	36 文件
+	37 编辑
+	38 显示
+	39 工作区
+	40 窗口
+	41 帮助

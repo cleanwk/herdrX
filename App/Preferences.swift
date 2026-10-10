@@ -7,31 +7,34 @@ import UserNotifications
 
 struct Preferences: View {
     @EnvironmentObject var desk: Desk
-    @State private var selected: String? = "Appearance"
-    private let sections = [("Appearance", "circle.lefthalf.filled"), ("Terminal", "terminal"), ("Connections", "server.rack"), ("About & Updates", "info.circle")]
+    @AppStorage("settingsPage") private var selected = "Appearance"
     var body: some View {
-        NavigationSplitView {
-            List(sections, id: \.0, selection: $selected) { entry in Label(LocalizedStringKey(entry.0), systemImage: entry.1).tag(entry.0) }.listStyle(.sidebar).navigationSplitViewColumnWidth(150)
-        } detail: {
-            Group {
-                switch selected {
-                case "Terminal": TerminalSettings()
-                case "Connections": ConnectionsSettings()
-                case "About & Updates": Updates()
-                default: TabView { Appearance().tabItem { Text("Appearance") }; Notifications().tabItem { Text("Behavior") } }.padding(12)
-
-                }
-            }.frame(maxWidth: .infinity, maxHeight: .infinity)
-        }.frame(width: 740, height: 560)
+        TabView(selection: $selected) {
+            Appearance().tabItem { Label("Appearance", systemImage: "paintbrush.pointed") }.tag("Appearance")
+            TerminalSettings().tabItem { Label("Terminal", systemImage: "terminal") }.tag("Terminal")
+            ConnectionsSettings().tabItem { Label("Connections", systemImage: "server.rack") }.tag("Connections")
+            Notifications().tabItem { Label("Notifications", systemImage: "bell") }.tag("Notifications")
+            TailcatSettings().tabItem { Label("Tailcat", systemImage: "key") }.tag("Tailcat")
+            Updates().tabItem { Label("About", systemImage: "info.circle") }.tag("About")
+        }.frame(width: selected == "Connections" || selected == "Tailcat" ? 600 : 420, height: height)
     }
-
+    var height: CGFloat {
+        switch selected {
+        case "Terminal": 410
+        case "Connections", "Tailcat": 480
+        case "Notifications": 220
+        case "About": 410
+        default: 190
+        }
+    }
 }
+
 private struct ConnectionsSettings: View {
     @State private var page = "Devices"
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Connections", selection: $page) { Text("Devices").tag("Devices"); Text("Advanced: Tailcat").tag("Tailcat"); Text("Advanced: Plugins").tag("Plugins") }.pickerStyle(.segmented).padding(20)
-            switch page { case "Tailcat": TailcatSettings(); case "Plugins": ExtensionSettings(); default: Devices() }
+            Picker("Connections", selection: $page) { Text("Devices").tag("Devices"); Text("Advanced: Plugins").tag("Plugins") }.labelsHidden().pickerStyle(.segmented).padding(16)
+            switch page { case "Plugins": ExtensionSettings(); default: Devices() }
         }
     }
 }
@@ -42,8 +45,7 @@ private struct Devices: View {
     var body: some View {
         Form {
             Section("Saved devices") {
-                Button("Discover Local Herdr Sessions") { desk.discoverSessions() }
-                Button("Import Enabled Herdr Machines") { desk.importHerdrMachines() }
+                HStack { Button("Discover Local Herdr Sessions") { desk.discoverSessions() }; Button("Import Enabled Herdr Machines") { desk.importHerdrMachines() } }
                 ForEach(desk.devices) { device in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
@@ -56,7 +58,7 @@ private struct Devices: View {
                             }
                         }
                         Text(DisplayTitle.detail([device.endpoint.target, device.endpoint.socketPath])).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
-                        Text(desk.connections[device.id] ?? L("Disconnected")).font(.caption).foregroundStyle(.secondary)
+                        Text(L(desk.connections[device.id] ?? "Disconnected")).font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -80,37 +82,72 @@ private struct Devices: View {
     func reset() { draft = ConnectionDraft(); error = nil }
 }
 private struct TerminalSettings: View {
-    @AppStorage("fontSize") private var size = 13.0
-    @AppStorage("fontFamily") private var family = "SF Mono"
+    @AppStorage("fontSize") private var size = 13.5
+    @AppStorage("fontFamily") private var family = Theme.defaultFont
     @AppStorage("lineSpacing") private var spacing = 1.0
     @AppStorage("fontWeight") private var weight = "Regular"
-    @AppStorage("disableMouseReporting") private var noMouse = false
-    @AppStorage("thinStrokes") private var thin = false
-    @AppStorage("copyOnSelect") private var copy = false
+    @AppStorage("disableMouseReporting") private var noMouse = true
+    @AppStorage("thinStrokes") private var thin = true
+    @AppStorage("copyOnSelect") private var copy = true
     @State private var importError: String?
     @State private var families: [String] = ["SF Mono"]
     var body: some View {
-        Form {
-            Picker("Font", selection: $family) { ForEach(families, id: \.self) { Text($0).tag($0) } }
-            HStack { Text("Size (pt)"); Slider(value: $size, in: 9...22, step: 0.5); Stepper(size.formatted(), value: $size, in: 9...22, step: 0.5).monospacedDigit() }
-            HStack { Text("Line spacing"); Slider(value: $spacing, in: 1...1.4, step: 0.05); Text(spacing.formatted()).monospacedDigit() }
-            Picker("Weight (system mono only)", selection: $weight) { ForEach(["Regular", "Medium", "Semibold", "Bold"], id: \.self) { Text(LocalizedStringKey($0)).tag($0) } }.disabled(family != "SF Mono")
-            Toggle("Report mouse input to terminal apps", isOn: Binding(get: { !noMouse }, set: { noMouse = !$0 }))
-            Toggle("Thin strokes", isOn: $thin)
-            Toggle("Copy selection to clipboard", isOn: $copy)
-            Button("Import Ghostty Font Once…") { importGhostty() }
-            if let importError { Text(importError).font(.caption).foregroundStyle(.secondary) }
-            Section("Preview") { Text("~/project $ herdr\n中文输入 · ASCII 0123456789").font(previewFont).lineSpacing(CGFloat((spacing - 1) * size)).padding(12).frame(maxWidth: .infinity, alignment: .leading).background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6)) }
-            Button("Restore Defaults") { size = 13; family = "SF Mono"; spacing = 1; thin = false; copy = false; noMouse = false; weight = "Regular" }
-        }.formStyle(.grouped).onAppear {
+        VStack(alignment: .leading, spacing: 12) {
+            Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 7) {
+                GridRow {
+                    Text("Font").gridColumnAlignment(.trailing)
+                    PreferenceMenu(label: "Font", items: families.map { ($0, $0) }, selection: $family).frame(width: 256, height: 24).frame(maxWidth: .infinity, alignment: .leading)
+                }
+                GridRow {
+                    Text("Size")
+                    HStack(spacing: 10) {
+                        Slider(value: $size, in: 9...22, step: 0.5).accessibilityLabel("Font size")
+                        Text(size.formatted(.number.precision(.fractionLength(1))) + " pt").foregroundStyle(.secondary).monospacedDigit().frame(width: 47, alignment: .trailing)
+                        Stepper("Font size", value: $size, in: 9...22, step: 0.5).labelsHidden().fixedSize()
+                    }
+                }
+                GridRow {
+                    Text("Weight")
+                    Picker("Weight", selection: $weight) { Text("Light weight").tag("Light"); Text("Regular").tag("Regular"); Text("Medium").tag("Medium") }.labelsHidden().pickerStyle(.segmented).frame(width: 150).disabled(family != "SF Mono").help("Font weight is available for SF Mono.")
+                }
+                GridRow {
+                    Text("Line spacing")
+                    HStack(spacing: 12) { Slider(value: $spacing, in: 1...1.4, step: 0.05).accessibilityLabel("Line spacing"); Text("\(Int((spacing * 100).rounded()))%").monospacedDigit().foregroundStyle(.secondary).frame(width: 45, alignment: .trailing) }
+                }
+                GridRow {
+                    Color.clear.frame(width: 0, height: 0)
+                    VStack(alignment: .leading, spacing: 9) {
+                        preferenceToggle("Thin strokes", description: "Use finer font strokes for clear, balanced Agent output.", value: $thin)
+                        preferenceToggle("Mouse reporting", description: "Forward clicks to terminal apps. Hold Shift to select text locally.", value: Binding(get: { !noMouse }, set: { noMouse = !$0 }))
+                        preferenceToggle("Copy on select", description: "Copy text to the clipboard when you finish selecting it.", value: $copy)
+                        HStack(spacing: 10) {
+                            Button("Restore Defaults") { size = 13.5; family = Theme.defaultFont; spacing = 1; thin = true; copy = true; noMouse = true; weight = "Regular" }
+                            Button("Import from Ghostty…") { importGhostty() }
+                        }.tint(.primary).padding(.top, 1)
+                    }
+                }
+            }.fixedSize(horizontal: false, vertical: true)
+            if let importError { Text(importError).font(.system(size: 11)).foregroundStyle(.secondary) }
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Preview").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text("❯ herdr agent attach w1:p1 — 中文 ABC 0123").font(previewFont).lineLimit(2).lineSpacing(CGFloat((spacing - 1) * size)).padding(10).frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(Color(nsColor: Theme.foreground)).background(Color(nsColor: Theme.content), in: RoundedRectangle(cornerRadius: 7))
+            }.padding(.top, 3)
+            Spacer(minLength: 0)
+        }.padding(.horizontal, 17).padding(.top, 20).padding(.bottom, 17).font(.system(size: 13)).onAppear {
             if families.count == 1 { families = Array(Set(NSFontManager.shared.availableFontFamilies.filter { NSFont(name: $0, size: 12)?.isFixedPitch == true } + ["SF Mono", family])).sorted() }
             apply()
         }.onChange(of: size) { apply() }.onChange(of: family) { apply() }.onChange(of: spacing) { apply() }.onChange(of: thin) { apply() }.onChange(of: copy) { apply() }.onChange(of: weight) { apply() }
     }
+    func preferenceToggle(_ title: String, description: String, value: Binding<Bool>) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Toggle(LocalizedStringKey(title), isOn: value).toggleStyle(.checkbox)
+            Text(LocalizedStringKey(description)).font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).padding(.leading, 21)
+        }
+    }
     func apply() { Theme.apply() }
     var previewFont: Font {
         guard family == "SF Mono" else { return .custom(family, size: size) }
-        let selected: Font.Weight = switch weight { case "Medium": .medium; case "Semibold": .semibold; case "Bold": .bold; default: .regular }
+        let selected: Font.Weight = switch weight { case "Light": .light; case "Medium": .medium; case "Semibold": .semibold; case "Bold": .bold; default: .regular }
         return .system(size: size, weight: selected, design: .monospaced)
     }
     func importGhostty() {
@@ -175,28 +212,53 @@ private struct Appearance: View {
     @AppStorage("accent") private var accent = "theme"
     @AppStorage("language") private var language = "system"
     var body: some View {
-        Form {
-            Picker("Appearance", selection: $appearance) { Text("System").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark") }.pickerStyle(.segmented)
-            Picker("Language", selection: $language) { Text("System").tag("system"); Text("简体中文").tag("zh-Hans"); Text("English").tag("en") }
-            Picker("Palette", selection: $palette) { Text("Default").tag("default"); Text("Follow Herdr").tag("herdr"); Text("Catppuccin").tag("catppuccin"); Text("Dracula").tag("dracula"); Text("Nord").tag("nord") }
-            Text("Dracula and Nord use the default palette in light mode. Follow Herdr reads its theme when the app becomes active; unsupported theme families fall back to Default.").font(.caption).foregroundStyle(.secondary)
-            Picker("Accent", selection: $accent) { ForEach(["theme", "graphite", "green", "blue", "purple", "amber", "pink", "red", "orange"], id: \.self) { Text(LocalizedStringKey($0.capitalized)).tag($0) } }
-            Text("Applies to navigation, pane focus and existing terminals. Terminal sessions and scrollback are preserved.").font(.caption).foregroundStyle(.secondary)
-        }.formStyle(.grouped)
+        VStack(alignment: .leading, spacing: 7) {
+            row("Color mode") {
+                VStack(alignment: .leading, spacing: 4) {
+                    Picker("Color mode", selection: $appearance) { Text("System mode").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark") }.labelsHidden().pickerStyle(.segmented).frame(width: 150)
+                    Text("Session appearance follows the app theme.").font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+            }
+            row("Palette") { PreferenceMenu(label: "Palette", items: Theme.palettes, selection: $palette).frame(width: 120, height: 24) }
+            row("Accent") {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        ForEach(Theme.accents, id: \.self) { name in
+                            Button { accent = name } label: {
+                                Circle().fill(Color(nsColor: Theme.accent(name))).frame(width: 16, height: 16).padding(3)
+                                    .overlay(Circle().stroke(accent == name ? Color(nsColor: Theme.accent(name)) : .clear, lineWidth: 1.5))
+                            }.buttonStyle(.plain).help(L(name.capitalized)).accessibilityLabel(L(name.capitalized)).accessibilityAddTraits(accent == name ? .isSelected : [])
+                        }
+                        Button("Follow theme") { accent = "theme" }.buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(.secondary).fixedSize().accessibilityAddTraits(accent == "theme" ? .isSelected : [])
+                    }
+                    Text("Pane focus, active tabs and selection.").font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            row("Language") { PreferenceMenu(label: "Language", items: [("system", "System"), ("zh-Hans", "简体中文"), ("en", "English")], selection: $language).frame(width: 100, height: 24) }
+            Spacer(minLength: 0)
+        }.font(.system(size: 13)).padding(.horizontal, 25).padding(.top, 20)
+    }
+    func row<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text(LocalizedStringKey(label)).frame(width: 48, alignment: .trailing).padding(.top, 3)
+            content().frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 }
+
 private struct Notifications: View {
     @AppStorage("notifications") private var enabled = false
     @AppStorage("silentNotifications") private var silent = false
     @State private var status = "Checking permission…"
     var body: some View {
-        Form {
+        VStack(alignment: .leading, spacing: 12) {
             Toggle("Notify when agents need input or finish", isOn: $enabled)
             Toggle("Play a sound", isOn: Binding(get: { !silent }, set: { silent = !$0 })).disabled(!enabled)
-            Text("Agents you are currently watching stay quiet. Click a notification to return to its terminal.").font(.caption).foregroundStyle(.secondary)
-            Text(LocalizedStringKey(status)).foregroundStyle(.secondary)
-            Button("Open Notification Settings") { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!) }
-        }.formStyle(.grouped).onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in Task { await permission() } }.task { await permission() }.onChange(of: enabled) { _, value in
+            Text("Agents you are currently watching stay quiet. Click a notification to return to its terminal.").font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Text(LocalizedStringKey(status)).font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Button("Open Notification Settings") { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!) }.tint(.primary)
+            Spacer(minLength: 0)
+        }.toggleStyle(.checkbox).font(.system(size: 13)).padding(24).onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in Task { await permission() } }.task { await permission() }.onChange(of: enabled) { _, value in
             Task { if value { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) }; await permission() }
         }
     }

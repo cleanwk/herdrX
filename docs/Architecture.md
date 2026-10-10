@@ -23,7 +23,7 @@ PTY 负责原始 ANSI 字节。读写在串行 IO 队列上执行，直接连接
 
 ## 身份与生命周期
 
-终端缓存唯一使用 `DeviceID + PaneID`，不随 Agent 检测状态改变。独立 Shell 使用客户端所有的 pane key，不保证服务器会话持久性。Agent attach 使用 Pane ID，普通终端 attach 使用 Terminal ID。每次 PTY 启动都有代次；旧进程 read/write/exit 都受当前 run 保护，旧退出回调无法结束新 attach。被其他客户端接管后不自动抢回。
+终端缓存唯一使用 `DeviceID + PaneID`，不随 Agent 检测状态改变。独立客户端 Shell、对应列表和创建入口已移除；本机及远端终端均从 Herdr Space 的 Tab / Pane 拓扑进入。Agent attach 使用 Pane ID，普通终端 attach 使用 Terminal ID。每次 PTY 启动都有代次；旧进程 read/write/exit 都受当前 run 保护，旧退出回调无法结束新 attach。被其他客户端接管后不自动抢回。
 
 RPC 连通、attach 存活、表面可见及 Agent 状态分别保存。断线只更新对应设备的错误，保留最后完整快照。旧请求完成后会检查取消状态与刷新 token，避免覆盖更新的读取或重新插入已删除设备。
 
@@ -43,20 +43,24 @@ RPC 连通、attach 存活、表面可见及 Agent 状态分别保存。断线�
 
 2026-10-10 的后续 UX 审计与用户补充已覆盖旧复刻范围：移除 Agent 启动器、文件树、预览、传输、附件投递及独占服务。`CommandProcess` 仅供连接发现与 Git 元数据读取，不包含文件传输 API。普通终端文本粘贴仍交给 Ghostty。原有偏好键保持惰性，不清理用户文件。Tailcat 使用独立 Go helper 将控制端口 6464/终端端口 6465 桥接到私有 Unix socket，令牌经 stdin 传入、身份和令牌存于 HerdrX 独立 Keychain service；未获得真实 host，所以源码和 universal 构建通过不代表真实连接已验收。没有额外的 Schema 表单、ACC 提供商或插件市场。
 
-终端兼容性沿用固定版本的 Ghostty，并实现空闲 IME 插入点、Kitty 模式恢复和隐藏尺寸守卫。未复制参考项目的 ANSI 颜色改写器；Pi 等 Agent 的浅色光标及第三方语音输入法仍需要真实环境验收。本次运行与性能证据以 `docs/parity/STATUS.md` 及其 evidence 为准，不沿用参考项目历史指标。
+终端兼容性沿用固定版本的 Ghostty，并实现空闲 IME 插入点、Kitty 模式恢复和隐藏尺寸守卫。未复制参考项目的 ANSI 颜色改写器；Pi 等 Agent 的浅色光标及第三方语音输入法仍需要真实环境验收。当前 ACCM 改版的运行证据在 `docs/accm-fidelity/evidence`，旧 parity / UX 审计记录保留其历史范围，不作为本轮全部通过的依据。
 
-Agent 创建读取 `integration.list` 的 available 工具，不再硬编码 CLI。参数解析为 argv，不作 shell 展开；默认工具执行交给 `agent.start`。本机显式命令覆盖经登录 PATH 检查和 shell 参数引用后写入新 Pane，再等待服务端识别；本机覆盖不会传给远端。快速新空间读取目标 Pane 的当前目录，使用 `workspace.create` 并选择返回的 Space；高级表单保留明确设备、名称和目录。通知仅由 Agent 状态转换产生，携带设备与 Pane 路由；当前正在看的 Agent 不提醒。
+用户在 Space 内直接运行 CLI，Herdr 识别 Agent 后客户端呈现标题、状态和导航；没有专用 Agent 启动器、`agent.start` 操作或命令覆盖设置。快速新空间读取目标 Pane 的当前目录，使用 `workspace.create` 并选择返回的 Space；高级表单保留明确设备、名称和目录。Space 内新标签和分屏仍通过 Herdr RPC 创建。通知仅由 Agent 状态转换产生，携带设备与 Pane 路由；当前正在看的 Agent 不提醒。
 
-客户端注意力由 HerdCore.Attention 管理，与通知开关分离。TabOrder 保存以相邻 Tab 为锚点的意图队列，串行提交失败后只移除失败操作，后续意图继续投影。文件浏览器以根代次与预览请求 ID 丢弃过期结果。
+客户端注意力由 HerdCore.Attention 管理，与通知开关分离。TabOrder 保存以相邻 Tab 为锚点的意图队列，串行提交失败后只移除失败操作，后续意图继续投影。
+
+`App/Theme.swift` 将十个 GhosttyTheme 主题族映射到浅深色终端及工作区颜色；HerdrX Default 使用 Catppuccin，Follow Herdr 通过 `HerdCore.ThemePreference` 只读解析本机 `[theme].name`，未匹配时回退 Catppuccin。Dracula / Vesper 的浅色是 HerdrX 自定义配套，不能称为上游官方预设。外观模式、配色与强调色独立保存，更新主题配置不重建会话。设置使用六个原生顶部图标页：外观、终端、连接、通知、Tailcat、关于。`PreferenceMenu` 比较非分隔菜单项以保持未变菜单稳定。
 
 ## 构建与验收
 
-`project.yml` 保留 SwiftUI/AppKit、HerdCore 和固定 Ghostty 依赖。Tailcat helper 使用 Go modules，`scripts/tailcat.sh` 构建 arm64/x86_64 后 lipo 合并，由 Xcode post-build 打包并签名。新构建依赖 Go（go.mod 指定工具链），SSH 文件服务依赖目标 Python 3。文件传输不经过终端输入或 Herdr RPC。第三方许可归档在 Resources/Licenses/Tailcat。
+`project.yml` 保留 SwiftUI/AppKit、HerdCore 和固定 Ghostty 依赖。Tailcat helper 使用 Go modules，`scripts/tailcat.sh` 构建 arm64/x86_64 后 lipo 合并，由 Xcode post-build 打包并签名。构建依赖 Go（go.mod 指定工具链）；本客户端已无 SSH 文件服务或传输模块。第三方许可归档在 Resources/Licenses/Tailcat。
 
 DEBUG 可通过 `HERDRX_STATE_DIR` 隔离设备存储，`HERDRX_WINDOW_SIZE` 指定验证窗口，`HERDRX_DIAGNOSTICS` 输出 surface 身份和可见/隐藏 frame；正式运行不会默认记录这些诊断。验收只操作独立命名会话和私有 SSH fixture，不连接已有用户工作 Pane。原生事件、截图、纯状态测试与源码审查分开标记，不能相互替代。
+
+ACCM 验证使用 `herdrx-fidelity-20261010` 隔离会话。Agent 状态与示例输出是合成夹具，PTY / attach / RPC 真实运行。原生操作记录覆盖 Space 内标签、分屏、输入、主题切换及恢复终端默认值；全菜单选择只证明菜单和偏好绑定，视觉对照只覆盖 Catppuccin 浅色和 Tokyo Night 深色。Tailcat、SSH、通知权限与投递、VoiceOver、IME、旧版 macOS 和所有主题/强调色对比度未在本轮完成运行验收；不声明像素一致，也没有新发布。
 
 ## 本轮交互规则
 
 标题投影、精确快捷键匹配、搜索稳定选择和相邻标签回落放在 HerdCore 的小型纯模型中。搜索索引复用未变化名称/上下文的拼音缓存；AppKit NSTextField 处理方向键和 Return，并先尊重 marked text。Desk 的写操作锁按设备与对象/意图区分，导航不因其他对象忙碌而锁住。创建和插件动作捕获原目标；显式导航有焦点版本号，后台快照和布局不主动抢 first responder。
 
-高级创建与搜索取消恢复原焦点；显式选择目标时恢复新目标。服务器关闭确认显示设备、名称与受影响 Pane 数。本机关闭通过前台进程组和 shell 身份检查，对运行或无法确认空闲的进程显示确认。隐藏应用只暂停表面绘制，保留 attach；不在恢复时自动接管其他客户端。
+高级创建与搜索取消恢复原焦点；显式选择目标时恢复新目标。服务器关闭确认显示设备、名称与受影响 Pane 数。本机 Space 内 Pane 仍遵循服务器会话关闭流程；不再存在独立 Shell 的关闭分支。隐藏应用只暂停表面绘制，保留 attach；不在恢复时自动接管其他客户端。

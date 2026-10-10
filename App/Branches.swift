@@ -10,7 +10,7 @@ struct BranchState {
         switch phase {
         case .loading: L("Loading directory…")
         case .branch: value
-        case .directory: value.isEmpty ? L("Directory") : value
+        case .directory: L("Directory")
         case .failed: L("Directory unavailable")
         case .stale: value + " · " + L("stale")
         }
