@@ -50,3 +50,8 @@ The explicit follow-up supersedes older tab/icon/pane geometry above: 28pt bar, 
 ## 2026-10-10 recovery and scroll follow-up
 
 Keep tab document height equal to its viewport and lock all vertical origins to zero, including wheel input, automatic reveals and resize. Horizontal overflow and Shift-wheel remain usable; no elastic bounce. Connection recovery uses short status text, one primary action and an accessible info button. Center the empty-canvas group, constrain long names, and preserve the 200pt sidebar minimum. Startup reuses native Herdr CLI commands only for recognized local sessions; snapshots remain authoritative. Current evidence and bounded inline finish verdict: [validation](../../docs/connection-recovery/VALIDATION.md), [review](../../docs/connection-recovery/FINISH-REVIEW.md). No new shipping raster assets.
+
+
+## 2026-10-10 pane spacing follow-up
+
+The latest explicit native-Herdr direction supersedes the earlier shared-edge/window-flush geometry. Keep independent square pane outlines, 8pt inner gutters and an 8pt outer inset at the left/right/bottom even when the sidebar is hidden. The existing approximately 11pt title reserve supplies the top perimeter gap; remove the extra 6pt canvas band. Pane outlines are 1.5pt at 2× and pixel-quantized to 2pt at 1×. Preserve the requested 28pt/22pt tab geometry, existing title and close actions, and authoritative Herdr rectangles/RPC. Check all four sides together, not only the changed edge. Current evidence and inline finish verdict: [validation](../../docs/pane-spacing/VALIDATION.md), [review](../../docs/pane-spacing/FINISH-REVIEW.md). No shipping raster assets added.

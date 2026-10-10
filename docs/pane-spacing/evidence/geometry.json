@@ -1,0 +1,178 @@
+{
+  "nativeReference": "Herdr GPUI 20261008.1; read-only observation",
+  "fixtureSession": "herdrx-pane-gutters-20261010",
+  "paneCount": 6,
+  "layout": [
+    {
+      "workspace_id": "w1",
+      "tab_id": "w1:t1",
+      "zoomed": false,
+      "area": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 40
+      },
+      "focused_pane_id": "w1:p1",
+      "panes": [
+        {
+          "pane_id": "w1:p1",
+          "focused": true,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 56,
+            "height": 22
+          }
+        },
+        {
+          "pane_id": "w1:p3",
+          "focused": false,
+          "rect": {
+            "x": 0,
+            "y": 22,
+            "width": 56,
+            "height": 18
+          }
+        },
+        {
+          "pane_id": "w1:p2",
+          "focused": false,
+          "rect": {
+            "x": 56,
+            "y": 0,
+            "width": 64,
+            "height": 22
+          }
+        },
+        {
+          "pane_id": "w1:p4",
+          "focused": false,
+          "rect": {
+            "x": 56,
+            "y": 22,
+            "width": 64,
+            "height": 18
+          }
+        }
+      ],
+      "splits": [
+        {
+          "id": "split_0_root",
+          "direction": "right",
+          "ratio": 0.46570775,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 120,
+            "height": 40
+          }
+        },
+        {
+          "id": "split_1_0",
+          "direction": "down",
+          "ratio": 0.54399323,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 56,
+            "height": 40
+          }
+        },
+        {
+          "id": "split_2_1",
+          "direction": "down",
+          "ratio": 0.5519141,
+          "rect": {
+            "x": 56,
+            "y": 0,
+            "width": 64,
+            "height": 40
+          }
+        }
+      ]
+    },
+    {
+      "workspace_id": "w1",
+      "tab_id": "w1:t2",
+      "zoomed": false,
+      "area": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 40
+      },
+      "focused_pane_id": "w1:p5",
+      "panes": [
+        {
+          "pane_id": "w1:p5",
+          "focused": true,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 65,
+            "height": 40
+          }
+        },
+        {
+          "pane_id": "w1:p6",
+          "focused": false,
+          "rect": {
+            "x": 65,
+            "y": 0,
+            "width": 55,
+            "height": 40
+          }
+        }
+      ],
+      "splits": [
+        {
+          "id": "split_0_root",
+          "direction": "right",
+          "ratio": 0.54196304,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 120,
+            "height": 40
+          }
+        }
+      ]
+    }
+  ],
+  "measurements": [
+    {
+      "window": [
+        1200,
+        760
+      ],
+      "sidebar": 260,
+      "canvas": [
+        923,
+        723
+      ]
+    },
+    {
+      "window": [
+        980,
+        620
+      ],
+      "sidebar": 260,
+      "canvas": [
+        703,
+        583
+      ]
+    },
+    {
+      "window": [
+        1200,
+        760
+      ],
+      "sidebar": "hidden",
+      "canvas": [
+        1184,
+        723
+      ]
+    }
+  ]
+}

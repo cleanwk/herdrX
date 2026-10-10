@@ -109,7 +109,7 @@ rounded:
   agent-selection: "7pt"
   font-preview: "7pt"
   reconnect: "8pt"
-  pane-outer-bottom: "11pt"
+  pane: "0pt"
 spacing:
   sidebar-row-x: "8pt"
   sidebar-content-indent: "18pt"
@@ -121,7 +121,9 @@ spacing:
   content-inset: "12pt"
   toolbar-inset: "16pt"
   creation-inset: "24pt"
-  canvas-top-clearance: "6pt"
+  canvas-top-clearance: "0pt"
+  canvas-edge-inset: "8pt"
+  pane-split-gap: "8pt"
   tab-strip-inset-x: "8pt"
   tab-strip-inset-y: "3pt"
   tab-gap: "4pt"
@@ -285,7 +287,7 @@ The selected family supplies the shared terminal/workbench ground. Explicit per-
 ### Neutral
 
 - **Catppuccin ground and text:** HerdrX Default currently resolves to Latte/Mocha, as does the explicit Catppuccin family. The prior white/grey default tokens are obsolete.
-- **Semantic text and palette-derived chrome:** `Theme.content` uses the selected definition's background; navigation foreground starts from the family's explicit frontmatter foreground seed. Chrome blends background toward that seed by 0.025 light / 0.06 dark. Secondary starts from a 0.20 blend of that seed toward background in both appearances. `ThemeColors.readable` then adjusts foreground, secondary, accent and state roles toward black or white only as needed to reach 4.5:1 against canvas, chrome, hover and the strongest sidebar/tab selections. Unfocused pane borders use adjusted foreground at 0.16. Native settings controls retain platform text and rendering; app tint follows the selected accent.
+- **Semantic text and palette-derived chrome:** `Theme.content` uses the selected definition's background; navigation foreground starts from the family's explicit frontmatter foreground seed. Chrome blends background toward that seed by 0.025 light / 0.06 dark. Secondary starts from a 0.20 blend of that seed toward background in both appearances. `ThemeColors.readable` then adjusts foreground, secondary, accent and state roles toward black or white only as needed to reach 4.5:1 against canvas, chrome, hover and the strongest sidebar/tab selections. Unfocused pane borders use adjusted foreground at 0.28. Native settings controls retain platform text and rendering; app tint follows the selected accent.
 - **Tokyo Day slate:** HerdrX adapts the upstream blue default to the `tokyo-light-foreground` token for terminal default, cursor, selection foreground and ANSI 0, with `tokyo-light-ansi-bright-black` for ANSI 8. Cursor text uses the background. This is an authored adaptation, not an incorrectly copied upstream definition.
 - **Gruvbox Light and Rosé Pine Dawn:** the named HerdrX light definitions set ANSI 0 to each upstream default foreground so black text remains dark on pale diff fills.
 - **Dracula and Vesper light companions:** the frontmatter holds HerdrX-authored ground/text pairs. Source ANSI brightness is first capped at 0.55, selection uses the source-defined companion color, and cursor follows foreground. The chromatic adjustment below then applies. These companions are not upstream official light variants.
@@ -331,7 +333,7 @@ The sidebar uses the default width token only when no saved width exists, persis
 
 Space and Agent text starts approximately 36pt from the window's left edge: sidebar inset + row padding + content indent. Two native text lines, their shared line gap and distinct vertical padding produce approximately 45pt Space and 51pt Agent fills. These are rendered targets, not additional fixed-height constraints. Device connection dots follow the device name. State words reserve their own width at the Agent row's trailing edge.
 
-Tabs use measured text plus 18pt (9pt on each side), clamped to 40–200pt, inside a shared 28pt integrated bar. Each pill is 22pt high with 3pt above/below, 8pt leading inset and 4pt gaps. Active tabs have 11% accent wash and a 1pt accent outline; inactive tabs have 6% neutral wash and secondary text. Overflow scrolls horizontally; selection reveals the active tab. Split rectangles share pixel-aligned boundaries. Outer edges use a 0.5pt inset for the 1pt stroke; the first title outline remains 11pt inside the canvas (46pt below window top including bar/divider/clearance). Internal split edges coincide without rounded gaps.
+Tabs use measured text plus 18pt (9pt on each side), clamped to 40–200pt, inside a shared 28pt integrated bar. Each pill is 22pt high with 3pt above/below, 8pt leading inset and 4pt gaps. Active tabs have 11% accent wash and a 1pt accent outline; inactive tabs have 6% neutral wash and secondary text. Overflow scrolls horizontally; selection reveals the active tab. Each pane owns a separate pixel-aligned outline with an 8pt gap between adjacent pane frames. The canvas has an 8pt inset on its left, right and bottom, with or without the sidebar. The title outline supplies approximately 11pt of top clearance below the tab divider; do not stack additional top padding on it. The first outline is approximately 40pt below the window top (28pt bar + 1pt divider + 11pt title reserve). This preserves breathing room on all four sides without the previous extra 6pt band.
 
 `PaneMetrics` owns the 4pt terminal content inset, 24pt header, 8pt horizontal overhead and 28pt vertical overhead. Terminal views use these same values as `Desk.minimumPaneSize` and split eligibility, keeping the space reserved for chrome consistent with the intended minimum of 24 columns and six rows. The minimum pane is `max(160, font × 0.65 × 24 + 8)` by `max(100, font × 1.5 × 6 + 28)` points, with a 13.5pt fallback font. Split handles are seven points wide; keyboard/accessibility adjustment moves five percentage points within those minimum bounds.
 
@@ -347,7 +349,7 @@ There is no authored shadow or motion vocabulary. Theme surfaces, thin outlines,
 
 ## Shapes
 
-Use the component-specific frontmatter radii for rows, tabs, preview, search and recovery. Pane top and internal split edges are square. Windowed outer bottom corners use an 11pt continuous curve (`UnevenRoundedRectangle`), with the left corner rounded only when the sidebar is hidden. Full-screen corners remain square. The terminal layer uses the same continuous shape with a concentric 7.5pt mask (4pt content inset minus 0.5pt border inset). Shared split lines remain 1pt, with focused edges drawn last. Accent controls retain their native circular geometry.
+Use the component-specific frontmatter radii for rows, tabs, preview, search and recovery. All pane corners are square, following the native Herdr reference. The entire pane area now sits inside the window contour, so pane outlines no longer borrow the window corner radius or require terminal corner masks. Strokes are 1.5pt on Retina and round to 2pt on 1× displays to keep both stroke edges on backing pixels. Each outline is inset by half the stroke width. Internal edges are independent, not overdrawn shared lines. Accent controls retain their native circular geometry.
 
 ## Components
 
@@ -363,7 +365,7 @@ Task titles share the pane display-title source. Context combines tool, Space an
 
 AppKit tabs combine native type, natural widths, accent selection and neutral theme hover. `TabMetrics` shares bar height, tab height, strip inset, gap and radius with the SwiftUI host. Reordering shows a two-point accent marker centered in the gap and edge scrolling. Tabs expose radio-button selection and pane-count help. Unchanged title/selection/count inputs reuse button layout; pane counts are grouped once per tab-list evaluation.
 
-Pane titles sit in a background-colored top-border cutout. The cutout begins nine points inside the pane frame, has four points before the main text and ten points between main/context runs. Main text receives at most 64% of available title width when context exists. Focused panes use accent outlines/titles; inactive panes use foreground at 28% and secondary title text. Topmost titles retain the border cutout; internal-row titles sit below their straight shared edge. Close stays at 50% opacity for the focused pane and 100% during pane/button hover or VoiceOver. Visibility changes ease out over 150ms (immediate under Reduce Motion); invisible buttons do not hit-test or expose an accessibility element. The backing remains opaque during fades. Header context menus target the clicked pane, and ⌘⇧W invokes the existing Close Pane action; zoom exposes Restore. Both use 22pt native button targets, with a 9pt semibold close symbol and a 10pt medium restore symbol. Hover/pressed fills use theme foreground at 0.07/0.14 with a 4pt corner radius inside a 2pt inset, and the controls retain native focus treatment. Full title/context remains attached to the terminal's help and accessibility label. Native splitters expose values, bounds and keyboard/accessibility adjustment.
+Pane titles sit in a background-colored top-border cutout. The cutout begins nine points inside the pane frame, has four points before the main text and ten points between main/context runs. Main text receives at most 64% of available title width when context exists. Focused panes use accent outlines/titles; inactive panes use foreground at 28% and secondary title text. Every row uses the same top-border title cutout. PaneMetrics applies half of the 8pt gutter to each adjacent frame; terminal content, titles, hover and close controls all use that frame. The 7pt resize target remains in the gutter, and split minimums include the largest gutter inset. Close stays at 50% opacity for the focused pane and 100% during pane/button hover or VoiceOver. Visibility changes ease out over 150ms (immediate under Reduce Motion); invisible buttons do not hit-test or expose an accessibility element. The backing remains opaque during fades. Header context menus target the clicked pane, and ⌘⇧W invokes the existing Close Pane action; zoom exposes Restore. Both use 22pt native button targets, with a 9pt semibold close symbol and a 10pt medium restore symbol. Hover/pressed fills use theme foreground at 0.07/0.14 with a 4pt corner radius inside a 2pt inset, and the controls retain native focus treatment. Full title/context remains attached to the terminal's help and accessibility label. Native splitters expose values, bounds and keyboard/accessibility adjustment.
 
 Ghostty surfaces remain mounted as workspaces are hidden. Layout and explicit focus requests are separate, and hidden views are not assigned visible frames. Ended attachments offer Reconnect with ownership confirmation where required. Removing independent Shell support does not remove Space-owned PTYs or terminal settings.
 
