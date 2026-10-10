@@ -1,6 +1,15 @@
 import AppKit
 import SwiftUI
 
+/// Shared with the SwiftUI host so tab content cannot touch the window edge.
+enum TabMetrics {
+    static let barHeight: CGFloat = 34
+    static let height: CGFloat = 24
+    static let inset: CGFloat = 6
+    static let gap: CGFloat = 6
+    static let radius: CGFloat = 5
+}
+
 struct TabEntry: Equatable { let id: String; let title: String; let count: Int }
 
 struct Tabs: NSViewRepresentable {
@@ -18,7 +27,9 @@ struct Tabs: NSViewRepresentable {
         let navigate = strip.scope != scope || strip.selected != selected
         if strip.scope != scope { strip.stopDrag() }; strip.scope = scope; strip.writable = writable
         strip.entries = entries; strip.selected = selected; strip.select = select; strip.move = move; strip.rename = rename; strip.close = close
-        strip.syncButtons(); strip.frame.size = NSSize(width: max(scroll.bounds.width, strip.buttons.last?.frame.maxX ?? 0), height: 28); strip.needsDisplay = true
+        strip.syncButtons()
+        strip.frame.size = NSSize(width: max(scroll.bounds.width, (strip.buttons.last?.frame.maxX ?? 0) + TabMetrics.inset), height: TabMetrics.barHeight)
+        strip.needsDisplay = true
         if navigate { strip.revealSelection() }
     }
     final class Strip: NSView {
@@ -47,13 +58,13 @@ struct Tabs: NSViewRepresentable {
         func syncButtons() {
             while buttons.count > entries.count { buttons.removeLast().removeFromSuperview() }
             while buttons.count < entries.count { let button = TabButton(); button.isBordered = false; button.bezelStyle = .regularSquare; button.target = self; button.action = #selector(pressed(_:)); button.lineBreakMode = .byTruncatingTail; addSubview(button); buttons.append(button) }
-            var x: CGFloat = 2
+            var x = TabMetrics.inset
             for (index, button) in buttons.enumerated() {
                 button.tag = index; button.title = entries[index].title + (entries[index].count > 1 ? "  \(entries[index].count)" : "")
-                button.font = .systemFont(ofSize: 12, weight: .medium)
+                button.font = .systemFont(ofSize: 12, weight: selected == entries[index].id ? .semibold : .regular)
                 button.contentTintColor = selected == entries[index].id ? Theme.foreground : Theme.secondary
                 let width = min(200, max(40, (button.title as NSString).size(withAttributes: [.font: button.font!]).width + 20))
-                button.frame = NSRect(x: x, y: 2, width: width, height: 24); x += width + 2
+                button.frame = NSRect(x: x, y: (TabMetrics.barHeight - TabMetrics.height) / 2, width: width, height: TabMetrics.height); x += width + TabMetrics.gap
                 button.setAccessibilityRole(.radioButton); button.setAccessibilityLabel(entries[index].title); button.setAccessibilityValue(selected == entries[index].id ? 1 : 0); button.setAccessibilityHelp(LF("%d panes", entries[index].count)); button.toolTip = entries[index].title
             }
         }
@@ -75,7 +86,7 @@ struct Tabs: NSViewRepresentable {
             menu.addItem(ActionMenuItem("Close Tab…", enabled: writable) { close?(id) })
             return menu
         }
-        func revealSelection() { if let index = entries.firstIndex(where: { $0.id == selected }), buttons.indices.contains(index) { scrollToVisible(buttons[index].frame.insetBy(dx: -2, dy: 0)) } }
+        func revealSelection() { if let index = entries.firstIndex(where: { $0.id == selected }), buttons.indices.contains(index) { scrollToVisible(buttons[index].frame.insetBy(dx: -TabMetrics.inset, dy: 0)) } }
         func stopDrag() { source = nil; insertion = nil; edgeTimer?.invalidate(); edgeTimer = nil; needsDisplay = true }
         override func viewWillMove(toWindow newWindow: NSWindow?) { if newWindow == nil { stopDrag() }; super.viewWillMove(toWindow: newWindow) }
         private func scrollEdge() {
@@ -90,13 +101,17 @@ struct Tabs: NSViewRepresentable {
         override func draw(_ dirtyRect: NSRect) {
             if let hover, buttons.indices.contains(hover), entries.indices.contains(hover), selected != entries[hover].id {
                 Theme.foreground.withAlphaComponent(0.05).setFill()
-                NSBezierPath(roundedRect: buttons[hover].frame.insetBy(dx: 0.5, dy: 0.5), xRadius: 5, yRadius: 5).fill()
+                NSBezierPath(roundedRect: buttons[hover].frame.insetBy(dx: 0.5, dy: 0.5), xRadius: TabMetrics.radius, yRadius: TabMetrics.radius).fill()
             }
             for (index, entry) in entries.enumerated() where buttons.indices.contains(index) && selected == entry.id {
-                let path = NSBezierPath(roundedRect: buttons[index].frame.insetBy(dx: 0.5, dy: 0.5), xRadius: 5, yRadius: 5)
+                let path = NSBezierPath(roundedRect: buttons[index].frame.insetBy(dx: 0.5, dy: 0.5), xRadius: TabMetrics.radius, yRadius: TabMetrics.radius)
                 Theme.selection.withAlphaComponent(effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? 0.20 : 0.18).setFill(); path.fill(); Theme.selection.withAlphaComponent(0.22).setStroke(); path.lineWidth = 1; path.stroke()
             }
-            if let insertion { let x = insertion < buttons.count ? buttons[insertion].frame.minX : buttons.last?.frame.maxX ?? 0; Theme.accent.setFill(); NSRect(x: x, y: 2, width: 2, height: 24).fill() }
+            if let insertion {
+                let x = insertion < buttons.count ? buttons[insertion].frame.minX - TabMetrics.gap / 2 : (buttons.last?.frame.maxX ?? 0) + TabMetrics.gap / 2
+                Theme.accent.setFill()
+                NSRect(x: x - 1, y: (TabMetrics.barHeight - TabMetrics.height) / 2, width: 2, height: TabMetrics.height).fill()
+            }
         }
         override func mouseDown(with event: NSEvent) { renaming = event.clickCount == 2; origin = convert(event.locationInWindow, from: nil).x; source = buttons.firstIndex { $0.frame.minX <= origin && origin <= $0.frame.maxX }.map { entries[$0].id }; dragged = false; if renaming, writable, let source { rename?(source); stopDrag() } }
         override func mouseDragged(with event: NSEvent) {

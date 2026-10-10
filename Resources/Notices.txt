@@ -19,3 +19,8 @@ HerdrX uses Herdr's public RPC and plugin contracts. No implementation from the
 PolyForm-licensed herdrm reference application is copied into this repository.
 
 Tailcat transport uses github.com/tailscale/tailcat v0.6.0 and its Go dependencies. Their license texts are included under Licenses/Tailcat. The HerdrX adapter was independently implemented; no ACCM source is included.
+
+Agent tool icons: Lobe Icons (MIT)
+https://github.com/lobehub/lobe-icons
+Pinned source URLs and adaptations are recorded in Resources/Icon/AgentIcons.json.
+Brand names and logos identify their respective tools; no affiliation is implied.

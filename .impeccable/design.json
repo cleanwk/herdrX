@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-10T11:59:30.068245+00:00",
+  "generatedAt": "2026-10-10T13:08:53.719446+00:00",
   "title": "Design System: HerdrX",
   "extensions": {
     "colorMeta": {
@@ -511,25 +511,34 @@
           "minimum": "40pt",
           "maximum": "200pt",
           "formula": "Measured title width + 20pt",
-          "gap": "2pt",
-          "edgeInset": "2pt"
+          "gap": "6pt",
+          "edgeInset": "6pt",
+          "barHeight": "34pt",
+          "tabHeight": "24pt",
+          "verticalInset": "5pt",
+          "sharedMetrics": "App/Tabs.swift: TabMetrics; App/Workbench.swift uses the same barHeight for the integrated bar and sidebar header."
         },
         "pane": {
           "frameInset": "3.5pt",
-          "topTitleClearance": "Additional 3.5pt above pane border; total border inset 7pt within canvas.",
+          "topTitleClearance": "Additional 7.5pt above the 3.5pt inset pane border; total top outline inset 11pt within canvas.",
           "canvasTopClearanceToken": "spacing.canvas-top-clearance",
-          "firstOutlinePosition": "Approximately 42pt below window top including tab bar, divider and canvas clearance.",
+          "firstOutlinePosition": "52pt below window top: 34pt bar + 1pt divider + 6pt canvas clearance + 11pt outline inset. Source-derived; current visual confirmation pending.",
           "terminalLeftBottomInset": "4pt",
           "terminalWidthReduction": "8pt",
-          "terminalHeightReduction": "18pt",
+          "terminalHeightReduction": "28pt",
           "splitHitWidth": "7pt",
           "titleCutoutOffset": "9pt",
           "titleTextInset": "4pt",
           "titleContextGap": "10pt",
           "titleMainAvailableFraction": "0.64 with context, otherwise 1.",
-          "minimumSizeIntent": "At least 24 columns and 6 rows; concrete minimum uses Desk.minimumPaneSize.",
+          "minimumSizeIntent": "At least 24 columns and 6 rows. PaneMetrics shares contentInset 4pt, headerHeight 24pt, horizontalOverhead 8pt and verticalOverhead 28pt between rendering, Desk.minimumPaneSize and split eligibility.",
           "splitKeyboardIncrement": "5 percentage points within minimum pane bounds.",
-          "outerCorners": "macOS 26+: bottom-right outer corner rounded; bottom-left rounded only when sidebar hidden. Radius uses rounded.pane-outer-bottom. Older systems remain rectangular."
+          "outerCorners": "On all supported macOS versions in windowed mode, bottom-right outer corner has rounded.pane-outer-bottom (10pt); bottom-left is rounded only when sidebar hidden. Sidebar-visible left boundary and full-screen corners stay square.",
+          "terminalHeaderHeight": "24pt",
+          "minimumSizeFormula": "width=max(160, font*0.65*24+8), height=max(100, font*1.5*6+28), in points; font fallback 13.5pt.",
+          "terminalCornerMask": "The opaque terminal surface masks the same bottom corners at 9.5pt; masks disabled for square/full-screen corners.",
+          "closeTarget": "22×22pt; 9pt semibold SF Symbol. Visible for the focused pane, hovered pane or VoiceOver.",
+          "restoreTarget": "22×22pt; 10pt medium SF Symbol. Visible while zoomed."
         },
         "searchResults": {
           "heightFormula": "min(320, max(44, resultCount * 36)) pt",
@@ -546,7 +555,14 @@
           "accentSelectedRing": "1.5pt",
           "terminalFontMenuWidth": "256pt",
           "terminalGridSpacing": "8pt horizontal / 7pt vertical; 17pt horizontal and bottom inset; settings-inset-top above.",
-          "about": "components.settings-about: 420×410pt content frame excluding OS chrome; native grouped form."
+          "about": "components.settings-about: 420×410pt native grouped form excluding OS chrome; helper text aligns with trailing-switch labels and wraps vertically. Immutable bundled notices cached once; fallback localized at display time.",
+          "appearanceAccentLayout": "Nine 22pt swatch targets with 6pt gaps, plus Follow Theme with reserved selected checkmark. ViewThatFits moves Follow Theme below the swatches when the horizontal row cannot fit; 4pt fallback gap.",
+          "appearanceScrolling": "Vertical ScrollView with 25pt horizontal, 20pt top and 16pt bottom padding; content frame remains 420×190pt.",
+          "segmentedControlWidth": "Appearance mode and Terminal weight use a 150pt minimum and native intrinsic width for localized labels.",
+          "terminalScrolling": "Vertical ScrollView retains 17pt horizontal/bottom and 20pt top inset; 420×410pt content frame; maximum font preview and import errors remain reachable.",
+          "notificationAlignment": "Content fills available width and aligns leading with 24pt padding; no intrinsic-width centering.",
+          "savedDeviceName": "Single line, middle truncation; full name in help.",
+          "preferenceMenu": "Actual NSPopUpButton with stable setting IDs in NSMenuItem.representedObject; compare IDs, localized titles and separator structure, preserving unchanged menu instances and distinguishing duplicate display names."
         },
         "deviceList": {
           "heightFormula": "min(360, deviceCount * 46) pt",
@@ -567,7 +583,9 @@
         "agentStatus": "Working half-filled circle; blocked/unread filled circle; other states outline. Readable state text remains in the second row.",
         "deviceConnection": "6pt green/red filled circle next to device name; accessible status.",
         "emptyCanvas": "Choose a Space explanation with New Space action.",
-        "endedAttachment": "Reconnect recovery; no independent local-Shell Reopen branch."
+        "endedAttachment": "Reconnect recovery; no independent local-Shell Reopen branch.",
+        "paneClose": "22pt native target with visible focus; 2pt inset/4pt radius feedback fill uses Theme.foreground at 0.07 hovered and 0.14 pressed; hover glyph uses foreground, resting glyph secondary.",
+        "followThemeAccent": "Reserved checkmark is visible when accent preference is theme; selected accessibility trait retained."
       },
       "settingsHierarchy": [
         {
@@ -653,7 +671,7 @@
         "sidebar": "Selected traits, expandable headings and full help context.",
         "agent": "Readable state words and symbol shapes; status glyphs expose accessible labels.",
         "tabs": "Radio-button role, selected value and pane-count help.",
-        "panes": "Full title/context label; contextual close labels; close control also visible when VoiceOver enabled.",
+        "panes": "Full title/context label; contextual close labels; 22pt native close target visible for the focused pane, hover or VoiceOver; native focus treatment.",
         "splitters": "Roles, value/min/max and keyboard/accessibility increments.",
         "search": "Native field-editor routing, marked-text guard and stable result identity.",
         "verification": "These are source behaviors; VoiceOver and IME runtime acceptance remains untested this pass."
@@ -670,7 +688,7 @@
       },
       "componentPreview": "Native source descriptions only. No HTML/CSS controls or synthetic tonal ramps: the shipping system uses appearance-dependent palette definitions and OS-rendered controls. DESIGN.md frontmatter owns primitive tokens.",
       "evidence": {
-        "mode": "Authorized extension of the established native Operate workbench: theme correction and app updates. Source scan, supplied native captures and implementation/reviewer evidence; no web detector.",
+        "mode": "Authorized refinement of the established native Operate workbench: source-observed UI geometry, settings layout and bounded UI state/caching changes. Historical theme/updater evidence remains separate; no web detector.",
         "contract": "docs/accm-fidelity/DIRECTION.md and .impeccable/surfaces/app-workbench-swift.md with the bounded theme/updater validation records; earlier scope removals remain applicable.",
         "sourceFiles": [
           "App/Theme.swift",
@@ -688,14 +706,22 @@
           "App/Updater.swift",
           "App/Main.swift",
           "App/Info.plist",
-          "project.yml"
+          "project.yml",
+          "App/Navigation.swift",
+          "App/Desk.swift"
         ],
         "inspectedScreenshots": [
           "docs/theme-correction/evidence/tokyo-night-light.png",
           "docs/theme-correction/evidence/gruvbox-light.png",
           "docs/theme-correction/evidence/rose-pine-light.png",
           "docs/app-updates/evidence/automatic-ready.png",
-          "docs/app-updates/evidence/up-to-date.png"
+          "docs/app-updates/evidence/up-to-date.png",
+          "docs/accm-fidelity/screenshots/settings-appearance.png",
+          "docs/accm-fidelity/screenshots/settings-terminal.png",
+          "docs/accm-fidelity/screenshots/settings-connections.png",
+          "docs/accm-fidelity/screenshots/settings-notifications.png",
+          "docs/accm-fidelity/screenshots/device-switcher.png",
+          "docs/app-updates/evidence/settings.png"
         ],
         "runtimeRecords": [
           "docs/accm-fidelity/evidence/native-checks.json",
@@ -721,7 +747,7 @@
           "docs/accm-fidelity/evidence/release-tests.txt"
         ],
         "fixture": "herdrx-fidelity-20261010: synthetic Agent names/statuses/illustrative content with real PTY, attach and Space/tab/split RPC; production state is not test data.",
-        "visualCoverage": "Theme reviewer opened all ten families in both appearances, Default light, Follow Herdr dark, nine accents, hidden-pane restoration and before/after reattach. Corrected Gruvbox/Rosé Pine light captures use a unique test bundle at 1200×760pt; earlier family captures use 980×620pt. Documenter opened the representative captures listed above.",
+        "visualCoverage": "Historical theme/updater coverage only: Theme reviewer opened all ten families in both appearances, Default light, Follow Herdr dark, nine accents, hidden-pane restoration and before/after reattach. Corrected Gruvbox/Rosé Pine light captures use a unique test bundle at 1200×760pt; earlier family captures use 980×620pt. Documenter opened the representative captures listed above. These captures do not validate the current UI polish geometry or settings changes.",
         "documenterBoundary": "Source/evidence reading and representative supplied screenshot inspection; no app launch, computer-use operation or independently repeated installation by the documenter.",
         "finishReview": [
           "docs/theme-correction/FINISH-REVIEW.md",
@@ -730,6 +756,7 @@
           "docs/app-updates/VERDICT.md"
         ],
         "untested": [
+          "Current UI polish running-app visuals and interaction states; computer-use access denied",
           "OS-driven System appearance transition",
           "Arbitrary terminal foreground/background and truecolor contrast",
           "Live Tailcat",
@@ -748,13 +775,22 @@
           "Universal terminal contrast",
           "Independent process PID continuity",
           "Server color-replay fix",
-          "Published release"
+          "Published release",
+          "Current UI polish visual acceptance or readiness to ship"
         ],
         "validation": [
           "docs/theme-correction/VALIDATION.md",
-          "docs/app-updates/VALIDATION.md"
+          "docs/app-updates/VALIDATION.md",
+          "docs/ui-polish/SETTINGS.md"
         ],
-        "knownDocumentationDrift": "None recorded after the lead synchronized PRODUCT.md and docs/Direction.md with the current theme evidence and icon."
+        "knownDocumentationDrift": "Current UI geometry/settings tokens synchronized with source. PRODUCT.md platform text was not changed for the tool enum warning; that warning is not part of this UI update.",
+        "currentPolish": {
+          "status": "Automated checks passed; user requested merge/local install and will perform visual acceptance.",
+          "blocker": "Computer-use access was denied and remained denied after the user gave written authorization. The denied path was not bypassed.",
+          "record": "docs/ui-polish/VALIDATION.md",
+          "completed": "Settings source review, Swift parsing, native-menu typecheck and offscreen NSHostingView behavior harness; these do not establish rendered acceptance.",
+          "pending": "Fresh native visual confirmation of tab/pane geometry, windowed/full-screen corner masks, close hover/pressed/focus behavior, and English/Chinese expanded settings."
+        }
       },
       "contrast": {
         "implementation": "App/ThemeColors.swift: ThemeColors.init/readable; App/Theme.swift: roles/stateColor.",
@@ -839,7 +875,27 @@
         "development": "Disabled in Debug unless HERDRX_ENABLE_UPDATES=1; debug feed override accepts localhost HTTP fixtures only.",
         "trust": "Signed feed required and archive verified before extraction; release CI verifies archive/feed key and artifact metadata before publication. Sparkle Ed25519 verification is separate from Apple Developer ID/notarization.",
         "releaseStatus": "Local changes and isolated signed fixture only; not published."
+      },
+      "performanceBehavior": {
+        "themeRoles": "Cache at most the light/dark semantic role sets for the current resolved family/accent key; recheck key on every read and clear when it changes.",
+        "tabs": "Reuse native tab button layout when entries and selection are unchanged; group pane counts once per tab-list evaluation.",
+        "canvas": "Cache visible pane keys for close visibility; assign terminal frames only when changed; preserve mounted terminal surfaces.",
+        "navigation": "Group Agent panes/tabs before ordering and precompute status ranks; publish derived Agent/search rows only when content or order changes.",
+        "settings": "Read immutable bundled notices once; preserve unchanged native popup items.",
+        "evidenceBoundary": "Source behavior; no new frame-rate or interaction-latency claim."
       }
+    },
+    "agentIcons": {
+      "sidebarSize": "12pt",
+      "searchSize": "14pt",
+      "textGap": "4pt",
+      "sourceManifest": "Resources/Icon/AgentIcons.json",
+      "rendering": "template, semantic foreground"
+    },
+    "sidebarScroller": {
+      "style": "overlay",
+      "controlSize": "small",
+      "autohides": true
     }
   },
   "components": [
@@ -867,14 +923,14 @@
       "name": "Terminal Tab",
       "kind": "nav",
       "refersTo": "tab",
-      "description": "Natural-width AppKit tab with semibold selection, accent fill/outline, overflow reveal and reorder marker.",
+      "description": "Natural-width 24pt AppKit tabs in a 34pt shared bar, 5pt vertical/6pt horizontal insets and 6pt gaps; semibold selection, accent fill/outline, overflow reveal and centered reorder marker.",
       "nativeSource": "App/Tabs.swift: Tabs.Strip"
     },
     {
       "name": "Terminal Pane",
       "kind": "custom",
       "refersTo": "pane-title",
-      "description": "Real Space-owned Ghostty surface; embedded title/context, active accent border/title and native adjustable splits.",
+      "description": "Real Space-owned Ghostty surface; 11pt canvas-relative top outline, title/context cutout, 22pt native close/restore targets, shared PaneMetrics for rendering and split minimums, and window-aware bottom corner masks.",
       "nativeSource": "App/Terminal.swift: TerminalCanvas.Canvas"
     },
     {
@@ -888,7 +944,7 @@
       "name": "Settings",
       "kind": "nav",
       "refersTo": "settings-appearance",
-      "description": "Six native toolbar icon tabs and OS-managed controls. About contains the app-lifetime Sparkle controls, truthful status, cancellation recovery and manual action.",
+      "description": "Six native toolbar tabs; Appearance/Terminal scroll for expanded content, segments fit localized labels, Follow Theme exposes selected state, notifications align leading, and native popup identity uses setting IDs. About retains Sparkle status/actions with aligned wrapping helper copy and cached notices.",
       "nativeSource": "App/Preferences.swift: Preferences/Updates; App/Updater.swift; App/Main.swift"
     },
     {

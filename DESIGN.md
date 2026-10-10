@@ -122,13 +122,20 @@ spacing:
   toolbar-inset: "16pt"
   creation-inset: "24pt"
   canvas-top-clearance: "6pt"
+  tab-strip-inset-x: "6pt"
+  tab-strip-inset-y: "5pt"
+  tab-gap: "6pt"
+  pane-outline-top: "11pt"
+  terminal-content-inset: "4pt"
   appearance-row-gap: "7pt"
   appearance-inner-gap: "4pt"
   appearance-inset-x: "25pt"
   settings-inset-top: "20pt"
+  appearance-inset-bottom: "16pt"
+  notifications-inset: "24pt"
 components:
   integrated-bar:
-    height: "28pt"
+    height: "34pt"
   sidebar:
     width: "260pt"
   sidebar-actions:
@@ -161,8 +168,17 @@ components:
     typography: "{typography.pane-title-focused}"
     height: "14pt"
   pane-close:
-    width: "20pt"
-    height: "20pt"
+    width: "22pt"
+    height: "22pt"
+    symbolSize: "9pt"
+  pane-restore:
+    width: "22pt"
+    height: "22pt"
+    symbolSize: "10pt"
+  terminal-content:
+    headerHeight: "24pt"
+    horizontalOverhead: "8pt"
+    verticalOverhead: "28pt"
   device-switcher:
     height: "28pt"
     rounded: "{rounded.device-switcher}"
@@ -206,7 +222,9 @@ components:
     typography: "{typography.settings-body}"
     height: "24pt"
   appearance-mode:
-    width: "150pt"
+    minWidth: "150pt"
+  terminal-weight:
+    minWidth: "150pt"
   appearance-palette:
     width: "120pt"
     height: "24pt"
@@ -246,6 +264,8 @@ The current authority is [PRODUCT.md](PRODUCT.md), [ACCM DIRECTION.md](docs/accm
 Tokens are source-observed native points and color seeds from `App/Theme.swift`, `ThemeColors.swift`, the pinned GhosttyTheme definitions, `Workbench.swift`, `Sidebar.swift`, `Tabs.swift`, `Terminal.swift`, `Preferences.swift`, `PreferenceMenu.swift`, `DeviceSwitcher.swift`, `SearchInput.swift` and `WindowBehavior.swift`. Foreground, accent and state seeds undergo the contrast derivation below; they are not unconditional rendered values. The JSON sidecar records these derivations, state rules and native behavior that do not fit the frontmatter schema. It does not provide HTML/CSS replicas of native controls.
 
 The current [theme validation](docs/theme-correction/VALIDATION.md) records all ten families in light/dark, Default, Follow Herdr, all nine accent captures, hidden-pane restoration, reattach continuity and 3,600 computed semantic text/surface pairs. The [updater validation](docs/app-updates/VALIDATION.md) records signed fixture installation, relaunch, automatic download/install on quit, cancellation and signed-feed rejection. Earlier [native checks](docs/accm-fidelity/evidence/native-checks.json) and [Space RPC checks](docs/accm-fidelity/evidence/space-actions-rpc.json) remain historical evidence for navigation geometry and actions. Fixtures contain synthetic names and illustrative output over real PTY/attach/RPC. The documenter read source/evidence and opened representative supplied captures, without operating the app. Reviewer verdicts govern acceptance. OS-driven System appearance changes, arbitrary terminal color pairs, live SSH/Tailcat, notification delivery, VoiceOver, IME, English updater layout and older macOS remain outside the completed evidence. These local changes are not a published release.
+
+The current UI polish updates these source-observed geometry and settings rules. Its [settings review](docs/ui-polish/SETTINGS.md) records the completed source and offscreen native-control checks. Fresh running-app visual acceptance is **not complete**: computer-use access was denied, and remained denied after the user gave written authorization. Earlier theme/updater screenshots remain historical evidence for their respective passes; they do not accept this new geometry. No ship or release claim is made.
 
 ## Colors
 
@@ -311,9 +331,11 @@ The sidebar uses the default width token only when no saved width exists, persis
 
 Space and Agent text starts approximately 36pt from the window's left edge: sidebar inset + row padding + content indent. Two native text lines, their shared line gap and distinct vertical padding produce approximately 45pt Space and 51pt Agent fills. These are rendered targets, not additional fixed-height constraints. Device connection dots follow the device name. State words reserve their own width at the Agent row's trailing edge.
 
-Tabs use measured text plus 20pt, clamped to 40–200pt, with two-point strip inset and gaps. Overflow scrolls horizontally; selection reveals the active tab. Pane frames follow normalized split rectangles with a 3.5pt base inset and another 3.5pt at the title edge. Added canvas top clearance places the first pane outline approximately 42pt below the window top while preserving the tab-bar height. Terminal views start four points from left/bottom and reduce width by eight and height by eighteen. Split handles are seven points wide; keyboard/accessibility adjustment moves five percentage points within computed minimum sizes. The split command aims to preserve at least 24 columns and six rows instead of shrinking font preferences.
+Tabs use measured text plus 20pt, clamped to 40–200pt, inside a 34pt integrated bar shared with the sidebar header. Each tab remains 24pt high with 5pt above and below, 6pt horizontal strip insets and 6pt between tabs. Overflow scrolls horizontally; selection reveals the active tab. Pane frames follow normalized split rectangles with a 3.5pt base inset and another 7.5pt at the title edge, placing the top outline 11pt inside the canvas. Including the 34pt bar, 1pt divider and 6pt canvas clearance, the first outline is 52pt below the window top. These are source-derived positions awaiting the current visual confirmation.
 
-Settings uses six native toolbar icon tabs. Frontmatter dimensions describe each selected tab's content frame, excluding the OS toolbar/titlebar. Appearance's labels are 48pt wide with a 10pt gap after the horizontal inset, placing controls at about 83pt. The row gap and inner helper/accent gap use their frontmatter tokens. The accent row contains nine circles plus Follow Theme. Terminal settings uses a native grid, aligned font/size/weight/spacing fields, checkbox explanations, import/reset actions and a preview. Connections and Tailcat use the wider frame; scrollable forms may extend below the viewport.
+`PaneMetrics` owns the 4pt terminal content inset, 24pt header, 8pt horizontal overhead and 28pt vertical overhead. Terminal views use these same values as `Desk.minimumPaneSize` and split eligibility, keeping the space reserved for chrome consistent with the intended minimum of 24 columns and six rows. The minimum pane is `max(160, font × 0.65 × 24 + 8)` by `max(100, font × 1.5 × 6 + 28)` points, with a 13.5pt fallback font. Split handles are seven points wide; keyboard/accessibility adjustment moves five percentage points within those minimum bounds.
+
+Settings uses six native toolbar icon tabs. Frontmatter dimensions describe each selected tab's content frame, excluding the OS toolbar/titlebar. Appearance's labels are 48pt wide with a 10pt gap after the horizontal inset, placing controls at about 83pt. The row gap and inner helper/accent gap use their frontmatter tokens. The accent row contains nine circles plus Follow Theme, with a reserved selection checkmark. When their intrinsic widths exceed the content column, Follow Theme moves below the swatches with the existing 4pt inner gap. Appearance and Terminal scroll vertically when content grows; Appearance adds a 16pt bottom inset. Appearance mode and Terminal weight segments retain a 150pt minimum width and may grow to fit localized labels. Terminal settings uses a native grid, aligned font/size/weight/spacing fields, checkbox explanations, import/reset actions and a preview. Notifications fills the available width with a consistent 24pt leading inset. Connections and Tailcat use the wider frame; scrollable forms may extend below the viewport.
 
 The device popover offers All Devices, two-line identity/source rows, connection dots, a current-selection checkmark and Add Device. Its device list is capped at `min(360, deviceCount × 46)`pt. Search uses the frontmatter width and header/result/footer dimensions; the results region is `min(320, max(44, resultCount × 36))`pt. New Space remains a compact named-directory sheet.
 
@@ -325,7 +347,7 @@ There is no authored shadow or motion vocabulary. Theme surfaces, thin outlines,
 
 ## Shapes
 
-Use the component-specific frontmatter radii for rows, tabs, preview, search and recovery. Pane outlines and internal split boundaries remain rectangular. On macOS 26+, bottom panes round the right outer corner and the left outer corner when the sidebar is hidden; earlier systems use rectangular outlines. This is source behavior, not an older-OS runtime pass. Agent glyphs use eight-point SF Symbols; connected/offline device dots are six-point filled circles. Accent controls are circular, with a 1.5pt selected ring. Native settings controls retain OS geometry.
+Use the component-specific frontmatter radii for rows, tabs, preview, search and recovery. Pane top outlines and internal split boundaries remain rectangular. In windowed mode on all supported macOS versions, bottom panes use a 10pt radius at the right outer corner and at the left outer corner only when the sidebar is hidden; the visible sidebar keeps the left boundary straight. Full-screen panes use square corners. The opaque terminal surface masks the same corners with a 9.5pt radius so it does not cover the outline. This is source behavior awaiting the current visual confirmation, not an older-OS runtime pass. Agent glyphs use eight-point SF Symbols; connected/offline device dots are six-point filled circles. Accent controls are circular, with a 1.5pt selected ring. Native settings controls retain OS geometry.
 
 ## Components
 
@@ -339,9 +361,9 @@ Task titles share the pane display-title source. Context combines tool, Space an
 
 ### Tabs, pane titles and splitters
 
-AppKit tabs combine native type, natural widths, accent selection and neutral theme hover. Reordering shows a two-point accent marker and edge scrolling. Tabs expose radio-button selection and pane-count help.
+AppKit tabs combine native type, natural widths, accent selection and neutral theme hover. `TabMetrics` shares bar height, tab height, strip inset, gap and radius with the SwiftUI host. Reordering shows a two-point accent marker centered in the gap and edge scrolling. Tabs expose radio-button selection and pane-count help. Unchanged title/selection/count inputs reuse button layout; pane counts are grouped once per tab-list evaluation.
 
-Pane titles sit in a background-colored top-border cutout. The cutout begins nine points inside the pane frame, has four points before the main text and ten points between main/context runs. Main text receives at most 64% of available title width when context exists. Active key-window panes use accent outlines/titles; inactive panes use theme separator/secondary. Close appears on hover or when VoiceOver is enabled; zoom exposes Restore. Full title/context remains attached to the terminal's help and accessibility label. Native splitters expose values, bounds and keyboard/accessibility adjustment.
+Pane titles sit in a background-colored top-border cutout. The cutout begins nine points inside the pane frame, has four points before the main text and ten points between main/context runs. Main text receives at most 64% of available title width when context exists. Active key-window panes use accent outlines/titles; inactive panes use theme separator/secondary. Close appears for the focused pane, on hover, or when VoiceOver is enabled; zoom exposes Restore. Both use 22pt native button targets, with a 9pt semibold close symbol and a 10pt medium restore symbol. Hover/pressed fills use theme foreground at 0.07/0.14 with a 4pt corner radius inside a 2pt inset, and the controls retain native focus treatment. Full title/context remains attached to the terminal's help and accessibility label. Native splitters expose values, bounds and keyboard/accessibility adjustment.
 
 Ghostty surfaces remain mounted as workspaces are hidden. Layout and explicit focus requests are separate, and hidden views are not assigned visible frames. Ended attachments offer Reconnect with ownership confirmation where required. Removing independent Shell support does not remove Space-owned PTYs or terminal settings.
 
@@ -351,9 +373,9 @@ Search uses a borderless native AppKit field, stable result identities, two-line
 
 ### Settings
 
-The six top-level tabs are Appearance, Terminal, Connections, Notifications, Tailcat and About. Connections contains Devices and Advanced: Plugins. Appearance separates mode, palette, accent and language. `PreferenceMenu` uses an actual `NSPopUpButton`; the palette menu contains twelve choices and a separator after Default/Follow Herdr. Its update comparison excludes separator items so an unchanged menu is not rebuilt during ordinary view updates. Native keyboard, focus, disabled and popup behavior remain intact.
+The six top-level tabs are Appearance, Terminal, Connections, Notifications, Tailcat and About. Connections contains Devices and Advanced: Plugins. Appearance separates mode, palette, accent and language. `PreferenceMenu` uses an actual `NSPopUpButton`; the palette menu contains twelve choices and a separator after Default/Follow Herdr. Choices carry stable setting IDs in `NSMenuItem.representedObject`, keeping identity independent from translated or duplicate display names. Updates compare IDs, titles and separator structure; an unchanged menu retains its native item instances. Native keyboard, focus, disabled and popup behavior remain intact.
 
-Terminal preferences and its actual-font preview follow Typography. Notifications has a dedicated native page; Tailcat has its own identity/connection page. About uses the 420×410pt content frame for version/project, updates and notices. Native controls present automatic checks, optional automatic download/install, status, last check, failure details, manual update action and release notes. A spinner appears only for a pending manual check; canceled checks/downloads clear progress and leave retry available. Status copy distinguishes a downloaded/verified update from one ready to install on quit.
+Terminal preferences and its actual-font preview follow Typography; scrolling keeps the maximum-size preview and import errors reachable. Saved device names truncate in the middle before displacing actions, with full identity retained in help. Notifications has a dedicated native page; Tailcat has its own identity/connection page. About uses the 420×410pt content frame for version/project, updates and notices. Native controls present automatic checks, optional automatic download/install, status, last check, failure details, manual update action and release notes. A spinner appears only for a pending manual check; canceled checks/downloads clear progress and leave retry available. Status copy distinguishes a downloaded/verified update from one ready to install on quit. Descriptions align with the trailing-switch labels without checkbox indentation and wrap vertically. Immutable bundled notices are read once, while their localized fallback remains language-aware.
 
 One app-lifetime Sparkle updater serves both the application-menu Check for Updates action and About. Automatic checks default on at a 24-hour interval while the app runs; automatic downloads default off and persist after opt-in. Both Homebrew and direct installations use this flow. Background downloads install on quit; Herdr-owned sessions continue independently. Development builds disable updates unless the isolated fixture environment enables them. The release pipeline requires signed feed and archive verification; this is separate from Apple Developer ID signing/notarization and does not mean these changes have been published. See [updater validation](docs/app-updates/VALIDATION.md) for runtime proof and remaining limits.
 
@@ -379,3 +401,9 @@ One app-lifetime Sparkle updater serves both the application-menu Check for Upda
 - Don't add decorative shadows, oversized branding or card containers around terminal panes.
 - Don't substitute terminal ANSI foreground for every app label or use secondary text as a global control tint.
 - Don't claim universal terminal contrast, an OS-driven appearance-transition pass, production Agent activity, external-service acceptance or a published release from this evidence.
+
+### Agent identity and sidebar scrolling (2026-10-10 follow-up)
+
+The supplied sidebar/tab screenshots refine the incumbent native visual direction. Agent metadata uses a 12pt template vector tool icon with a 4pt text gap; search uses the same component at 14pt. Codex, Claude, Cursor, Gemini, Grok, Kimi, OpenCode, Copilot and Antigravity/agy map to bundled assets; unknown tools retain the system-symbol fallback. The source commit, source URLs and adapted-file hashes are recorded in `Resources/Icon/AgentIcons.json`; the MIT license ships in `Resources/Licenses/LobeIcons.txt`. These are vector assets, with semantic foreground tint for both appearances, not generated raster artwork.
+
+The sidebar's own native scroll view uses overlay scrollers, small control size and automatic hiding, avoiding the legacy reserved gutter. This is scoped to sidebar content and does not change global macOS preferences. New icons and scroller behavior compile, but running-app visual acceptance will be performed by the user after the requested local update.

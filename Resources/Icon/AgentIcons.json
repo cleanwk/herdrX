@@ -1,0 +1,53 @@
+{
+  "project": "https://github.com/lobehub/lobe-icons",
+  "commit": "c385b2b8d1f9e19aa86e628d4e23c91ee1111a47",
+  "license": "MIT",
+  "adaptation": "currentColor resolved to black; Xcode template assets take semantic foreground tint at runtime",
+  "icons": [
+    {
+      "name": "codex",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/codex.svg",
+      "sha256": "268d2539466df69e4defc0aec59bf2c65ca9124b5db3b8d0e711c0f8bdf586a7"
+    },
+    {
+      "name": "claude",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/claude.svg",
+      "sha256": "cfa161e388edfe5877adc5095cbe11776dc84df9a29a586a85163445c64eea4b"
+    },
+    {
+      "name": "cursor",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/cursor.svg",
+      "sha256": "6510b2a91d21e94ae9ea5491a4f6c3af0e9bcdc61e7d6165de7b832b54640b38"
+    },
+    {
+      "name": "gemini",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/gemini.svg",
+      "sha256": "8c59b526150e9bbe8ede872898991e082774ea321a667fdaf2a1c712d455fe2e"
+    },
+    {
+      "name": "grok",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/grok.svg",
+      "sha256": "70c65581a2f3e83944663c1813f5956da0fb808dc588c7c9688df140a8fe586f"
+    },
+    {
+      "name": "kimi",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/kimi.svg",
+      "sha256": "1a57c7b223b888e323b44edc816300640f7630d782c1b5032821868fe18ed59d"
+    },
+    {
+      "name": "opencode",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/opencode.svg",
+      "sha256": "d11b7f3f78ed67d47c9851a11c92a69448c46f6e91156dbd3cff43f397360a50"
+    },
+    {
+      "name": "githubcopilot",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/githubcopilot.svg",
+      "sha256": "dd2ffd596ab4df6c09a6df41b1b85d954a6a8f86690c12c7f39fe3be7d6609e6"
+    },
+    {
+      "name": "antigravity",
+      "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/antigravity.svg",
+      "sha256": "00b26449ced11b2da873a3fcffa44ca9e478a8d96214b5cf703df85ff24b2123"
+    }
+  ]
+}

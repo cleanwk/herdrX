@@ -107,6 +107,14 @@ final class TerminalView: AppTerminalView {
 
 }
 
+/// Chrome geometry is also used by split validation; terminal row capacity must agree with rendering.
+enum PaneMetrics {
+    static let contentInset: CGFloat = 4
+    static let headerHeight: CGFloat = 24
+    static let horizontalOverhead = contentInset * 2
+    static let verticalOverhead = headerHeight + contentInset
+}
+
 /// Keep native surfaces mounted even while other workspaces occupy the viewport.
 struct TerminalCanvas: NSViewRepresentable {
     let terminals: [(PaneKey, Terminal, CGRect)]
@@ -155,6 +163,7 @@ struct TerminalCanvas: NSViewRepresentable {
         private var tracking: NSTrackingArea?
         private let restoreButton = CloseButton()
         private var closeButtons: [PaneKey: CloseButton] = [:]
+        private var visibleKeys: Set<PaneKey> = []
         private var handles: [String: Handle] = [:]
         override func updateTrackingAreas() {
             super.updateTrackingAreas()
@@ -171,8 +180,8 @@ struct TerminalCanvas: NSViewRepresentable {
         override func mouseExited(with event: NSEvent) { hovered = nil; updateCloseButtons() }
         private func updateCloseButtons() {
             for (key, button) in closeButtons {
-                let visible = entries.contains { $0.0 == key && $0.2.width > 0 }
-                button.isHidden = !visible || (hovered != key && !NSWorkspace.shared.isVoiceOverEnabled)
+                let visible = visibleKeys.contains(key)
+                button.isHidden = !visible || (hovered != key && focused != key && !NSWorkspace.shared.isVoiceOverEnabled)
             }
         }
         override func draw(_ dirtyRect: NSRect) {
@@ -180,19 +189,19 @@ struct TerminalCanvas: NSViewRepresentable {
             for (key, _, rect) in entries where rect.width > 0 {
                 var frame = paneFrame(rect).insetBy(dx: 3.5, dy: 3.5)
                 // The 14pt title straddles the outline; reserve its full upper half.
-                frame.size.height = max(0, frame.height - 3.5)
+                frame.size.height = max(0, frame.height - 7.5)
                 let active = focused == key && window?.isKeyWindow == true
                 (active ? Theme.accent : Theme.separator).setStroke()
-                if #available(macOS 26, *) {
-                    let bottom = abs(rect.maxY - 1) < 0.001
-                    outline(frame, left: bottom && roundLeft && rect.minX < 0.001, right: bottom && rect.maxX > 0.999).stroke()
-                } else { NSBezierPath(rect: frame).stroke() }
+                let corners = bottomCorners(rect)
+                let border = outline(frame, left: corners.left, right: corners.right)
+                border.lineWidth = 1
+                border.stroke()
                 let title = titles[key] ?? PaneTitle(main: L("Terminal"), context: "")
                 let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingTail
                 let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: active ? .semibold : .regular), .foregroundColor: active ? Theme.accent : Theme.secondary, .paragraphStyle: style]
                 let contextStyle = NSMutableParagraphStyle(); contextStyle.lineBreakMode = .byTruncatingMiddle
                 let secondary: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 10, weight: .regular), .foregroundColor: Theme.secondary, .paragraphStyle: contextStyle]
-                let available = max(0, frame.width - (zoomed ? 72 : 50))
+                let available = max(0, frame.width - (zoomed ? 82 : 56))
                 let mainWidth = min(available * (title.context.isEmpty ? 1 : 0.64), (title.main as NSString).size(withAttributes: attributes).width)
                 let contextWidth = min(max(0, available - mainWidth - 10), (title.context as NSString).size(withAttributes: secondary).width)
                 let box = NSRect(x: frame.minX + 9, y: frame.maxY - 7, width: mainWidth + (contextWidth > 0 ? contextWidth + 10 : 0) + 8, height: 14)
@@ -212,14 +221,46 @@ struct TerminalCanvas: NSViewRepresentable {
             path.close(); return path
         }
         func paneFrame(_ rect: CGRect) -> CGRect { CGRect(x: bounds.width * rect.minX, y: bounds.height * (1 - rect.maxY), width: bounds.width * rect.width, height: bounds.height * rect.height) }
+        private func bottomCorners(_ rect: CGRect) -> (left: Bool, right: Bool) {
+            let bottom = rect.maxY > 0.999 && window?.styleMask.contains(.fullScreen) != true
+            return (bottom && roundLeft && rect.minX < 0.001, bottom && rect.maxX > 0.999)
+        }
+        /// Small glyph, native button semantics and a stable 22pt hit target.
         final class CloseButton: NSButton {
             var invoke: (() -> Void)?
-            init() { super.init(frame: .zero); image = NSImage(systemSymbolName: "xmark", accessibilityDescription: L("Close Pane")); isBordered = false; target = self; action = #selector(pressed) }
+            private var hovered = false
+            private var tracking: NSTrackingArea?
+            init() {
+                super.init(frame: .zero)
+                image = NSImage(systemSymbolName: "xmark", accessibilityDescription: L("Close Pane"))
+                image = image?.withSymbolConfiguration(.init(pointSize: 9, weight: .semibold))
+                imagePosition = .imageOnly; isBordered = false
+                setButtonType(.momentaryChange); focusRingType = .exterior
+                target = self; action = #selector(pressed)
+            }
+            override func updateTrackingAreas() {
+                super.updateTrackingAreas()
+                if let tracking { removeTrackingArea(tracking) }
+                let next = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self)
+                tracking = next; addTrackingArea(next)
+            }
+            override func mouseEntered(with event: NSEvent) { hovered = true; needsDisplay = true }
+            override func mouseExited(with event: NSEvent) { hovered = false; needsDisplay = true }
+            override func draw(_ dirtyRect: NSRect) {
+                Theme.content.setFill(); bounds.fill()
+                if hovered || isHighlighted {
+                    Theme.foreground.withAlphaComponent(isHighlighted ? 0.14 : 0.07).setFill()
+                    NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 4, yRadius: 4).fill()
+                }
+                contentTintColor = hovered ? Theme.foreground : Theme.secondary
+                super.draw(dirtyRect)
+            }
             required init?(coder: NSCoder) { fatalError() }
             @objc func pressed() { invoke?() }
         }
         override func layout() {
             super.layout()
+            visibleKeys = Set(entries.filter { $0.2.width > 0 && $0.2.height > 0 }.map(\.0))
             let keys = Set(entries.map(\.0))
             for key in Array(closeButtons.keys) where !keys.contains(key) { closeButtons.removeValue(forKey: key)?.removeFromSuperview() }
             let views = Set(entries.map { ObjectIdentifier($0.1.view) })
@@ -234,11 +275,18 @@ struct TerminalCanvas: NSViewRepresentable {
                 button.invoke = { [weak self] in self?.close?(key) }
                 if visible {
                     let frame = paneFrame(rect)
-                    button.frame = NSRect(x: frame.maxX - 26, y: frame.maxY - 21, width: 20, height: 20)
+                    button.frame = NSRect(x: frame.maxX - 30, y: frame.maxY - 22, width: 22, height: 22)
                     button.toolTip = L("Close") + " " + (titles[key]?.main ?? L("Pane"))
                     terminal.view.toolTip = titles[key]?.full; terminal.view.setAccessibilityLabel(titles[key]?.full)
                     button.setAccessibilityLabel(button.toolTip)
-                    terminal.view.frame = CGRect(x: frame.minX + 4, y: frame.minY + 4, width: max(0, frame.width - 8), height: max(0, frame.height - 18))
+                    let contentFrame = CGRect(x: frame.minX + PaneMetrics.contentInset, y: frame.minY + PaneMetrics.contentInset, width: max(0, frame.width - PaneMetrics.horizontalOverhead), height: max(0, frame.height - PaneMetrics.verticalOverhead))
+                    if terminal.view.frame != contentFrame { terminal.view.frame = contentFrame }
+                    // The opaque terminal must follow the outline, or it paints over its curved corners.
+                    let corners = bottomCorners(rect)
+                    terminal.view.wantsLayer = true
+                    terminal.view.layer?.cornerRadius = 9.5
+                    terminal.view.layer?.maskedCorners = (corners.left ? CACornerMask.layerMinXMinYCorner : []).union(corners.right ? .layerMaxXMinYCorner : [])
+                    terminal.view.layer?.masksToBounds = corners.left || corners.right
                     if focused == key, appliedFocusRevision != focusRevision, window?.isKeyWindow == true, window?.attachedSheet == nil {
                         if window?.makeFirstResponder(terminal.view) == true { appliedFocusRevision = focusRevision }
                     }
@@ -247,8 +295,8 @@ struct TerminalCanvas: NSViewRepresentable {
             updateCloseButtons()
             if restoreButton.superview !== self { addSubview(restoreButton) }
             restoreButton.isHidden = !zoomed
-            restoreButton.frame = NSRect(x: bounds.maxX - 49, y: bounds.maxY - 21, width: 20, height: 20)
-            restoreButton.image = NSImage(systemSymbolName: "arrow.down.right.and.arrow.up.left", accessibilityDescription: L("Restore Pane"))
+            restoreButton.frame = NSRect(x: bounds.maxX - 56, y: bounds.maxY - 22, width: 22, height: 22)
+            restoreButton.image = NSImage(systemSymbolName: "arrow.down.right.and.arrow.up.left", accessibilityDescription: L("Restore Pane"))?.withSymbolConfiguration(.init(pointSize: 10, weight: .medium))
             restoreButton.toolTip = L("Restore Pane · ⌘⇧Return"); restoreButton.invoke = { [weak self] in self?.restore?() }
             #if DEBUG
             if let path = ProcessInfo.processInfo.environment["HERDRX_DIAGNOSTICS"] {

@@ -2,6 +2,21 @@ import SwiftUI
 import HerdCore
 
 enum AgentToolIcon {
+    static func asset(for tool: String?) -> String? {
+        switch tool?.lowercased() {
+        case "codex", "openai-codex": "agent-codex"
+        case "claude", "claude-code": "agent-claude"
+        case "cursor", "cursor-agent": "agent-cursor"
+        case "gemini", "gemini-cli": "agent-gemini"
+        case "grok": "agent-grok"
+        case "kimi", "kimi-cli": "agent-kimi"
+        case "opencode": "agent-opencode"
+        case "copilot", "github-copilot": "agent-githubcopilot"
+        case "agy", "antigravity": "agent-antigravity"
+        default: nil
+        }
+    }
+
     static func symbol(for tool: String?) -> String {
         switch tool?.lowercased() {
         case "claude": "sun.max"
@@ -72,5 +87,40 @@ struct AgentStatus: View {
         Image(systemName: status == "working" ? "circle.lefthalf.filled" : status == "blocked" || unread ? "circle.fill" : "circle")
             .font(.system(size: 8)).foregroundStyle(status == "done" || status == "idle" ? Color(nsColor: Theme.secondary).opacity(0.6) : Self.color(status, unread: unread))
             .accessibilityLabel(L(status == "unknown" ? "Unknown" : unread ? "Completed, unread" : status))
+    }
+}
+
+/// Shared by sidebar metadata and search; unknown tools retain the native terminal fallback.
+struct AgentIcon: View {
+    let tool: String?
+    var size: CGFloat = 12
+    var body: some View {
+        Group {
+            if let asset = AgentToolIcon.asset(for: tool) {
+                Image(asset).resizable().scaledToFit()
+            } else {
+                Image(systemName: AgentToolIcon.symbol(for: tool)).resizable().scaledToFit()
+            }
+        }.frame(width: size, height: size).foregroundStyle(Color(nsColor: Theme.foreground)).accessibilityHidden(true)
+    }
+}
+
+/// Keep the native scroll behavior without the wide legacy gutter when macOS
+/// is configured to always show scroll bars. Scoped to the sidebar document.
+struct SidebarScrollStyle: NSViewRepresentable {
+    func makeNSView(context: Context) -> Probe { Probe() }
+    func updateNSView(_ view: Probe, context: Context) { view.configure() }
+    final class Probe: NSView {
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            DispatchQueue.main.async { [weak self] in self?.configure() }
+        }
+        func configure() {
+            guard let scroll = enclosingScrollView else { return }
+            scroll.scrollerStyle = .overlay
+            scroll.autohidesScrollers = true
+            scroll.verticalScroller?.controlSize = .small
+            scroll.drawsBackground = false
+        }
     }
 }
