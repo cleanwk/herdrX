@@ -38,13 +38,12 @@ def cask(release, metadata):
   version "{version}"
   sha256 "{digest}"
 
-  url "https://github.com/cleanwk/herdrX/releases/download/v#{{version}}/Herd-X-#{{version}}-universal.zip",
-      verified: "github.com/cleanwk/herdrX/"
+  url "https://github.com/cleanwk/herdrX/releases/download/v#{{version}}/Herd-X-#{{version}}-universal.zip"
   name "Herd-X"
   desc "Native macOS workspace for Herdr terminals and coding agents"
   homepage "https://github.com/cleanwk/herdrX"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
   app "Herd-X.app"
 
 {notice}
