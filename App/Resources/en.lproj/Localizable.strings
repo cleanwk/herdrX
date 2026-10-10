@@ -310,3 +310,25 @@
 "System mode" = "System mode";
 "Generate Client Identity" = "Generate Client Identity";
 "Connection token" = "Connection token";
+
+"Not checked yet" = "Not checked yet";
+"Updates are disabled in development builds." = "Updates are disabled in development builds.";
+"This build has no valid update signing key." = "This build has no valid update signing key.";
+"Could not start the updater." = "Could not start the updater.";
+"Checking for updates…" = "Checking for updates…";
+"Version %@ is available" = "Version %@ is available";
+"You’re up to date" = "You’re up to date";
+"No compatible update is available." = "No compatible update is available.";
+"Downloading version %@…" = "Downloading version %@…";
+"Update downloaded and verified" = "Update downloaded and verified";
+"Update ready. It will install when you quit HerdrX." = "Update ready. It will install when you quit HerdrX.";
+"Update canceled. You can try again later." = "Update canceled. You can try again later.";
+"Could not complete the update. Try again." = "Could not complete the update. Try again.";
+"Automatically check for updates" = "Automatically check for updates";
+"Check once a day while HerdrX is running." = "Check once a day while HerdrX is running.";
+"Automatically download and install updates" = "Automatically download and install updates";
+"Download in the background and install when you quit. Herdr sessions keep running." = "Download in the background and install when you quit. Herdr sessions keep running.";
+"Last checked: %@" = "Last checked: %@";
+"View and Install Update…" = "View and Install Update…";
+"Release Notes" = "Release Notes";
+"Check for Updates…" = "Check for Updates…";

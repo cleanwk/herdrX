@@ -1,0 +1,10 @@
+{
+  "fixture": true,
+  "from": "0.1.7 (9)",
+  "to": "0.1.8 (10)",
+  "manual_install_relaunch": "passed",
+  "background_download_install_on_quit": "passed",
+  "deep_signature_verification": "passed",
+  "persistent_session_content_and_sgr_preserved": true,
+  "snapshot_note": "Viewport resize changed line wrapping only."
+}

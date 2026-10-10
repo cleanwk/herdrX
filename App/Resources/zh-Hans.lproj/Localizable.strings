@@ -310,3 +310,25 @@
 "System mode" = "系统";
 "Generate Client Identity" = "生成客户端身份";
 "Connection token" = "连接令牌";
+
+"Not checked yet" = "尚未检查更新";
+"Updates are disabled in development builds." = "开发构建未启用更新。";
+"This build has no valid update signing key." = "此构建缺少有效的更新签名密钥。";
+"Could not start the updater." = "无法启动更新服务。";
+"Checking for updates…" = "正在检查更新…";
+"Version %@ is available" = "发现新版本 %@";
+"You’re up to date" = "已是最新版本";
+"No compatible update is available." = "暂无兼容的更新。";
+"Downloading version %@…" = "正在下载版本 %@…";
+"Update downloaded and verified" = "更新已下载并通过验证";
+"Update ready. It will install when you quit HerdrX." = "更新已就绪，将在退出 HerdrX 时安装。";
+"Update canceled. You can try again later." = "更新已取消，可稍后重试。";
+"Could not complete the update. Try again." = "未能完成更新，请重试。";
+"Automatically check for updates" = "自动检查更新";
+"Check once a day while HerdrX is running." = "HerdrX 运行期间每天检查一次。";
+"Automatically download and install updates" = "自动下载并安装更新";
+"Download in the background and install when you quit. Herdr sessions keep running." = "在后台下载，退出时安装。Herdr 会话会继续运行。";
+"Last checked: %@" = "上次检查：%@";
+"View and Install Update…" = "查看并安装更新…";
+"Release Notes" = "更新说明";
+"Check for Updates…" = "检查更新…";

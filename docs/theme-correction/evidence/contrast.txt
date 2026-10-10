@@ -1,0 +1,1 @@
+PASS: 3600 actual semantic text/surface pairs across 12 choices × 2 appearances × 10 accents. Minimum 4.500000001345258:1

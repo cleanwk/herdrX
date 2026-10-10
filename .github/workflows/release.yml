@@ -70,18 +70,18 @@ jobs:
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: scripts/package.sh
-      - name: Generate optional signed appcast
+      - name: Generate and verify signed updates
         env:
           SPARKLE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
           SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_KEY }}
         run: |
-          if [[ -n "$SPARKLE_KEY" || -n "$SPARKLE_PUBLIC_KEY" ]]; then
-            [[ -n "$SPARKLE_KEY" && -n "$SPARKLE_PUBLIC_KEY" ]] || { echo 'Both Sparkle keys are required'; exit 1; }
-            printf '%s' "$SPARKLE_KEY" > "$RUNNER_TEMP/sparkle-key"
-            tool=$(find build/release/SourcePackages/artifacts -path '*/bin/generate_appcast' -type f -print -quit)
-            [[ -n "$tool" ]] || { echo 'Missing Sparkle appcast tool'; exit 1; }
-            "$tool" --ed-key-file "$RUNNER_TEMP/sparkle-key" --download-url-prefix "https://github.com/cleanwk/herdrX/releases/download/v${VERSION}/" build/dist
-          fi
+          [[ -n "$SPARKLE_KEY" && -n "$SPARKLE_PUBLIC_KEY" ]] || { echo 'Both Sparkle keys are required'; exit 1; }
+          umask 077
+          printf '%s' "$SPARKLE_KEY" > "$RUNNER_TEMP/sparkle-key"
+          tool=$(find build/release/SourcePackages/artifacts -path '*/bin/generate_appcast' -type f -print -quit)
+          [[ -n "$tool" ]] || { echo 'Missing Sparkle appcast tool'; exit 1; }
+          "$tool" --ed-key-file "$RUNNER_TEMP/sparkle-key" --download-url-prefix "https://github.com/cleanwk/herdrX/releases/download/v${VERSION}/" build/dist
+          python3 scripts/appcast.py build/dist build/release/Build/Products/Release/HerdrX.app "$(dirname "$tool")/sign_update" "$RUNNER_TEMP/sparkle-key" "$SPARKLE_PUBLIC_KEY"
       - name: Publish verified release
         env:
           GH_TOKEN: ${{ github.token }}

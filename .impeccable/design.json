@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-10T10:39:02.349014+00:00",
+  "generatedAt": "2026-10-10T11:59:30.068245+00:00",
   "title": "Design System: HerdrX",
   "extensions": {
     "colorMeta": {
@@ -12,7 +12,7 @@
       "catppuccin-light-foreground": {
         "role": "neutral",
         "displayName": "Catppuccin Light Foreground",
-        "purpose": "Pinned GhosttyTheme source used by Catppuccin and HerdrX Default for workbench and terminal."
+        "purpose": "Family foreground seed; semantic navigation text is derived by ThemeColors against authored surfaces. Terminal defaults remain separately defined by the palette."
       },
       "catppuccin-dark-background": {
         "role": "neutral",
@@ -22,7 +22,7 @@
       "catppuccin-dark-foreground": {
         "role": "neutral",
         "displayName": "Catppuccin Dark Foreground",
-        "purpose": "Pinned GhosttyTheme source used by Catppuccin and HerdrX Default for workbench and terminal."
+        "purpose": "Family foreground seed; semantic navigation text is derived by ThemeColors against authored surfaces. Terminal defaults remain separately defined by the palette."
       },
       "dracula-companion-background": {
         "role": "neutral",
@@ -32,7 +32,7 @@
       "dracula-companion-foreground": {
         "role": "neutral",
         "displayName": "Dracula Companion Foreground",
-        "purpose": "HerdrX-authored light companion, not an upstream official light theme."
+        "purpose": "Family foreground seed; semantic navigation text is derived by ThemeColors against authored surfaces. Terminal defaults remain separately defined by the palette."
       },
       "vesper-companion-background": {
         "role": "neutral",
@@ -42,127 +42,212 @@
       "vesper-companion-foreground": {
         "role": "neutral",
         "displayName": "Vesper Companion Foreground",
-        "purpose": "HerdrX-authored light companion, not an upstream official light theme."
+        "purpose": "Family foreground seed; semantic navigation text is derived by ThemeColors against authored surfaces. Terminal defaults remain separately defined by the palette."
       },
       "accent-blue-light": {
         "role": "primary",
         "displayName": "Accent Blue Light",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-blue-dark": {
         "role": "primary",
         "displayName": "Accent Blue Dark",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-graphite-light": {
         "role": "primary",
         "displayName": "Accent Graphite Light",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-graphite-dark": {
         "role": "primary",
         "displayName": "Accent Graphite Dark",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-green-light": {
         "role": "primary",
         "displayName": "Accent Green Light",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-green-dark": {
         "role": "primary",
         "displayName": "Accent Green Dark",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-cyan-light": {
         "role": "primary",
         "displayName": "Accent Cyan Light",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-cyan-dark": {
         "role": "primary",
         "displayName": "Accent Cyan Dark",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-purple-light": {
         "role": "primary",
         "displayName": "Accent Purple Light",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-purple-dark": {
         "role": "primary",
         "displayName": "Accent Purple Dark",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-amber-light": {
         "role": "primary",
         "displayName": "Accent Amber Light",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-amber-dark": {
         "role": "primary",
         "displayName": "Accent Amber Dark",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-pink-light": {
         "role": "primary",
         "displayName": "Accent Pink Light",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-pink-dark": {
         "role": "primary",
         "displayName": "Accent Pink Dark",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-red-light": {
         "role": "primary",
         "displayName": "Accent Red Light",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-red-dark": {
         "role": "primary",
         "displayName": "Accent Red Dark",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-orange-light": {
         "role": "primary",
         "displayName": "Accent Orange Light",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "accent-orange-dark": {
         "role": "primary",
         "displayName": "Accent Orange Dark",
-        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
       },
       "success-light": {
         "role": "secondary",
         "displayName": "Success Light",
-        "purpose": "Completed/idle state words and connected-device dots."
+        "purpose": "Completed/idle state words and connected-device dots. Seed is adjusted by ThemeColors.readable against authored app surfaces."
       },
       "success-dark": {
         "role": "secondary",
         "displayName": "Success Dark",
-        "purpose": "Completed/idle state words and connected-device dots."
+        "purpose": "Completed/idle state words and connected-device dots. Seed is adjusted by ThemeColors.readable against authored app surfaces."
       },
       "warning-light": {
         "role": "secondary",
         "displayName": "Warning Light",
-        "purpose": "Blocked/waiting-input state words and glyphs."
+        "purpose": "Blocked/waiting-input state words and glyphs. Seed is adjusted by ThemeColors.readable against authored app surfaces."
       },
       "warning-dark": {
         "role": "secondary",
         "displayName": "Warning Dark",
-        "purpose": "Blocked/waiting-input state words and glyphs."
+        "purpose": "Blocked/waiting-input state words and glyphs. Seed is adjusted by ThemeColors.readable against authored app surfaces."
       },
       "failure-light": {
         "role": "secondary",
         "displayName": "Failure Light",
-        "purpose": "Offline-device dots."
+        "purpose": "Offline-device dots. Seed is adjusted by ThemeColors.readable against authored app surfaces."
       },
       "failure-dark": {
         "role": "secondary",
         "displayName": "Failure Dark",
-        "purpose": "Offline-device dots."
+        "purpose": "Offline-device dots. Seed is adjusted by ThemeColors.readable against authored app surfaces."
+      },
+      "tokyo-light-foreground": {
+        "role": "neutral",
+        "displayName": "Tokyo Light Foreground",
+        "purpose": "HerdrX slate adaptation: app text seed plus terminal default, cursor, selection foreground and ANSI 0."
+      },
+      "tokyo-light-ansi-bright-black": {
+        "role": "neutral",
+        "displayName": "Tokyo Light Ansi Bright Black",
+        "purpose": "HerdrX Tokyo Day ANSI 8 adaptation; separate from ordinary default text."
+      },
+      "tokyo-dark-foreground": {
+        "role": "neutral",
+        "displayName": "Tokyo Dark Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "gruvbox-light-foreground": {
+        "role": "neutral",
+        "displayName": "Gruvbox Light Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "gruvbox-dark-foreground": {
+        "role": "neutral",
+        "displayName": "Gruvbox Dark Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "one-light-foreground": {
+        "role": "neutral",
+        "displayName": "One Light Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "one-dark-foreground": {
+        "role": "neutral",
+        "displayName": "One Dark Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "solarized-light-foreground": {
+        "role": "neutral",
+        "displayName": "Solarized Light Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "solarized-dark-foreground": {
+        "role": "neutral",
+        "displayName": "Solarized Dark Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "kanagawa-light-foreground": {
+        "role": "neutral",
+        "displayName": "Kanagawa Light Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "kanagawa-dark-foreground": {
+        "role": "neutral",
+        "displayName": "Kanagawa Dark Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "rose-pine-light-foreground": {
+        "role": "neutral",
+        "displayName": "Rose Pine Light Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "rose-pine-dark-foreground": {
+        "role": "neutral",
+        "displayName": "Rose Pine Dark Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "dracula-dark-foreground": {
+        "role": "neutral",
+        "displayName": "Dracula Dark Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "nord-light-foreground": {
+        "role": "neutral",
+        "displayName": "Nord Light Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "nord-dark-foreground": {
+        "role": "neutral",
+        "displayName": "Nord Dark Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
+      },
+      "vesper-dark-foreground": {
+        "role": "neutral",
+        "displayName": "Vesper Dark Foreground",
+        "purpose": "Explicit per-family app text seed from Theme.roles; ThemeColors adjusts it against authored surfaces."
       }
     },
     "typographyMeta": {
@@ -236,22 +321,25 @@
       "measurementUnit": "pt",
       "derivedColors": {
         "content": "Selected GhosttyThemeDefinition.background.",
-        "foreground": "Selected GhosttyThemeDefinition.foreground.",
-        "secondary": "Selected foreground blended toward selected background by 0.20 in light / 0.22 in dark appearance.",
-        "chrome": "Selected background blended toward selected foreground by 0.025 in light / 0.06 in dark appearance.",
+        "foreground": "Explicit per-family foreground seed from Theme.roles, then ThemeColors.readable against all authored surfaces; not an alias for terminal ANSI/default foreground.",
+        "secondary": "Family foreground seed blended 0.20 toward background in either appearance, then ThemeColors.readable against all authored surfaces.",
+        "chrome": "Selected background blended toward the family foreground seed by 0.025 light / 0.06 dark.",
         "paneSeparator": "Theme.foreground at 0.16 alpha.",
         "nativeSeparator": "NSColor.separatorColor for the sidebar separator and native Divider rendering.",
-        "chromeTint": "Theme.secondary.",
+        "chromeTint": "Theme.accent. Native settings labels retain system semantic styles.",
         "agentStatusWords": "Working/unread: Theme.accent; blocked: Theme.warning; done/idle: Theme.success; unknown: Theme.secondary.",
         "agentGlyph": "Done/idle use secondary at 0.6; other statuses use AgentStatus.color.",
         "paneMainTitle": "Theme.accent for active pane in key window; Theme.secondary otherwise.",
         "paneContext": "Theme.secondary.",
         "deviceConnection": "Theme.success when connected, Theme.failure when offline.",
-        "fontPreview": "Theme.content with Theme.foreground."
+        "fontPreview": "Theme.content with Theme.foreground.",
+        "selection": "Raw selected accent seed; preserves hue for translucent row/tab/search/device fills.",
+        "accent": "Selected accent seed adjusted by ThemeColors.readable against all authored surfaces for focus, text and tint.",
+        "semanticStateColors": "Success/warning/failure seeds also use ThemeColors.readable against the same surfaces."
       },
       "themeSources": {
-        "implementation": "App/Theme.swift and Core/Sources/HerdCore/ThemePreference.swift.",
-        "upstream": "Pinned libghostty-spm Sources/GhosttyTheme/Themes definitions; complete ANSI/cursor/selection palettes stay library-owned.",
+        "implementation": "App/Theme.swift, App/ThemeColors.swift and Core/Sources/HerdCore/ThemePreference.swift.",
+        "upstream": "Pinned libghostty-spm GhosttyTheme definitions supply the source palettes. Named HerdrX light adaptations and chromatic ANSI shade adjustments are applied in App/Theme.swift.",
         "palettes": [
           {
             "id": "default",
@@ -275,14 +363,14 @@
           {
             "id": "tokyo-night",
             "label": "Tokyo Night",
-            "light": "tokyoNight_Day",
+            "light": "HerdrX Tokyo Night Day: slate default/cursor/selection foreground and ANSI 0/8",
             "dark": "tokyoNight_Night",
             "accent": "blue"
           },
           {
             "id": "gruvbox",
             "label": "Gruvbox",
-            "light": "gruvbox_Light",
+            "light": "HerdrX Gruvbox Light: source default foreground replaces ANSI 0",
             "dark": "gruvbox_Dark",
             "accent": "amber"
           },
@@ -310,7 +398,7 @@
           {
             "id": "rose-pine",
             "label": "Rosé Pine",
-            "light": "rose_Pine_Dawn",
+            "light": "HerdrX Rosé Pine Dawn: source default foreground replaces ANSI 0",
             "dark": "rose_Pine",
             "accent": "pink"
           },
@@ -358,9 +446,39 @@
           "orange"
         ],
         "defaultAccent": "theme",
-        "lightCompanions": "Dracula/Vesper have HerdrX-authored light definitions. Source-derived ANSI hue/saturation is retained while brightness is capped at 0.55; foreground supplies cursor; companion selection is defined by Theme.lightCompanion.",
+        "lightCompanions": "Dracula/Vesper have HerdrX-authored light definitions, not official upstream light variants. Source-derived ANSI hue/saturation is retained with brightness initially capped at 0.55; chromatic slots then receive the common canvas-contrast shade adjustment. Cursor follows foreground; companion selection is defined by Theme.lightCompanion.",
         "herdr": "Read ~/.config/herdr/config.toml [theme].name when applying Follow Herdr; unknown or absent values resolve to Catppuccin; never write that file.",
-        "continuity": "Theme.apply updates configuration on existing terminal controller/surfaces; native evidence records mounted sessions and text surviving light Catppuccin / dark Tokyo Night changes."
+        "continuity": "Existing surfaces receive theme configuration. Supplied light/dark, hidden-pane restoration and reattach records retain fixture content/SGR. Before/after ANSI files are equal; terminal/pane IDs and process title match. No independent PID verification or server replay fix is asserted.",
+        "terminalAdaptation": {
+          "minimumContrast": 1,
+          "faintOpacity": 0.85,
+          "cursorText": "Mapped when the selected definition supplies it; Tokyo Day uses its background.",
+          "chromaticSlots": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "chromaticAdjustment": "Hue-preserving shade adjustment toward 4.5:1 against canvas; the resulting palette slots also apply when applications use them as backgrounds.",
+          "reservedSlots": [
+            0,
+            7,
+            8,
+            15
+          ],
+          "exceptions": "Tokyo Day ANSI 0/8 use the two Tokyo light tokens; Gruvbox Light and Rosé Pine Dawn ANSI 0 use their source default foreground.",
+          "shaderChoice": "Pinned Ghostty minimum contrast 4.5 substitutes failing colors with pure black/white. Minimum contrast 1 preserves ANSI hue distinctions after the targeted preset adjustment.",
+          "boundary": "Application SGR is preserved. Explicit indexed colors outside adapted ANSI slots, truecolor and adversarial foreground/background combinations are not rewritten or certified universally readable."
+        },
+        "systemAppearanceEvidence": "System mode was selected and the native effective-appearance callback exists. No actual OS-driven appearance transition was exercised."
       },
       "materials": [
         {
@@ -427,7 +545,8 @@
           "accentGap": "6pt",
           "accentSelectedRing": "1.5pt",
           "terminalFontMenuWidth": "256pt",
-          "terminalGridSpacing": "8pt horizontal / 7pt vertical; 17pt horizontal and bottom inset; settings-inset-top above."
+          "terminalGridSpacing": "8pt horizontal / 7pt vertical; 17pt horizontal and bottom inset; settings-inset-top above.",
+          "about": "components.settings-about: 420×410pt content frame excluding OS chrome; native grouped form."
         },
         "deviceList": {
           "heightFormula": "min(360, deviceCount * 46) pt",
@@ -435,16 +554,16 @@
         }
       },
       "stateTreatments": {
-        "spaceSelected": "Accent fill 0.13 light / 0.20 dark; 1pt accent outline at 0.24.",
-        "agentSelected": "Accent fill 0.25 light / 0.30 dark; no visible outline.",
+        "spaceSelected": "Raw Theme.selection fill 0.13 light / 0.20 dark; 1pt raw selection outline at 0.24.",
+        "agentSelected": "Raw Theme.selection fill 0.25 light / 0.30 dark; no visible outline.",
         "sidebarHover": "Theme.foreground fill at 0.05.",
-        "tabSelected": "Accent fill 0.18 light / 0.20 dark; 1pt outline at 0.22; semibold theme-foreground label.",
+        "tabSelected": "Raw Theme.selection fill 0.18 light / 0.20 dark; 1pt outline at 0.22; semibold theme-foreground label.",
         "tabHover": "Theme.foreground fill at 0.05 on hovered unselected tab.",
-        "searchSelected": "Accent fill at 0.14.",
+        "searchSelected": "Raw Theme.selection fill at 0.14.",
         "paneFocused": "Accent border and semibold accent title only in active pane of key window.",
         "paneUnfocused": "Theme.separator border and regular theme-secondary title.",
         "tabInsertion": "2pt accent line.",
-        "deviceSwitcher": "Accent fill at 0.055 resting / 0.18 open.",
+        "deviceSwitcher": "Raw Theme.selection fill at 0.055 resting / 0.18 open.",
         "agentStatus": "Working half-filled circle; blocked/unread filled circle; other states outline. Readable state text remains in the second row.",
         "deviceConnection": "6pt green/red filled circle next to device name; accessible status.",
         "emptyCanvas": "Choose a Space explanation with New Space action.",
@@ -493,10 +612,11 @@
         {
           "section": "About",
           "children": [
-            "Version and installation context",
-            "Homebrew update command",
-            "Direct-update eligibility",
-            "Open Source Notices"
+            "Version and Project link",
+            "Automatic checks (default on, every 24 hours while running)",
+            "Automatic download/install on quit (default off, persisted opt-in)",
+            "Status, last check, retryable failure and manual Check / View and Install action",
+            "Release Notes and Open Source Notices"
           ]
         }
       ],
@@ -550,8 +670,8 @@
       },
       "componentPreview": "Native source descriptions only. No HTML/CSS controls or synthetic tonal ramps: the shipping system uses appearance-dependent palette definitions and OS-rendered controls. DESIGN.md frontmatter owns primitive tokens.",
       "evidence": {
-        "mode": "Authorized replacement toward ACCM references; current native source scan and supplied native screenshot inspection.",
-        "contract": "docs/accm-fidelity/DIRECTION.md and .impeccable/surfaces/app-workbench-swift.md; earlier UX scope removals remain applicable.",
+        "mode": "Authorized extension of the established native Operate workbench: theme correction and app updates. Source scan, supplied native captures and implementation/reviewer evidence; no web detector.",
+        "contract": "docs/accm-fidelity/DIRECTION.md and .impeccable/surfaces/app-workbench-swift.md with the bounded theme/updater validation records; earlier scope removals remain applicable.",
         "sourceFiles": [
           "App/Theme.swift",
           "Core/Sources/HerdCore/ThemePreference.swift",
@@ -563,18 +683,36 @@
           "App/PreferenceMenu.swift",
           "App/DeviceSwitcher.swift",
           "App/SearchInput.swift",
-          "App/WindowBehavior.swift"
+          "App/WindowBehavior.swift",
+          "App/ThemeColors.swift",
+          "App/Updater.swift",
+          "App/Main.swift",
+          "App/Info.plist",
+          "project.yml"
         ],
         "inspectedScreenshots": [
-          "docs/accm-fidelity/screenshots/workbench-light.png",
-          "docs/accm-fidelity/screenshots/workbench-tokyo-dark.png",
-          "docs/accm-fidelity/screenshots/settings-appearance.png",
-          "docs/accm-fidelity/screenshots/settings-terminal.png"
+          "docs/theme-correction/evidence/tokyo-night-light.png",
+          "docs/theme-correction/evidence/gruvbox-light.png",
+          "docs/theme-correction/evidence/rose-pine-light.png",
+          "docs/app-updates/evidence/automatic-ready.png",
+          "docs/app-updates/evidence/up-to-date.png"
         ],
         "runtimeRecords": [
           "docs/accm-fidelity/evidence/native-checks.json",
           "docs/accm-fidelity/evidence/theme-menu.json",
-          "docs/accm-fidelity/evidence/space-actions-rpc.json"
+          "docs/accm-fidelity/evidence/space-actions-rpc.json",
+          "docs/theme-correction/evidence/contrast.txt",
+          "docs/theme-correction/evidence/fixture-before.ansi",
+          "docs/theme-correction/evidence/fixture-after.ansi",
+          "docs/theme-correction/evidence/pane-before.json",
+          "docs/theme-correction/evidence/pane-after.json",
+          "docs/theme-correction/evidence/system-mode-ax.txt",
+          "docs/app-updates/evidence/install-result.json",
+          "docs/app-updates/evidence/check-canceled-ax.txt",
+          "docs/app-updates/evidence/download-canceled-ax.txt",
+          "docs/app-updates/evidence/automatic-ready-ax.txt",
+          "docs/app-updates/evidence/update-failed-ax.txt",
+          "docs/app-updates/evidence/up-to-date-ax.txt"
         ],
         "buildAndTestRecords": [
           "docs/accm-fidelity/evidence/build-validation.json",
@@ -583,24 +721,124 @@
           "docs/accm-fidelity/evidence/release-tests.txt"
         ],
         "fixture": "herdrx-fidelity-20261010: synthetic Agent names/statuses/illustrative content with real PTY, attach and Space/tab/split RPC; production state is not test data.",
-        "visualCoverage": "Catppuccin light and Tokyo Night dark only. Full native palette-menu selection verifies binding, not every family visually.",
-        "documenterBoundary": "Source/evidence reads and supplied screenshot inspection; no independent app operation or runtime certification by the documenter.",
-        "finishReview": "docs/accm-fidelity/FINISH-REVIEW.md",
+        "visualCoverage": "Theme reviewer opened all ten families in both appearances, Default light, Follow Herdr dark, nine accents, hidden-pane restoration and before/after reattach. Corrected Gruvbox/Rosé Pine light captures use a unique test bundle at 1200×760pt; earlier family captures use 980×620pt. Documenter opened the representative captures listed above.",
+        "documenterBoundary": "Source/evidence reading and representative supplied screenshot inspection; no app launch, computer-use operation or independently repeated installation by the documenter.",
+        "finishReview": [
+          "docs/theme-correction/FINISH-REVIEW.md",
+          "docs/theme-correction/VERDICT.md",
+          "docs/app-updates/FINISH-REVIEW.md",
+          "docs/app-updates/VERDICT.md"
+        ],
         "untested": [
+          "OS-driven System appearance transition",
+          "Arbitrary terminal foreground/background and truecolor contrast",
           "Live Tailcat",
           "Live SSH in this pass",
           "Notification permission/delivery",
           "VoiceOver",
           "IME",
           "Older macOS runtime",
-          "Every palette/accent contrast"
+          "English updater layout and full keyboard traversal",
+          "Apple notarization or actual GitHub release publication of these changes"
         ],
         "scopeRemoval": "Independent client-owned local Shells, their lists/create entries; dedicated Agent launcher, command overrides, file tree, previews, transfer, attachments and clipboard file/image interception. Space-owned sessions, Agents, tabs and splits remain.",
         "claimsExcluded": [
           "Literal pixel identity with ACCM",
           "Production Agent activity in fixture screenshots",
-          "New release"
-        ]
+          "Universal terminal contrast",
+          "Independent process PID continuity",
+          "Server color-replay fix",
+          "Published release"
+        ],
+        "validation": [
+          "docs/theme-correction/VALIDATION.md",
+          "docs/app-updates/VALIDATION.md"
+        ],
+        "knownDocumentationDrift": "None recorded after the lead synchronized PRODUCT.md and docs/Direction.md with the current theme evidence and icon."
+      },
+      "contrast": {
+        "implementation": "App/ThemeColors.swift: ThemeColors.init/readable; App/Theme.swift: roles/stateColor.",
+        "minimumRatio": 4.5,
+        "surfaces": [
+          "Palette canvas",
+          "Chrome: background toward family foreground seed, 0.025 light / 0.06 dark",
+          "Hover: background toward family foreground seed, 0.05",
+          "Strongest sidebar selection: background toward raw accent, 0.25 light / 0.30 dark",
+          "Selected tab: chrome toward raw accent, 0.18 light / 0.20 dark"
+        ],
+        "method": "Calculate WCAG relative luminance in sRGB. Keep passing colors; otherwise binary-search a minimal mix toward whichever of black or white gives better minimum contrast across the authored surfaces.",
+        "foregroundSeedTokens": {
+          "default": [
+            "catppuccin-light-foreground",
+            "catppuccin-dark-foreground"
+          ],
+          "catppuccin": [
+            "catppuccin-light-foreground",
+            "catppuccin-dark-foreground"
+          ],
+          "tokyo-night": [
+            "tokyo-light-foreground",
+            "tokyo-dark-foreground"
+          ],
+          "gruvbox": [
+            "gruvbox-light-foreground",
+            "gruvbox-dark-foreground"
+          ],
+          "one": [
+            "one-light-foreground",
+            "one-dark-foreground"
+          ],
+          "solarized": [
+            "solarized-light-foreground",
+            "solarized-dark-foreground"
+          ],
+          "kanagawa": [
+            "kanagawa-light-foreground",
+            "kanagawa-dark-foreground"
+          ],
+          "rose-pine": [
+            "rose-pine-light-foreground",
+            "rose-pine-dark-foreground"
+          ],
+          "dracula": [
+            "dracula-companion-foreground",
+            "dracula-dark-foreground"
+          ],
+          "nord": [
+            "nord-light-foreground",
+            "nord-dark-foreground"
+          ],
+          "vesper": [
+            "vesper-companion-foreground",
+            "vesper-dark-foreground"
+          ]
+        },
+        "computedEvidence": "docs/theme-correction/evidence/contrast.txt: 3,600 foreground/secondary/accent-to-surface pairs across 12 choices × 2 appearances × 10 accent settings; minimum 4.500000001345258:1.",
+        "boundary": "Numerical role check, not measured rendered-glyph contrast. State roles use the same source algorithm but are not additional counted pairs in this record. No universal terminal foreground/background guarantee."
+      },
+      "updates": {
+        "implementation": [
+          "App/Updater.swift",
+          "App/Main.swift",
+          "App/Preferences.swift",
+          "App/Info.plist",
+          "project.yml"
+        ],
+        "framework": "Sparkle 2.9.6, one app-lifetime controller started from the main window and shared with Settings.",
+        "manualEntryPoints": [
+          "Application menu: Check for Updates…",
+          "About: Check for Updates… / View and Install Update…"
+        ],
+        "automaticChecksDefault": true,
+        "scheduledCheckIntervalSeconds": 86400,
+        "automaticDownloadsDefault": false,
+        "persistence": "Sparkle KVO-backed properties drive controls; setters preserve choices across launch. Automatic downloads require automatic checks and updater permission.",
+        "installation": "Opt-in download in background, then install when the user quits; Herdr-owned sessions continue independently. Both Homebrew and direct app installations use Sparkle.",
+        "cancellation": "Initial check and download cancellation clear progress and leave retry available. Preserve legitimate available/ready-on-quit states.",
+        "feedback": "Native spinner for pending manual check; localized status, last check, selectable failure detail and manual action. No custom progress chrome.",
+        "development": "Disabled in Debug unless HERDRX_ENABLE_UPDATES=1; debug feed override accepts localhost HTTP fixtures only.",
+        "trust": "Signed feed required and archive verified before extraction; release CI verifies archive/feed key and artifact metadata before publication. Sparkle Ed25519 verification is separate from Apple Developer ID/notarization.",
+        "releaseStatus": "Local changes and isolated signed fixture only; not published."
       }
     }
   },
@@ -650,8 +888,8 @@
       "name": "Settings",
       "kind": "nav",
       "refersTo": "settings-appearance",
-      "description": "Six native toolbar icon tabs: Appearance, Terminal, Connections, Notifications, Tailcat and About; OS-managed controls.",
-      "nativeSource": "App/Preferences.swift: Preferences"
+      "description": "Six native toolbar icon tabs and OS-managed controls. About contains the app-lifetime Sparkle controls, truthful status, cancellation recovery and manual action.",
+      "nativeSource": "App/Preferences.swift: Preferences/Updates; App/Updater.swift; App/Main.swift"
     },
     {
       "name": "Device Chooser",
@@ -696,6 +934,11 @@
         "section": "colors"
       },
       {
+        "name": "The Text Role Rule",
+        "body": "Use semantic app roles for navigation and status, keep raw selection hue separate from readable accent text, and do not recolor arbitrary terminal output to claim universal contrast.",
+        "section": "colors"
+      },
+      {
         "name": "The Reading Rule",
         "body": "Keep compact native navigation type, preserve user terminal preferences, and retain full context in help when labels truncate.",
         "section": "typography"
@@ -712,6 +955,8 @@
       "Do keep ten theme families plus Default/Follow Herdr, with appearance and accent independent.",
       "Do preserve saved sidebar width, terminal preferences, Space sessions, Agent navigation, tabs and splits.",
       "Do distinguish Space selection, Agent selection, pane focus, execution status and device connectivity.",
+      "Do derive app text and state colors against the authored surfaces while preserving independent palette and accent choices.",
+      "Do keep automatic installation opt-in, expose manual update access and report canceled or failed updates as retryable.",
       "Do keep source facts, synthetic fixture content, screenshots and completed runtime checks separate."
     ],
     "donts": [
@@ -720,7 +965,8 @@
       "Don't replace native controls or real terminals with web styling, raster mockups or simulated terminals.",
       "Don't restore a second fixed toolbar or persistent bottom status bar.",
       "Don't add decorative shadows, oversized branding or card containers around terminal panes.",
-      "Don't claim pixel identity, production Agent activity, every palette's contrast, external-service acceptance or a new release from this evidence."
+      "Don't substitute terminal ANSI foreground for every app label or use secondary text as a global control tint.",
+      "Don't claim universal terminal contrast, an OS-driven appearance-transition pass, production Agent activity, external-service acceptance or a published release from this evidence."
     ]
   }
 }

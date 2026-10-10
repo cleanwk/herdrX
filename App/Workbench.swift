@@ -56,7 +56,7 @@ struct Workbench: View {
                     }
                 }.background(GeometryReader { geo in Color.clear.onAppear { desk.canvasSize = geo.size }.onChange(of: geo.size) { desk.canvasSize = $1 } }).clipped().padding(.top, 6)
             }
-        }.foregroundStyle(Color(nsColor: Theme.foreground)).tint(Color(nsColor: Theme.secondary))
+        }.foregroundStyle(Color(nsColor: Theme.foreground)).tint(Color(nsColor: Theme.accent))
         .overlay(alignment: .leading) { if showSidebar { ResizeStrip(width: $sidebar, limits: 200...480, reset: 260).frame(width: 7).offset(x: sidebar - 3) } }
         .background(Color(nsColor: Theme.content)).background(WindowBehavior()).ignoresSafeArea(.container, edges: .top)
         .sheet(isPresented: $desk.showSearch, onDismiss: desk.restoreFocus) { Jump().environmentObject(desk).environment(\.locale, locale).background(SheetCloseHandler { desk.showSearch = false }) }
@@ -208,7 +208,7 @@ struct Jump: View {
                                 VStack(alignment: .leading, spacing: 1) { Text(row.label).lineLimit(1); Text(row.detail).font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1) }
                                 Spacer(minLength: 0)
                                 if let pane, let device = row.device, pane.agent != nil { AgentStatus(status: pane.status, unread: desk.attentionState.unread.contains(PaneKey(device: device, pane: pane.id))) }
-                            }.padding(.horizontal, 10).frame(height: 36).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).background(selection.id == id ? Color(nsColor: Theme.accent).opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 6))
+                            }.padding(.horizontal, 10).frame(height: 36).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).background(selection.id == id ? Color(nsColor: Theme.selection).opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 6))
                         }.buttonStyle(.plain).onHover { if $0 { selection.choose(id) } }.id(id).help(row.label + "\n" + row.detail).accessibilityAddTraits(selection.id == id ? .isSelected : [])
                     } }
                     if results.isEmpty { Text("No matching spaces, terminals or agents").foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading).padding(12) }

@@ -2,7 +2,6 @@ import SwiftUI
 import AppKit
 import GhosttyTerminal
 import HerdCore
-import Sparkle
 import UserNotifications
 
 struct Preferences: View {
@@ -170,39 +169,42 @@ private struct TerminalSettings: View {
 
 }
 private struct Updates: View {
-    @State private var updater: SPUStandardUpdaterController?
-    @State private var channel = "Checking installation…"
-    @State private var reason = ""
-    @State private var copied = false
-    private let brewCommand = "brew update && brew upgrade --cask herdrx"
+    @EnvironmentObject var updater: AppUpdater
     var body: some View {
         Form {
             Section("HerdrX") {
-                Text(LF("Version %@ (%@)", Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? L("Development"), Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"))
-                Text(channel).font(.caption).foregroundStyle(.secondary)
-                Link("Project", destination: URL(string: "https://github.com/cleanwk/herdrX")!)
+                HStack {
+                    Text(LF("Version %@ (%@)", Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? L("Development"), Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"))
+                    Spacer()
+                    Link("Project", destination: URL(string: "https://github.com/cleanwk/herdrX")!)
+                }
             }
             Section("Updates") {
-                Text("Install and upgrade from your existing cleanwk tap.")
-                Text(brewCommand).font(.system(.body, design: .monospaced)).textSelection(.enabled)
-                Button(LocalizedStringKey(copied ? "Copied" : "Copy Homebrew Update Command")) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(brewCommand, forType: .string); copied = true }
-                Button("Check Direct Download Updates") { updater?.checkForUpdates(nil) }.disabled(updater == nil)
-                Text(reason).font(.caption).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 3) {
+                    Toggle("Automatically check for updates", isOn: Binding(get: { updater.automaticChecks }, set: updater.setAutomaticChecks)).disabled(!updater.ready)
+                    Text("Check once a day while HerdrX is running.").font(.caption).foregroundStyle(.secondary).padding(.leading, 20)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Toggle("Automatically download and install updates", isOn: Binding(get: { updater.automaticDownloads }, set: updater.setAutomaticDownloads)).disabled(!updater.ready || !updater.allowsAutomaticUpdates)
+                    Text("Download in the background and install when you quit. Herdr sessions keep running.").font(.caption).foregroundStyle(.secondary).padding(.leading, 20)
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        if updater.checking { ProgressView().controlSize(.small) }
+                        Text(updater.status).font(.system(size: 12, weight: .medium)).fixedSize(horizontal: false, vertical: true)
+                    }.accessibilityElement(children: .combine)
+                    if let date = updater.lastCheck { Text(LF("Last checked: %@", date.formatted(date: .abbreviated, time: .shortened))).font(.caption).foregroundStyle(.secondary) }
+                    if let failure = updater.failure { Text(failure).font(.caption).foregroundStyle(.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
+                    HStack {
+                        Button(updater.availableVersion == nil ? "Check for Updates…" : "View and Install Update…") { updater.check() }.disabled(!updater.ready || !updater.canCheck)
+                        Link("Release Notes", destination: URL(string: "https://github.com/cleanwk/herdrX/releases/latest")!)
+                    }.padding(.top, 2)
+                }
             }
             DisclosureGroup("Open Source Notices") {
                 Text((try? String(contentsOf: Bundle.main.url(forResource: "Notices", withExtension: "txt") ?? URL(fileURLWithPath: "/nonexistent"), encoding: .utf8)) ?? L("See Resources/Notices.txt and Resources/Licenses in the source distribution.")).font(.caption).textSelection(.enabled)
             }
-        }.formStyle(.grouped).onAppear { identify() }
-    }
-    func identify() {
-        let url = Bundle.main.bundleURL.resolvingSymlinksInPath()
-        let verifiedBrew = ["/opt/homebrew/Caskroom/herdrx/", "/usr/local/Caskroom/herdrx/"].contains { url.path.hasPrefix($0) }
-        let possibleBrew = ["/opt/homebrew/Caskroom/herdrx", "/usr/local/Caskroom/herdrx"].contains { FileManager.default.fileExists(atPath: $0) }
-        channel = L(verifiedBrew ? "Homebrew installation" : possibleBrew ? "Homebrew is installed; ownership of this app is unverified." : "Direct download or development build")
-        let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String ?? ""
-        if verifiedBrew { reason = L("Use Homebrew to update this installation.") }
-        else if key.isEmpty || key.contains("$(") { reason = L("Direct updates are unavailable because this build has no release signing key. Use Homebrew or download a release from the project.") }
-        else { reason = L("Signed direct downloads can check for updates here."); if updater == nil { updater = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil) } }
+        }.formStyle(.grouped)
     }
 }
 

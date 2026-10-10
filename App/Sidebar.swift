@@ -30,8 +30,8 @@ struct SidebarRow<Content: View>: View {
     var body: some View {
         Button(action: action) { content().padding(.horizontal, 8).padding(.vertical, verticalPadding).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()) }
             .buttonStyle(.plain)
-            .background(selected ? Color(nsColor: Theme.accent).opacity(filledSelection ? (appearance == .dark ? 0.30 : 0.25) : (appearance == .dark ? 0.20 : 0.13)) : hovered ? Color(nsColor: Theme.foreground).opacity(0.05) : .clear, in: RoundedRectangle(cornerRadius: radius))
-            .overlay(RoundedRectangle(cornerRadius: radius).stroke(selected ? Color(nsColor: Theme.accent).opacity(filledSelection ? 0 : 0.24) : .clear, lineWidth: 1))
+            .background(selected ? Color(nsColor: Theme.selection).opacity(filledSelection ? (appearance == .dark ? 0.30 : 0.25) : (appearance == .dark ? 0.20 : 0.13)) : hovered ? Color(nsColor: Theme.foreground).opacity(0.05) : .clear, in: RoundedRectangle(cornerRadius: radius))
+            .overlay(RoundedRectangle(cornerRadius: radius).stroke(selected ? Color(nsColor: Theme.selection).opacity(filledSelection ? 0 : 0.24) : .clear, lineWidth: 1))
             .onHover { hovered = $0 }.accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
