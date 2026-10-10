@@ -510,19 +510,19 @@
         "tabWidth": {
           "minimum": "40pt",
           "maximum": "200pt",
-          "formula": "Measured title width + 20pt",
-          "gap": "6pt",
-          "edgeInset": "6pt",
-          "barHeight": "34pt",
-          "tabHeight": "24pt",
-          "verticalInset": "5pt",
+          "formula": "Measured title width + 18pt",
+          "gap": "4pt",
+          "edgeInset": "8pt",
+          "barHeight": "28pt",
+          "tabHeight": "22pt",
+          "verticalInset": "3pt",
           "sharedMetrics": "App/Tabs.swift: TabMetrics; App/Workbench.swift uses the same barHeight for the integrated bar and sidebar header."
         },
         "pane": {
-          "frameInset": "3.5pt",
-          "topTitleClearance": "Additional 7.5pt above the 3.5pt inset pane border; total top outline inset 11pt within canvas.",
+          "frameInset": "0.5pt on outer edges; shared internal boundaries",
+          "topTitleClearance": "11pt on the first row; internal titles sit below a straight shared edge",
           "canvasTopClearanceToken": "spacing.canvas-top-clearance",
-          "firstOutlinePosition": "52pt below window top: 34pt bar + 1pt divider + 6pt canvas clearance + 11pt outline inset. Source-derived; current visual confirmation pending.",
+          "firstOutlinePosition": "46pt below the top: 28pt bar + 1pt divider + 6pt clearance + 11pt outline inset",
           "terminalLeftBottomInset": "4pt",
           "terminalWidthReduction": "8pt",
           "terminalHeightReduction": "28pt",
@@ -533,11 +533,11 @@
           "titleMainAvailableFraction": "0.64 with context, otherwise 1.",
           "minimumSizeIntent": "At least 24 columns and 6 rows. PaneMetrics shares contentInset 4pt, headerHeight 24pt, horizontalOverhead 8pt and verticalOverhead 28pt between rendering, Desk.minimumPaneSize and split eligibility.",
           "splitKeyboardIncrement": "5 percentage points within minimum pane bounds.",
-          "outerCorners": "On all supported macOS versions in windowed mode, bottom-right outer corner has rounded.pane-outer-bottom (10pt); bottom-left is rounded only when sidebar hidden. Sidebar-visible left boundary and full-screen corners stay square.",
+          "outerCorners": "11pt continuous outer bottom corners; left only with sidebar hidden; full-screen and internal corners square",
           "terminalHeaderHeight": "24pt",
           "minimumSizeFormula": "width=max(160, font*0.65*24+8), height=max(100, font*1.5*6+28), in points; font fallback 13.5pt.",
-          "terminalCornerMask": "The opaque terminal surface masks the same bottom corners at 9.5pt; masks disabled for square/full-screen corners.",
-          "closeTarget": "22×22pt; 9pt semibold SF Symbol. Visible for the focused pane, hovered pane or VoiceOver.",
+          "terminalCornerMask": "Matching continuous 7.5pt concentric bottom mask",
+          "closeTarget": "22×22pt, focused opacity 0.5, pane/button hover and VoiceOver 1; 150ms ease-out; hidden hit testing disabled",
           "restoreTarget": "22×22pt; 10pt medium SF Symbol. Visible while zoomed."
         },
         "searchResults": {
@@ -890,12 +890,22 @@
       "searchSize": "14pt",
       "textGap": "4pt",
       "sourceManifest": "Resources/Icon/AgentIcons.json",
-      "rendering": "template, semantic foreground"
+      "rendering": "Color-first original, monochrome template, terminal SF fallback; CoreSVG-compatible path syntax; Kimi black backing."
     },
     "sidebarScroller": {
       "style": "overlay",
       "controlSize": "small",
       "autohides": true
+    },
+    "tabRename": {
+      "triggers": [
+        "double-click",
+        "Tab context menu",
+        "Terminal menu / ⌘⌥R"
+      ],
+      "sheetWidth": "400pt",
+      "authority": "Existing Herdr tab.rename and refreshed snapshot; serial UI queue, no optimistic label or separate persistence",
+      "validation": "Reject blank and unchanged names; inline failure with retry"
     }
   },
   "components": [
@@ -923,7 +933,7 @@
       "name": "Terminal Tab",
       "kind": "nav",
       "refersTo": "tab",
-      "description": "Natural-width 24pt AppKit tabs in a 34pt shared bar, 5pt vertical/6pt horizontal insets and 6pt gaps; semibold selection, accent fill/outline, overflow reveal and centered reorder marker.",
+      "description": "22pt native tabs in a shared 28pt bar; 3pt vertical / 8pt leading insets, 4pt gaps, 9pt text padding. 11% selected accent wash and 6% inactive neutral wash.",
       "nativeSource": "App/Tabs.swift: Tabs.Strip"
     },
     {

@@ -14,12 +14,28 @@ extension Desk {
         return result
     }
     func renameTab(_ id: String) {
-        let device = selectedDevice
-        guard device.map({ canAct(device: $0, object: "tab|" + id) }) ?? true else { return }
-        let current = device.flatMap { sessions[$0]?.tabs.first { $0.id == id }?.label }
-        guard let current else { return }
-        guard let name = NamePrompt.ask("Rename Tab", current: current) else { return }
-        if let device { objectAction(device: device, method: "tab.rename", params: ["tab_id": .string(id), "label": .string(name)]) }
+        guard tabRenameRequest == nil, let device = selectedDevice,
+              canAct(device: device, object: "tab|" + id),
+              let tab = sessions[device]?.tabs.first(where: { $0.id == id }),
+              let endpoint = devices.first(where: { $0.id == device })?.endpoint else { return }
+        captureFocus()
+        tabRenameRequest = TabRenameRequest(device: device, tab: id, space: tab.workspace, endpoint: endpoint, current: tab.label)
+    }
+    func submitTabRename(_ request: TabRenameRequest, name: String) async throws {
+        guard let name = TabName.changed(name, from: request.current) else { return }
+        let operation = tabRenameQueue.enqueue { [self] in
+            guard devices.first(where: { $0.id == request.device })?.endpoint == request.endpoint,
+                  sessions[request.device]?.tabs.contains(where: { $0.id == request.tab && $0.workspace == request.space }) == true,
+                  begin(request.device + "|tab|" + request.tab, device: request.device) else {
+                throw Failure(L("The tab is no longer available. Reconnect and try again."))
+            }
+            defer { busy.remove(request.device + "|tab|" + request.tab) }
+            let client = try rpc(request.device)
+            _ = try await client.call("tab.rename", ["tab_id": .string(request.tab), "label": .string(name)])
+            // Only a server snapshot changes the displayed name. A failed RPC leaves it intact.
+            try await refresh(request.device, client: client)
+        }
+        try await operation.value
     }
     func closeTab(_ id: String) {
         if let device = selectedDevice, let tab = sessions[device]?.tabs.first(where: { $0.id == id }) {

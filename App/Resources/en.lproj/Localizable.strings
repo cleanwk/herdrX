@@ -332,3 +332,13 @@
 "View and Install Update…" = "View and Install Update…";
 "Release Notes" = "Release Notes";
 "Check for Updates…" = "Check for Updates…";
+
+"Rename Tab…" = "Rename Tab…";
+
+"Use Chinese, spaces or symbols to name this tab." = "Use Chinese, spaces or symbols to name this tab.";
+
+"Renaming…" = "Renaming…";
+
+"Could not rename the tab: %@" = "Could not rename the tab: %@";
+
+"The tab is no longer available. Reconnect and try again." = "The tab is no longer available. Reconnect and try again.";

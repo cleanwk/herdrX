@@ -332,3 +332,13 @@
 "View and Install Update…" = "查看并安装更新…";
 "Release Notes" = "更新说明";
 "Check for Updates…" = "检查更新…";
+
+"Rename Tab…" = "重命名标签页…";
+
+"Use Chinese, spaces or symbols to name this tab." = "名称支持中文、空格和符号。";
+
+"Renaming…" = "正在重命名…";
+
+"Could not rename the tab: %@" = "无法重命名标签页：%@";
+
+"The tab is no longer available. Reconnect and try again." = "该标签页已不可用。请重新连接后再试。";

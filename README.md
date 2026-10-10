@@ -58,6 +58,8 @@
 
 ---
 
+0.1.9 优化紧凑标签栏、分屏关闭交互与连续圆角，恢复 Agent 品牌配色，并完善标签重命名的校验和服务端同步。HerdrX 保持 Herdr GUI 定位，复用已有 RPC。详见[版本说明](docs/releases/0.1.9.md)。
+
 ## 安装与升级
 
 HerdrX 通过官方 [cleanwk/homebrew-tap](https://github.com/cleanwk/homebrew-tap) 分发，支持一键安装与升级：
