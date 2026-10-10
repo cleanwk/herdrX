@@ -31,6 +31,8 @@ final class ByteProcess: @unchecked Sendable {
     private let state = NSLock()
     private var run: Run?
     private var generation = 0
+    private var resizeTotal = 0
+    var resizeCount: Int { state.lock(); defer { state.unlock() }; return resizeTotal }
     var output: (@Sendable (Data) -> Void)?
     var exited: ((Int32) -> Void)?
     var inputRejected: (() -> Void)?
@@ -44,7 +46,7 @@ final class ByteProcess: @unchecked Sendable {
         defer { argv.forEach { free($0) }; env.forEach { free($0) } }
         var fd: Int32 = -1
         let pid = herd_pty(&fd, "/bin/zsh", &argv, &env)
-        guard pid > 0 else { exited?(127); return }
+        guard pid > 0 else { exited?(127 << 8); return }
         let context = Run(fd: fd, pid: pid)
         state.lock(); generation += 1; let epoch = generation; run = context; state.unlock()
         let output = self.output
@@ -100,12 +102,24 @@ final class ByteProcess: @unchecked Sendable {
         }
     }
     func resize(_ columns: UInt16, _ rows: UInt16) {
-        state.lock(); let context = run; state.unlock()
+        state.lock(); let context = run; if context != nil { resizeTotal += 1 }; state.unlock()
         context?.queue.async {
             guard let context, context.active else { return }
             var size = winsize(ws_row: rows, ws_col: columns, ws_xpixel: 0, ws_ypixel: 0)
             _ = ioctl(context.fd, TIOCSWINSZ, &size)
         }
+    }
+    enum Activity { case idle, running, unknown }
+    func foregroundActivity() -> Activity {
+        state.lock(); let context = run; state.unlock()
+        guard let context else { return .unknown }
+        context.lock.lock(); let reaped = context.reaped; context.lock.unlock()
+        if reaped { return .idle }
+        var foreground: Int32 = 0
+        context.queue.sync { if context.active { _ = ioctl(context.fd, TIOCGPGRP, &foreground) } }
+        guard foreground > 0 else { return .unknown }
+        if foreground != context.pid { return .running }
+        return herd_is_shell(context.pid) != 0 ? .idle : .unknown
     }
     func cwd() -> String? {
         state.lock(); let context = run; state.unlock()

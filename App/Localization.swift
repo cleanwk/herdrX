@@ -8,3 +8,5 @@ func L(_ key: String) -> String {
     let bundle = Bundle.main.path(forResource: name, ofType: "lproj").flatMap(Bundle.init(path:)) ?? .main
     return bundle.localizedString(forKey: key, value: key, table: nil)
 }
+
+func LF(_ format: String, _ args: CVarArg...) -> String { String(format: L(format), arguments: args) }

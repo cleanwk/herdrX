@@ -11,7 +11,7 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
     let view = TerminalView(frame: .zero)
     var surface: TerminalSurface?
     var command: String
-    var onExit: (() -> Void)?
+    var onExit: ((Int32) -> Void)?
     private(set) var hoverURL: URL?
     init(command: String) {
         self.command = command
@@ -22,7 +22,7 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
         view.configuration = TerminalSurfaceOptions(backend: .inMemory(session))
         let session = self.session
         process.output = { session.receive($0) }
-        process.exited = { [weak self] _ in self?.onExit?() }
+        process.exited = { [weak self] status in self?.onExit?(status) }
         view.onFocus = { [weak self] in self?.focused?() }
         process.start(command)
     }
@@ -45,7 +45,7 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
 final class TerminalView: AppTerminalView {
     weak var hostSurface: TerminalSurface?
     var objectMenu: (() -> NSMenu?)?
-    var pasteAttachment: (() -> Bool)?
+    var commands: WorkbenchActions?
     private var mouseOrigin: NSEvent?
     private var localSelection = false
     private var selectionTimer: Timer?
@@ -95,18 +95,16 @@ final class TerminalView: AppTerminalView {
     override func layout() { if visible { super.layout() } }
     override func becomeFirstResponder() -> Bool { let result = super.becomeFirstResponder(); if result { onFocus?() }; return result }
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        // Resolve native app commands before Ghostty's default split/tab bindings.
-        if event.modifierFlags.contains(.command) {
-            if event.charactersIgnoringModifiers?.lowercased() == "v", pasteAttachment?() == true { return true }
-            if NSApp.mainMenu?.performKeyEquivalent(with: event) == true { return true }
-            if ["n", "t", "w", "d", "b", "k", "j", "r", "e", "f", "[", "]", "1", "2", "3", "4", "5", "6", "7", "8", "9"].contains(event.charactersIgnoringModifiers?.lowercased() ?? "") { return true }
+        let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
+        var keys: KeyModifiers = []
+        if modifiers.contains(.command) { keys.insert(.command) }; if modifiers.contains(.shift) { keys.insert(.shift) }; if modifiers.contains(.option) { keys.insert(.option) }; if modifiers.contains(.control) { keys.insert(.control) }
+        if let action = WorkbenchShortcut.action(event.charactersIgnoringModifiers ?? "", modifiers: keys), let commands {
+            if commands.enabled(action) { commands.perform(action) }; return true
         }
+        if modifiers.contains(.command), NSApp.mainMenu?.performKeyEquivalent(with: event) == true { return true }
         return super.performKeyEquivalent(with: event)
     }
-    override func keyUp(with event: NSEvent) {
-        if event.modifierFlags.contains(.command) && event.keyCode == 9 { return }
-        super.keyUp(with: event)
-    }
+
 }
 
 /// Keep native surfaces mounted even while other workspaces occupy the viewport.
@@ -116,20 +114,39 @@ struct TerminalCanvas: NSViewRepresentable {
     let dividers: [Layout.Divider]
     let setRatio: (Layout.Divider, Double) -> Void
     let previewRatio: (Layout.Divider, Double) -> Void
-    let titles: [PaneKey: String]
+    let titles: [PaneKey: PaneTitle]
     let close: (PaneKey) -> Void
     let zoomed: Bool
     let restore: () -> Void
+    let focusRevision: Int
+    let minimumPaneSize: CGSize
+    let actions: WorkbenchActions
+    let roundLeft: Bool
     func makeNSView(context: Context) -> Canvas { Canvas() }
     func updateNSView(_ canvas: Canvas, context: Context) {
+        canvas.actions = actions; canvas.roundLeft = roundLeft; canvas.focusRevision = focusRevision; canvas.minimumPaneSize = minimumPaneSize
         canvas.titles = titles; canvas.close = close; canvas.entries = terminals; canvas.focused = focused; canvas.dividers = dividers; canvas.setRatio = setRatio; canvas.previewRatio = previewRatio; canvas.zoomed = zoomed; canvas.restore = restore; canvas.needsLayout = true; canvas.needsDisplay = true
     }
     final class Canvas: NSView {
+        var actions: WorkbenchActions?
+        var roundLeft = false
         var entries: [(PaneKey, Terminal, CGRect)] = []
+        var focusRevision = 0
+        private var appliedFocusRevision = -1
+        var minimumPaneSize: CGSize = .zero
+        private var activation: NSObjectProtocol?
+        override init(frame: NSRect) {
+            super.init(frame: frame)
+            activation = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { [weak self] note in
+                MainActor.assumeIsolated { if let self, (note.object as? NSWindow) === self.window { self.needsDisplay = true; self.needsLayout = true } }
+            }
+        }
+        required init?(coder: NSCoder) { fatalError() }
+        deinit { if let activation { NotificationCenter.default.removeObserver(activation) } }
         var focused: PaneKey?
         var dividers: [Layout.Divider] = []
         var setRatio: ((Layout.Divider, Double) -> Void)?
-        var titles: [PaneKey: String] = [:]
+        var titles: [PaneKey: PaneTitle] = [:]
         var close: ((PaneKey) -> Void)?
         var previewRatio: ((Layout.Divider, Double) -> Void)?
         var zoomed = false
@@ -164,17 +181,35 @@ struct TerminalCanvas: NSViewRepresentable {
                 var frame = paneFrame(rect).insetBy(dx: 3.5, dy: 3.5)
                 // The 14pt title straddles the outline; reserve its full upper half.
                 frame.size.height = max(0, frame.height - 3.5)
-                let active = focused == key
+                let active = focused == key && window?.isKeyWindow == true
                 (active ? Theme.accent : NSColor.separatorColor).setStroke()
-                NSBezierPath(rect: frame).stroke()
+                if #available(macOS 26, *) {
+                    let bottom = abs(rect.maxY - 1) < 0.001
+                    outline(frame, left: bottom && roundLeft && rect.minX < 0.001, right: bottom && rect.maxX > 0.999).stroke()
+                } else { NSBezierPath(rect: frame).stroke() }
+                let title = titles[key] ?? PaneTitle(main: L("Terminal"), context: "")
                 let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingTail
-                let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: active ? .semibold : .regular), .foregroundColor: active ? Theme.accent : NSColor.secondaryLabelColor, .paragraphStyle: style]
-                let title = titles[key] ?? "Terminal"
-                let width = min(max(0, frame.width - 50), (title as NSString).size(withAttributes: attributes).width + 12)
-                let box = NSRect(x: frame.minX + 9, y: frame.maxY - 7, width: width, height: 14)
+                let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: active ? .semibold : .regular), .foregroundColor: NSColor.labelColor, .paragraphStyle: style]
+                let contextStyle = NSMutableParagraphStyle(); contextStyle.lineBreakMode = .byTruncatingMiddle
+                let secondary: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 10, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor, .paragraphStyle: contextStyle]
+                let available = max(0, frame.width - (zoomed ? 72 : 50))
+                let mainWidth = min(available * (title.context.isEmpty ? 1 : 0.64), (title.main as NSString).size(withAttributes: attributes).width)
+                let contextWidth = min(max(0, available - mainWidth - 10), (title.context as NSString).size(withAttributes: secondary).width)
+                let box = NSRect(x: frame.minX + 9, y: frame.maxY - 7, width: mainWidth + (contextWidth > 0 ? contextWidth + 10 : 0) + 8, height: 14)
                 Theme.content.setFill(); box.fill()
-                (title as NSString).draw(in: box.insetBy(dx: 6, dy: 0), withAttributes: attributes)
+                (title.main as NSString).draw(in: NSRect(x: box.minX + 4, y: box.minY, width: mainWidth, height: 14), withAttributes: attributes)
+                if contextWidth > 0 { (title.context as NSString).draw(in: NSRect(x: box.minX + mainWidth + 14, y: box.minY, width: contextWidth, height: 14), withAttributes: secondary) }
+
             }
+        }
+        private func outline(_ rect: NSRect, left: Bool, right: Bool) -> NSBezierPath {
+            let path = NSBezierPath(), l: CGFloat = left ? 10 : 0, r: CGFloat = right ? 10 : 0
+            path.move(to: NSPoint(x: rect.minX, y: rect.maxY)); path.line(to: NSPoint(x: rect.maxX, y: rect.maxY))
+            path.line(to: NSPoint(x: rect.maxX, y: rect.minY + r))
+            path.curve(to: NSPoint(x: rect.maxX - r, y: rect.minY), controlPoint1: NSPoint(x: rect.maxX, y: rect.minY + r * 0.45), controlPoint2: NSPoint(x: rect.maxX - r * 0.45, y: rect.minY))
+            path.line(to: NSPoint(x: rect.minX + l, y: rect.minY))
+            path.curve(to: NSPoint(x: rect.minX, y: rect.minY + l), controlPoint1: NSPoint(x: rect.minX + l * 0.45, y: rect.minY), controlPoint2: NSPoint(x: rect.minX, y: rect.minY + l * 0.45))
+            path.close(); return path
         }
         func paneFrame(_ rect: CGRect) -> CGRect { CGRect(x: bounds.width * rect.minX, y: bounds.height * (1 - rect.maxY), width: bounds.width * rect.width, height: bounds.height * rect.height) }
         final class CloseButton: NSButton {
@@ -191,6 +226,7 @@ struct TerminalCanvas: NSViewRepresentable {
             for view in subviews where view is TerminalView && !views.contains(ObjectIdentifier(view)) { view.removeFromSuperview() }
             for (key, terminal, rect) in entries {
                 let visible = rect.width > 0 && rect.height > 0
+                terminal.view.commands = actions
                 terminal.visible(visible)
                 if terminal.view.superview !== self { terminal.view.removeFromSuperview(); addSubview(terminal.view) }
                 let button = closeButtons[key] ?? CloseButton(); closeButtons[key] = button
@@ -199,10 +235,13 @@ struct TerminalCanvas: NSViewRepresentable {
                 if visible {
                     let frame = paneFrame(rect)
                     button.frame = NSRect(x: frame.maxX - 26, y: frame.maxY - 21, width: 20, height: 20)
-                    button.toolTip = L("Close") + " " + (titles[key] ?? "Pane")
+                    button.toolTip = L("Close") + " " + (titles[key]?.main ?? L("Pane"))
+                    terminal.view.toolTip = titles[key]?.full; terminal.view.setAccessibilityLabel(titles[key]?.full)
                     button.setAccessibilityLabel(button.toolTip)
                     terminal.view.frame = CGRect(x: frame.minX + 4, y: frame.minY + 4, width: max(0, frame.width - 8), height: max(0, frame.height - 18))
-                    if focused == key && window?.firstResponder !== terminal.view { window?.makeFirstResponder(terminal.view) }
+                    if focused == key, appliedFocusRevision != focusRevision, window?.isKeyWindow == true, window?.attachedSheet == nil {
+                        if window?.makeFirstResponder(terminal.view) == true { appliedFocusRevision = focusRevision }
+                    }
                 }
             }
             updateCloseButtons()
@@ -210,10 +249,10 @@ struct TerminalCanvas: NSViewRepresentable {
             restoreButton.isHidden = !zoomed
             restoreButton.frame = NSRect(x: bounds.maxX - 49, y: bounds.maxY - 21, width: 20, height: 20)
             restoreButton.image = NSImage(systemSymbolName: "arrow.down.right.and.arrow.up.left", accessibilityDescription: L("Restore Pane"))
-            restoreButton.toolTip = "Restore Pane · ⌘⇧Return"; restoreButton.invoke = { [weak self] in self?.restore?() }
+            restoreButton.toolTip = L("Restore Pane · ⌘⇧Return"); restoreButton.invoke = { [weak self] in self?.restore?() }
             #if DEBUG
             if let path = ProcessInfo.processInfo.environment["HERDRX_DIAGNOSTICS"] {
-                let report: [String: Any] = ["window": [window?.frame.width ?? 0, window?.frame.height ?? 0], "canvas": [bounds.width, bounds.height], "panes": entries.map { key, terminal, rect -> [String: Any] in ["device": key.device, "pane": key.pane, "surface": terminal.surface.map { String(describing: ObjectIdentifier($0)) } ?? "pending", "visible": rect.width > 0, "frame": [terminal.view.frame.minX, terminal.view.frame.minY, terminal.view.frame.width, terminal.view.frame.height]] }]
+                let report: [String: Any] = ["window": [window?.frame.width ?? 0, window?.frame.height ?? 0], "canvas": [bounds.width, bounds.height], "panes": entries.map { key, terminal, rect -> [String: Any] in ["device": key.device, "pane": key.pane, "surface": terminal.surface.map { String(describing: ObjectIdentifier($0)) } ?? "pending", "visible": rect.width > 0, "resizeCount": terminal.process.resizeCount, "frame": [terminal.view.frame.minX, terminal.view.frame.minY, terminal.view.frame.width, terminal.view.frame.height]] }]
                 if let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]), let file = FileHandle(forWritingAtPath: path) { _ = try? file.seekToEnd(); try? file.write(contentsOf: data + Data("\n".utf8)); try? file.close() }
             }
             #endif
@@ -222,16 +261,31 @@ struct TerminalCanvas: NSViewRepresentable {
             for divider in dividers {
                 let id = divider.path.map { $0 ? "1" : "0" }.joined()
                 let handle = handles[id] ?? Handle(); handles[id] = handle
-                handle.divider = divider; handle.commit = setRatio; handle.preview = previewRatio
+                handle.divider = divider; handle.commit = setRatio; handle.preview = previewRatio; handle.minimumPaneSize = minimumPaneSize
+                handle.setAccessibilityElement(true); handle.setAccessibilityRole(.splitter); handle.setAccessibilityLabel(L(divider.horizontal ? "Resize Pane Width" : "Resize Pane Height")); handle.setAccessibilityValue(divider.ratio * 100)
                 if handle.superview !== self { addSubview(handle) }
                 let box = divider.box
                 handle.frame = divider.horizontal
-                    ? CGRect(x: bounds.width * (box.minX + box.width * divider.ratio) - 3, y: bounds.height * (1 - box.maxY), width: 6, height: bounds.height * box.height)
-                    : CGRect(x: bounds.width * box.minX, y: bounds.height * (1 - box.minY - box.height * divider.ratio) - 3, width: bounds.width * box.width, height: 6)
+                    ? CGRect(x: bounds.width * (box.minX + box.width * divider.ratio) - 3.5, y: bounds.height * (1 - box.maxY), width: 7, height: bounds.height * box.height)
+                    : CGRect(x: bounds.width * box.minX, y: bounds.height * (1 - box.minY - box.height * divider.ratio) - 3.5, width: bounds.width * box.width, height: 7)
             }
         }
         final class Handle: NSView {
             var divider: Layout.Divider?
+            var minimumPaneSize: CGSize = .zero
+            override var acceptsFirstResponder: Bool { true }
+            func clamped(_ value: Double) -> Double {
+                guard let divider, let parent = superview else { return value }
+                let dimension = divider.horizontal ? parent.bounds.width * divider.box.width : parent.bounds.height * divider.box.height
+                let minimum = divider.horizontal ? minimumPaneSize.width : minimumPaneSize.height
+                let edge = min(0.5, max(0.1, minimum / max(1, dimension)))
+                return min(1 - edge, max(edge, value))
+            }
+            override func accessibilityMinValue() -> Any? { clamped(0) * 100 }
+            override func accessibilityMaxValue() -> Any? { clamped(1) * 100 }
+            override func accessibilityPerformIncrement() -> Bool { guard let divider else { return false }; commit?(divider, clamped(divider.ratio + 0.05)); return true }
+            override func accessibilityPerformDecrement() -> Bool { guard let divider else { return false }; commit?(divider, clamped(divider.ratio - 0.05)); return true }
+            override func keyDown(with event: NSEvent) { if [124, 125].contains(event.keyCode) { _ = accessibilityPerformIncrement() } else if [123, 126].contains(event.keyCode) { _ = accessibilityPerformDecrement() } else { super.keyDown(with: event) } }
             var commit: ((Layout.Divider, Double) -> Void)?
             var preview: ((Layout.Divider, Double) -> Void)?
             private var start: CGPoint = .zero
@@ -242,13 +296,13 @@ struct TerminalCanvas: NSViewRepresentable {
                 guard let initial, let parent = superview else { return }
                 let delta = initial.horizontal ? (event.locationInWindow.x - start.x) / (parent.bounds.width * initial.box.width) : (start.y - event.locationInWindow.y) / (parent.bounds.height * initial.box.height)
                 // Local layouts update continuously; remote layouts commit on release.
-                preview?(initial, min(0.9, max(0.1, initial.ratio + delta)))
+                preview?(initial, clamped(initial.ratio + delta))
             }
             override func mouseUp(with event: NSEvent) {
                 defer { initial = nil }
                 guard let initial, let parent = superview else { return }
                 let delta = initial.horizontal ? (event.locationInWindow.x - start.x) / (parent.bounds.width * initial.box.width) : (start.y - event.locationInWindow.y) / (parent.bounds.height * initial.box.height)
-                commit?(initial, min(0.9, max(0.1, initial.ratio + delta)))
+                commit?(initial, clamped(initial.ratio + delta))
             }
         }
     }

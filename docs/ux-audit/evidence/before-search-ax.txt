@@ -1,0 +1,2 @@
+There has been no change in the accessibility tree for Window: "".
+The focused UI element is 65 文本栏 (settable) Value: alpha, Placeholder: 搜索 Space、终端或 Agent

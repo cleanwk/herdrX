@@ -1,3 +1,5 @@
+> 历史记录：本文件描述此前版本。当前功能减法、删除范围和逐项结果以 [本轮验收](ux-audit/RESULTS.md) 为准；不得按旧清单恢复 Agent 启动器、文件预览、传输或附件投递。
+
 # Validation
 
 验证日期：2026-10-10。本机 Xcode 27 / Apple Silicon。实际运行的 Herdr 为 0.9.3，protocol 22。

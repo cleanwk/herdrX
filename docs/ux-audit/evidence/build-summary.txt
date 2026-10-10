@@ -1,0 +1,9 @@
+2026-10-10
+Baseline: 3a006f4, working branch: codex/core-ux-subtraction
+Debug build: xcodebuild configuration Debug, ad-hoc, ONLY_ACTIVE_ARCH=YES
+Universal Release: scripts/build.sh (build/ux-fixture/release-final.log)
+Core tests: 19 pass, 0 fail, 0 skip
+PTY: 20 restart generations plus idle/foreground-child/interrupt/exec-ed-task checks passed
+Release contract: 4 Python tests passed
+No GitHub publish, tag, tap update or local installation performed in this iteration.
+Final copy-only Tailcat cleanup rebuilt universal Release (build/ux-fixture/release-copy-final.log); codesign --verify --deep --strict passed; lipo: x86_64 arm64; bundle version 0.1.5.

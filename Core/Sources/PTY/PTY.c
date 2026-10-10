@@ -21,3 +21,9 @@ int herd_cwd(pid_t pid, char *buffer, int size) {
     if (proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &info, sizeof(info)) != sizeof(info)) return 0;
     strlcpy(buffer, info.pvi_cdir.vip_path, size); return 1;
 }
+
+int herd_is_shell(int pid) {
+    struct proc_bsdinfo info;
+    if (proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, sizeof(info)) != sizeof(info)) return 0;
+    return !strcmp(info.pbi_comm, "zsh") || !strcmp(info.pbi_comm, "bash") || !strcmp(info.pbi_comm, "fish") || !strcmp(info.pbi_comm, "sh");
+}

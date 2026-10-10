@@ -1,0 +1,11 @@
+The following is a diff from the previous accessibility tree for Window: "" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 0-64
++73 表单 Secondary Actions: Raise
++	74 container
++		75 文本栏 (settable) Description: 搜索, Value: never-match, Placeholder: 搜索空间、终端或 Agent
++		76 滚动区
++			77 列表 Secondary Actions: AXScrollToTop, AXScrollToBottom
++				78 文本 没有匹配的空间、终端或 Agent
++		79 文本 ↑ ↓ 选择     ↩ 打开     Esc 关闭
++		80 按钮 取消
+The focused UI element is 75 文本栏 (settable) Description: 搜索, Value: never-match, Placeholder: 搜索空间、终端或 Agent

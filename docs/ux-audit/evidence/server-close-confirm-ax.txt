@@ -1,0 +1,16 @@
+Window: "", App: HerdrX.
+0 对话框 Description: 警告, Secondary Actions: Raise
+	1 图像 HerdrX 警告
+	2 text 关闭面板“登录问题排查”？ 这将终止 1 个服务器面板及其在 本机工作 · ux-a 上的进程。断开连接只会释放客户端连接。
+	3 按钮 取消, ID: action-button-2
+	4 按钮 关闭, ID: action-button-1
+5 menu bar
+	6 HerdrX
+	7 文件
+	8 编辑
+	9 显示
+	10 工作区
+	11 窗口
+	12 帮助
+
+The focused UI element is 0 对话框 Description: 警告, Secondary Actions: Raise

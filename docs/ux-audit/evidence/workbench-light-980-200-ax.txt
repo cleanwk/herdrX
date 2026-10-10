@@ -1,0 +1,24 @@
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			4 单选按钮 Implementation  2, Description: Implementation, Help: 2 个面板, Value: 1
++			65 单选按钮 长名称任务标签 02 — Navigation  2, Description: 长名称任务标签 02 — Navigation, Help: 2 个面板, Value: 0
++			66 单选按钮 长名称任务标签 03 — Navigation  2, Description: 长名称任务标签 03 — Navigation, Help: 2 个面板, Value: 0
++			67 单选按钮 长名称任务标签 04 — Navigation  2, Description: 长名称任务标签 04 — Navigation, Help: 2 个面板, Value: 0
++			68 单选按钮 长名称任务标签 05 — Navigation  2, Description: 长名称任务标签 05 — Navigation, Help: 2 个面板, Value: 0
++			69 单选按钮 长名称任务标签 06 — Navigation  2, Description: 长名称任务标签 06 — Navigation, Help: 2 个面板, Value: 0
++			70 单选按钮 长名称任务标签 07 — Navigation  2, Description: 长名称任务标签 07 — Navigation, Help: 2 个面板, Value: 0
++			71 单选按钮 长名称任务标签 08 — Navigation  2, Description: 长名称任务标签 08 — Navigation, Help: 2 个面板, Value: 0
++			72 单选按钮 长名称任务标签 09 — Navigation  2, Description: 长名称任务标签 09 — Navigation, Help: 2 个面板, Value: 0
++			73 单选按钮 长名称任务标签 10 — Navigation  2, Description: 长名称任务标签 10 — Navigation, Help: 2 个面板, Value: 0
++			74 单选按钮 长名称任务标签 11 — Navigation  2, Description: 长名称任务标签 11 — Navigation, Help: 2 个面板, Value: 0
++			75 单选按钮 长名称任务标签 12 — Navigation  2, Description: 长名称任务标签 12 — Navigation, Help: 2 个面板, Value: 0
+~		7 按钮 Description: 新建空间, Help: 在 本机工作 · ux-a 新建空间 · ⌘⇧N
+~				12 按钮 Shell 1 · ~
+~				13 按钮 (selected) Description: 登录问题排查与长名称工作空间 Alpha、codex/core-ux-subtraction、等待输入, Help: 登录问题排查与长名称工作空间 Alpha · /Users/kai/github/herdrX/build/ux-fixture/alpha · /Users/kai/github/herdrX/build/ux-fixture/alpha
+~				18 按钮 (selected) Description: 登录问题排查、codex · 登录问题排查与长名称工作空间 Alpha · 本机工作 · ux-a、等待输入, Help: 登录问题排查
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+fixture only
++		76 分离器 Description: 调整面板宽度, Value: 50, Secondary Actions: Increment, Decrement
+The focused UI element is 0 标准窗口 HerdrX, ID: desk, Secondary Actions: Raise

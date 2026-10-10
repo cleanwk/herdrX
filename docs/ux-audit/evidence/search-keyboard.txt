@@ -1,0 +1,6 @@
+The following is a diff from the previous accessibility tree for Window: "" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~				66 按钮 Description: 长名称任务标签 02 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 02 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
+~				67 按钮 (selected) Description: 长名称任务标签 03 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 03 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
+The focused UI element is 63 文本栏 (settable) Description: 搜索, Value: Navigation, Placeholder: 搜索空间、终端或 Agent

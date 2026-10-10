@@ -1,0 +1,102 @@
+[
+  {
+    "query": "dlxf",
+    "ms": 503,
+    "inputObserved": true
+  },
+  {
+    "query": "001",
+    "ms": 801,
+    "inputObserved": true
+  },
+  {
+    "query": "denglu",
+    "ms": 837,
+    "inputObserved": true
+  },
+  {
+    "query": "never-match",
+    "ms": 812,
+    "inputObserved": true
+  },
+  {
+    "query": "020",
+    "ms": 827,
+    "inputObserved": true
+  },
+  {
+    "query": "dlxf",
+    "ms": 812,
+    "inputObserved": true
+  },
+  {
+    "query": "001",
+    "ms": 819,
+    "inputObserved": true
+  },
+  {
+    "query": "denglu",
+    "ms": 801,
+    "inputObserved": true
+  },
+  {
+    "query": "never-match",
+    "ms": 784,
+    "inputObserved": true
+  },
+  {
+    "query": "020",
+    "ms": 852,
+    "inputObserved": true
+  },
+  {
+    "query": "dlxf",
+    "ms": 875,
+    "inputObserved": true
+  },
+  {
+    "query": "001",
+    "ms": 815,
+    "inputObserved": true
+  },
+  {
+    "query": "denglu",
+    "ms": 887,
+    "inputObserved": true
+  },
+  {
+    "query": "never-match",
+    "ms": 806,
+    "inputObserved": true
+  },
+  {
+    "query": "020",
+    "ms": 784,
+    "inputObserved": true
+  },
+  {
+    "query": "dlxf",
+    "ms": 825,
+    "inputObserved": true
+  },
+  {
+    "query": "001",
+    "ms": 861,
+    "inputObserved": true
+  },
+  {
+    "query": "denglu",
+    "ms": 835,
+    "inputObserved": true
+  },
+  {
+    "query": "never-match",
+    "ms": 834,
+    "inputObserved": true
+  },
+  {
+    "query": "020",
+    "ms": 785,
+    "inputObserved": true
+  }
+]

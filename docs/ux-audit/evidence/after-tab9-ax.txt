@@ -1,0 +1,25 @@
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 29
+~			4 单选按钮 Implementation, Help: 1 个面板, Value: 0
++			54 单选按钮 长名称任务标签 02 — Navigation, Help: 1 个面板, Value: 0
++			55 单选按钮 长名称任务标签 03 — Navigation, Help: 1 个面板, Value: 0
++			56 单选按钮 长名称任务标签 04 — Navigation, Help: 1 个面板, Value: 0
++			57 单选按钮 长名称任务标签 05 — Navigation, Help: 1 个面板, Value: 0
++			58 单选按钮 长名称任务标签 06 — Navigation, Help: 1 个面板, Value: 0
++			59 单选按钮 长名称任务标签 07 — Navigation, Help: 1 个面板, Value: 0
++			60 单选按钮 长名称任务标签 08 — Navigation, Help: 1 个面板, Value: 0
++			61 单选按钮 长名称任务标签 09 — Navigation, Help: 1 个面板, Value: 1
++			62 单选按钮 长名称任务标签 10 — Navigation, Help: 1 个面板, Value: 0
++			63 单选按钮 长名称任务标签 11 — Navigation, Help: 1 个面板, Value: 0
++			64 单选按钮 长名称任务标签 12 — Navigation, Help: 1 个面板, Value: 0
+~		6 菜单按钮 拆分为二乘一的矩形, ID: rectangle.split.2x1
+~		7 按钮 Description: 新建 空间, Help: 在 本机工作 · ux-a 新建空间 · ⌘⇧N
+~		8 菜单按钮 向下移动, ID: chevron.down
+~				12 按钮 Shell 1 · ~
+~				13 按钮 (selected) Description: 登录问题排查与长名称工作空间 Alpha、codex/core-ux-subtraction, Help: 登录问题排查与长名称工作空间 Alpha · /Users/kai/github/herdrX/build/ux-fixture/alpha · /Users/kai/github/herdrX/build/ux-fixture/alpha
+~				15 文本 Cannot connect to /Users/kai/github/herdrX/build/ux-fixture/offline.sock: No such file or directory · Retrying in 8s
+~				25 按钮 (selected) Description: 长名称任务标签 09 — Navigation, Help: 长名称任务标签 09 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha

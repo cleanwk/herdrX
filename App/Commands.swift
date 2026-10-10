@@ -18,19 +18,16 @@ struct WorkbenchCommands: Commands {
     }
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            button("New Agent…", "agent", "n")
-            button("New Terminal", "terminal", "t")
+            button("Close", "close", "w")
+            Divider()
+            button("New Terminal Tab", "terminal", "t")
             button("Quick New Space", "space", "n", [.command, .shift])
-            button("New Tab", "tab", "t", [.command, .option])
         }
         CommandGroup(replacing: .windowSize) {
-            button("Close", "close", "w")
             button("Close Pane…", "closePane", "w", [.command, .shift])
             button("Close Tab…", "closeTab", "w", [.command, .option])
             Divider()
             button("Toggle Sidebar", "sidebar", "b")
-            button("Browse Files", "files", "e", [.command, .shift])
-            button("File Manager…", "fileManager", "f", [.command, .shift])
         }
         CommandMenu(L("Workspace")) {
             button("Search…", "search", "k")

@@ -1,0 +1,1 @@
+Stopped only isolated Debug PID 21128, named Herdr servers herdrx-ux-20261010-a (PID 11976), herdrx-ux-20261010-b (PID 16340), and synthetic metadata servers PIDs 17913/17925. ps confirmed all five no longer running. User production sessions and installed app were not stopped. Fixture build directories retained as local diagnostics; no user files or credentials deleted.

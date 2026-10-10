@@ -12,13 +12,13 @@ struct ExtensionSettings: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Picker("Device", selection: $deviceID) { ForEach(desk.devices) { Text($0.displayName).tag($0.id) } }.disabled(busy)
+                Picker("Device", selection: $deviceID) { Text("Select device").tag(""); ForEach(desk.devices) { Text($0.displayName).tag($0.id) } }.disabled(busy)
                 Button("Refresh") { Task { await refresh() } }.disabled(busy)
                 if busy { ProgressView().controlSize(.small) }
             }
             if let error { Text(error).font(.caption).foregroundStyle(.secondary) }
             HSplitView {
-                List(selection: $selected) { ForEach(installed) { plugin in VStack(alignment: .leading) { Text(plugin.name); Text(plugin.enabled ? "Enabled" : "Disabled").font(.caption).foregroundStyle(.secondary) }.tag(plugin.id) } }.frame(minWidth: 170, maxWidth: 210)
+                List(selection: $selected) { ForEach(installed) { plugin in VStack(alignment: .leading) { Text(plugin.name); Text(LocalizedStringKey(plugin.enabled ? "Enabled" : "Disabled")).font(.caption).foregroundStyle(.secondary) }.tag(plugin.id) } }.frame(minWidth: 170, maxWidth: 210)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         if let plugin = installed.first(where: { $0.id == selected }) {
@@ -27,17 +27,20 @@ struct ExtensionSettings: View {
                             Toggle("Enabled in Herdr", isOn: Binding(get: { plugin.enabled }, set: { enabled in run { try await Extensions.setEnabled($0, plugin: plugin.id, enabled: enabled) } })).disabled(busy)
                             if !plugin.actions.isEmpty { Text("Actions").font(.headline) }
                             ForEach(plugin.actions, id: \.self) { action in
-                                Button(action["title"].string ?? action["id"].string ?? "Action") { run { rpc in
-                                    _ = try await Extensions.invoke(rpc, plugin: plugin.id, action: action["id"].string ?? "", context: context)
+                                Button(action["title"].string ?? action["id"].string ?? L("Action")) { let capturedContext = context; run { rpc in
+                                    _ = try await Extensions.invoke(rpc, plugin: plugin.id, action: action["id"].string ?? "", context: capturedContext)
                                 } }.disabled(!plugin.enabled || busy || !available(action))
                             }
                             if !plugin.panes.isEmpty { Text("Terminal panels").font(.headline) }
                             ForEach(plugin.panes, id: \.self) { pane in
-                                HStack { Text(pane["title"].string ?? "Panel"); Spacer(); Button("Open in Tab") { run { rpc in
-                                    let result = try await Extensions.open(rpc, plugin: plugin.id, entry: pane["id"].string ?? "", workspace: desk.selectedDevice == deviceID ? desk.selectedSpace : nil)
-                                    let session = try await Session.load(rpc); desk.sessions[deviceID] = session
+                                HStack { Text(pane["title"].string ?? L("Panel")); Spacer(); Button("Open in Tab") {
+                                    let target = deviceID, workspace = desk.selectedDevice == deviceID ? desk.selectedSpace : nil, revision = desk.focusRevision
+                                    run { rpc in
+                                    let result = try await Extensions.open(rpc, plugin: plugin.id, entry: pane["id"].string ?? "", workspace: workspace)
+                                    try await desk.refresh(target, client: rpc)
+                                    guard let session = desk.sessions[target] else { return }
                                     let id = result["pane"]["pane_id"].string ?? result["plugin_pane"]["pane"]["pane_id"].string
-                                    if let pane = session.panes.first(where: { $0.id == id }) { desk.select(device: deviceID, space: pane.workspace, tab: pane.tab) }
+                                    if revision == desk.focusRevision, let pane = session.panes.first(where: { $0.id == id }) { desk.select(device: target, space: pane.workspace, tab: pane.tab) }
                                     desk.reindex()
                                 } }.disabled(!plugin.enabled || busy) }
                             }
@@ -45,12 +48,12 @@ struct ExtensionSettings: View {
                             ForEach(logs, id: \.self) { log in
                                 VStack(alignment: .leading, spacing: 4) { Text((log["action_id"].string ?? log["event"].string ?? "Command") + " · " + (log["status"].string ?? "")).font(.callout); if let error = log["error"].string { Text(error).font(.caption) }; if let text = log["stdout"].string, !text.isEmpty { Text(String(text.prefix(4000))).font(.system(.caption, design: .monospaced)).textSelection(.enabled) } }
                             }
-                        } else { Text(installed.isEmpty ? "No plugins found on this device. Install with herdr plugin install, then refresh." : "Choose a Herdr plugin.").foregroundStyle(.secondary) }
+                        } else { Text(LocalizedStringKey(busy ? "Loading plugins…" : deviceID.isEmpty ? "Select a device to inspect its plugins." : error != nil ? "Could not load plugins. Retry when the device is connected." : installed.isEmpty ? "No plugins found on this device. Install with herdr plugin install, then refresh." : "Choose a Herdr plugin.")).foregroundStyle(.secondary) }
                     }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             Text("Herdr runs and manages extensions. HerdrX displays their actions, logs and terminal panels.").font(.caption).foregroundStyle(.secondary)
-        }.onAppear { if deviceID.isEmpty { deviceID = desk.selectedDevice ?? desk.devices.first?.id ?? "" } }
+        }.padding(20).onAppear { if deviceID.isEmpty { deviceID = desk.selectedDevice ?? desk.devices.first?.id ?? "" } }
         .task(id: deviceID) { installed = []; logs = []; selected = nil; await refresh() }
         .task(id: selected) {
             await refreshLogs()
@@ -75,7 +78,8 @@ struct ExtensionSettings: View {
         return scopes.isEmpty || scopes.contains("global") || (desk.selectedDevice == deviceID && ((scopes.contains("workspace") && desk.selectedSpace != nil) || (scopes.contains("tab") && !desk.selectedTab.isEmpty) || (scopes.contains("pane") && desk.currentPane != nil)))
     }
     func run(_ action: @escaping (RPC) async throws -> Void) {
-        Task { busy = true; error = nil; do { try await action(desk.rpc(deviceID)); await refresh() } catch { self.error = error.localizedDescription }; busy = false }
+        guard !busy, desk.canWrite(deviceID) else { return }; let id = deviceID; busy = true; error = nil
+        Task { defer { busy = false }; do { try await action(desk.rpc(id)); await refresh() } catch { self.error = error.localizedDescription } }
     }
     func refresh() async {
         let id = deviceID; guard !id.isEmpty else { return }; busy = true
@@ -83,7 +87,7 @@ struct ExtensionSettings: View {
             let values = try await Extensions.list(desk.rpc(id))
             guard deviceID == id, !Task.isCancelled else { return }
             installed = values; error = nil; await refreshLogs()
-        } catch { if deviceID == id, !Task.isCancelled { self.error = "Plugin API unavailable on this device: " + error.localizedDescription } }
+        } catch { if deviceID == id, !Task.isCancelled { self.error = L("Plugin API unavailable on this device:") + " " + error.localizedDescription } }
         if deviceID == id { busy = false }
     }
     func refreshLogs() async {

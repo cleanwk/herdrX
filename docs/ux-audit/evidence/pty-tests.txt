@@ -1,0 +1,2 @@
+PASS: idle shell / foreground child / interrupt / exec-ed task classification
+PASS: 20 actual PTY restart/output/write generations; no previous-run bytes after restart

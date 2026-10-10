@@ -2,6 +2,10 @@ import Foundation
 
 public struct Item: Identifiable, Equatable, Sendable {
     public let id: String
+    public let customLabel: String?
+    public let agentTitle: String?
+    public let sessionName: String?
+    public let terminalTitle: String?
     public let label: String
     public let workspace: String
     public let tab: String
@@ -18,7 +22,11 @@ public struct Item: Identifiable, Equatable, Sendable {
         terminal = value["terminal_id"].string; agent = value["agent"].string
         status = value["agent_status"].string ?? "unknown"
         cwd = value["foreground_cwd"].string ?? value["cwd"].string
-        label = value["title"].string ?? value["label"].string ?? value["terminal_title_stripped"].string ?? value["name"].string ?? agent ?? "Shell"
+        customLabel = DisplayTitle.clean(value["label"].string)
+        agentTitle = DisplayTitle.clean(value["title"].string)
+        sessionName = DisplayTitle.clean(value["name"].string)
+        terminalTitle = DisplayTitle.clean(value["terminal_title_stripped"].string)
+        label = customLabel ?? agentTitle ?? terminalTitle ?? sessionName ?? agent ?? "Shell"
         tokens = value["tokens"].object
         stateLabel = value["state_labels"][status].string ?? status
     }
@@ -54,13 +62,18 @@ public struct Search: Sendable {
         public init(id: String, name: String, context: String = "") { self.id = id; self.name = name; self.context = context }
     }
     private struct Row: Sendable { let id: String; let name: String; let latin: String; let initials: String; let context: String }
-    private let rows: [Row]
+    private var rows: [Row]
+    private var source: [String: Document] = [:]
     public init(_ items: [(String, String)]) { self.init(documents: items.map { Document(id: $0.0, name: $0.1) }) }
-    public init(documents: [Document]) {
+    public init(documents: [Document]) { rows = []; update(documents: documents) }
+    public mutating func update(documents: [Document]) {
+        let previous = Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
         rows = documents.map { item in
+            if let old = source[item.id], old.name == item.name, old.context == item.context, let row = previous[item.id] { return row }
             let latin = Self.latin(item.name)
             return Row(id: item.id, name: item.name.lowercased(), latin: latin, initials: latin.split(separator: " ").compactMap(\.first).map(String.init).joined(), context: (item.context + " " + Self.latin(item.context)).lowercased())
         }
+        source = Dictionary(uniqueKeysWithValues: documents.map { ($0.id, $0) })
     }
     private static func latin(_ text: String) -> String { (text.applyingTransform(.toLatin, reverse: false)?.applyingTransform(.stripDiacritics, reverse: false) ?? text).lowercased() }
     public func query(_ input: String) -> [String] {
