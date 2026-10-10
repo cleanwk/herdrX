@@ -41,6 +41,6 @@ CI runner 使用 GitHub 当前公布的 [xcode-27](https://github.com/actions/ru
 
 Brew 可以安装 ad-hoc 签名的 cask，但 macOS 可能阻止首次启动。先尝试打开应用，再在系统设置 → 隐私与安全点击“仍要打开”，由用户确认这个应用。更新后可能需要再次确认。流程不修改系统 Gatekeeper 设置或移除 quarantine。参考 [Apple 的说明](https://support.apple.com/en-us/102445)及 [Homebrew 的安全模型](https://docs.brew.sh/Homebrew-Security-and-Supply-Chain)。
 
-## 名称修正
+## 名称
 
-从 0.1.1 起，应用与包名统一为 HerdrX，Brew token 为 `herdrx`。旧 `herd-x` 通过 tap 的 `cask_renames.json` 迁移。应用的内部 bundle ID 和已有数据目录保留，以便沿用设备配置及偏好设置；它们不决定界面或安装名称。历史图标生成提示保留原始记录。
+应用与包名为 HerdrX，Brew token 为 `herdrx`。当前处于早期开发，直接采用新的 bundle ID 与数据目录，不提供旧名称迁移层。

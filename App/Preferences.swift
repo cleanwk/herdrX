@@ -73,7 +73,7 @@ private struct Updates: View {
             Text("Homebrew manages Brew installations. Signed direct downloads can use Sparkle when a release signing key is configured.").font(.caption).foregroundStyle(.secondary)
             Button("Check Direct Download Updates") { updater?.checkForUpdates(nil) }.disabled(updater == nil)
         }.formStyle(.grouped).onAppear {
-            let brewOwned = ["/opt/homebrew/Caskroom/herdrx", "/usr/local/Caskroom/herdrx", "/opt/homebrew/Caskroom/herd-x", "/usr/local/Caskroom/herd-x"].contains { FileManager.default.fileExists(atPath: $0) }
+            let brewOwned = ["/opt/homebrew/Caskroom/herdrx", "/usr/local/Caskroom/herdrx"].contains { FileManager.default.fileExists(atPath: $0) }
             let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String ?? ""
             if !brewOwned, !key.isEmpty, !key.contains("$(") { updater = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil) }
         }

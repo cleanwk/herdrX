@@ -96,7 +96,7 @@ final class Desk: ObservableObject {
         else if let divider = dividers.last(where: { $0.panes.contains(focused) && $0.horizontal == ["left", "right"].contains(direction) }) { setRatio(divider, ratio: divider.ratio + (["right", "down"].contains(direction) ? 0.05 : -0.05)) }
     }
     private let saveURL = Desk.support.appendingPathComponent("devices.json")
-    static var support: URL { FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/Herd-X") }
+    static var support: URL { FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/HerdrX") }
     var currentDevice: Device? { devices.first { $0.id == selectedDevice } }
     var currentPane: Item? { guard let focused else { return nil }; return sessions[focused.device]?.panes.first { $0.id == focused.pane } }
     var activeRects: [(PaneKey, CGRect)] {

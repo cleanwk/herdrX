@@ -49,13 +49,13 @@ targets:
     settings:
       configs:
         Debug:
-          PRODUCT_BUNDLE_IDENTIFIER: io.github.cleanwk.herd-x.dev
+          PRODUCT_BUNDLE_IDENTIFIER: io.github.cleanwk.herdrx.dev
           ENABLE_HARDENED_RUNTIME: NO
       base:
         PRODUCT_NAME: HerdrX
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.cleanwk.herd-x
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.cleanwk.herdrx
         SWIFT_VERSION: '5.0'
-        MARKETING_VERSION: '0.1.1'
+        MARKETING_VERSION: '0.1.2'
         CURRENT_PROJECT_VERSION: 1
         CODE_SIGN_IDENTITY: '-'
         CODE_SIGN_STYLE: Manual
