@@ -58,6 +58,7 @@ brew install xcodegen go
 scripts/build.sh
 scripts/test-pty.sh
 scripts/test-tabs.sh
+scripts/test-panes.sh
 python3 -m unittest discover -s scripts -p 'test_*.py'
 scripts/package.sh
 ```

@@ -107,14 +107,6 @@ final class TerminalView: AppTerminalView {
 
 }
 
-/// Chrome geometry is also used by split validation; terminal row capacity must agree with rendering.
-enum PaneMetrics {
-    static let contentInset: CGFloat = 4
-    static let headerHeight: CGFloat = 24
-    static let horizontalOverhead = contentInset * 2
-    static let verticalOverhead = headerHeight + contentInset
-}
-
 /// Keep native surfaces mounted even while other workspaces occupy the viewport.
 struct TerminalCanvas: NSViewRepresentable {
     let terminals: [(PaneKey, Terminal, CGRect)]
@@ -129,15 +121,13 @@ struct TerminalCanvas: NSViewRepresentable {
     let focusRevision: Int
     let minimumPaneSize: CGSize
     let actions: WorkbenchActions
-    let roundLeft: Bool
     func makeNSView(context: Context) -> Canvas { Canvas() }
     func updateNSView(_ canvas: Canvas, context: Context) {
-        canvas.actions = actions; canvas.roundLeft = roundLeft; canvas.focusRevision = focusRevision; canvas.minimumPaneSize = minimumPaneSize
+        canvas.actions = actions; canvas.focusRevision = focusRevision; canvas.minimumPaneSize = minimumPaneSize
         canvas.titles = titles; canvas.close = close; canvas.entries = terminals; canvas.focused = focused; canvas.dividers = dividers; canvas.setRatio = setRatio; canvas.previewRatio = previewRatio; canvas.zoomed = zoomed; canvas.restore = restore; canvas.needsLayout = true; canvas.needsDisplay = true
     }
     final class Canvas: NSView {
         var actions: WorkbenchActions?
-        var roundLeft = false
         var entries: [(PaneKey, Terminal, CGRect)] = []
         var focusRevision = 0
         private var appliedFocusRevision = -1
@@ -199,17 +189,14 @@ struct TerminalCanvas: NSViewRepresentable {
         }
         override func draw(_ dirtyRect: NSRect) {
             Theme.content.setFill(); bounds.fill()
-            // Focused shared edges draw last, so adjacent panes cannot erase the accent.
-            let ordered = entries.filter { $0.2.width > 0 }.sorted { ($0.0 == focused ? 1 : 0) < ($1.0 == focused ? 1 : 0) }
-            for (key, _, rect) in ordered {
+            for (key, _, rect) in entries where rect.width > 0 && rect.height > 0 {
                 let frame = borderFrame(rect)
                 let active = focused == key
-                let corners = bottomCorners(rect)
                 if let context = NSGraphicsContext.current?.cgContext {
                     context.saveGState()
                     context.setStrokeColor((active ? Theme.accent : Theme.foreground.withAlphaComponent(0.28)).cgColor)
-                    context.setLineWidth(1)
-                    context.addPath(outline(frame, left: corners.left ? 11 : 0, right: corners.right ? 11 : 0))
+                    context.setLineWidth(PaneMetrics.borderWidth(scale: window?.backingScaleFactor ?? 2))
+                    context.addRect(frame)
                     context.strokePath(); context.restoreGState()
                 }
                 let title = titles[key] ?? PaneTitle(main: L("Terminal"), context: "")
@@ -220,7 +207,7 @@ struct TerminalCanvas: NSViewRepresentable {
                 let available = max(0, frame.width - (zoomed ? 82 : 56))
                 let mainWidth = min(available * (title.context.isEmpty ? 1 : 0.64), (title.main as NSString).size(withAttributes: attributes).width)
                 let contextWidth = min(max(0, available - mainWidth - 10), (title.context as NSString).size(withAttributes: secondary).width)
-                let box = NSRect(x: frame.minX + 9, y: frame.maxY - (rect.minY < 0.001 ? 7 : 19), width: mainWidth + (contextWidth > 0 ? contextWidth + 10 : 0) + 8, height: 14)
+                let box = NSRect(x: frame.minX + 9, y: frame.maxY - 7, width: mainWidth + (contextWidth > 0 ? contextWidth + 10 : 0) + 8, height: 14)
                 Theme.content.setFill(); box.fill()
                 (title.main as NSString).draw(in: NSRect(x: box.minX + 4, y: box.minY, width: mainWidth, height: 14), withAttributes: attributes)
                 if contextWidth > 0 { (title.context as NSString).draw(in: NSRect(x: box.minX + mainWidth + 14, y: box.minY, width: contextWidth, height: 14), withAttributes: secondary) }
@@ -230,31 +217,11 @@ struct TerminalCanvas: NSViewRepresentable {
             Theme.content.setFill()
             for button in closeButtons.values where !button.isHidden { button.frame.fill() }
         }
-        /// SwiftUI's continuous shape is shared by the outline and the terminal mask.
-        private func outline(_ rect: CGRect, left: CGFloat, right: CGFloat) -> CGPath {
-            let shape = UnevenRoundedRectangle(bottomLeadingRadius: left, bottomTrailingRadius: right, style: .continuous)
-            let path = shape.path(in: CGRect(origin: .zero, size: rect.size)).cgPath
-            var transform = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: rect.minX, ty: rect.maxY)
-            return path.copy(using: &transform)!
-        }
         func paneFrame(_ rect: CGRect) -> CGRect {
-            // Round shared boundaries once in backing pixels; fractional split ratios stay crisp.
-            let scale = window?.backingScaleFactor ?? 2
-            func snap(_ value: CGFloat) -> CGFloat { (value * scale).rounded() / scale }
-            let x = snap(bounds.width * rect.minX), y = snap(bounds.height * (1 - rect.maxY))
-            return CGRect(x: x, y: y, width: snap(bounds.width * rect.maxX) - x, height: snap(bounds.height * (1 - rect.minY)) - y)
+            PaneMetrics.frame(rect, in: bounds.size, scale: window?.backingScaleFactor ?? 2)
         }
         private func borderFrame(_ rect: CGRect) -> CGRect {
-            let frame = paneFrame(rect)
-            let left = frame.minX + (rect.minX < 0.001 ? 0.5 : 0)
-            let right = frame.maxX - (rect.maxX > 0.999 ? 0.5 : 0)
-            let bottom = frame.minY + (rect.maxY > 0.999 ? 0.5 : 0)
-            let top = frame.maxY - (rect.minY < 0.001 ? 11 : 0)
-            return CGRect(x: left, y: bottom, width: max(0, right - left), height: max(0, top - bottom))
-        }
-        private func bottomCorners(_ rect: CGRect) -> (left: Bool, right: Bool) {
-            let bottom = rect.maxY > 0.999 && window?.styleMask.contains(.fullScreen) != true
-            return (bottom && roundLeft && rect.minX < 0.001, bottom && rect.maxX > 0.999)
+            PaneMetrics.borderFrame(paneFrame(rect), scale: window?.backingScaleFactor ?? 2)
         }
         /// Small glyph, native button semantics and a stable 22pt hit target.
         final class CloseButton: NSButton {
@@ -338,14 +305,8 @@ struct TerminalCanvas: NSViewRepresentable {
                     button.setAccessibilityLabel(button.toolTip)
                     let contentFrame = CGRect(x: frame.minX + PaneMetrics.contentInset, y: frame.minY + PaneMetrics.contentInset, width: max(0, frame.width - PaneMetrics.horizontalOverhead), height: max(0, frame.height - PaneMetrics.verticalOverhead))
                     if terminal.view.frame != contentFrame { terminal.view.frame = contentFrame }
-                    // The opaque terminal must follow the outline, or it paints over its curved corners.
-                    let corners = bottomCorners(rect)
-                    terminal.view.wantsLayer = true
-                    if corners.left || corners.right {
-                        let mask = (terminal.view.layer?.mask as? CAShapeLayer) ?? CAShapeLayer()
-                        mask.path = outline(CGRect(origin: .zero, size: contentFrame.size), left: corners.left ? 7.5 : 0, right: corners.right ? 7.5 : 0)
-                        terminal.view.layer?.mask = mask
-                    } else { terminal.view.layer?.mask = nil }
+                    // Pane frames are inset from the window on every side; all pane corners stay square.
+                    terminal.view.layer?.mask = nil
                     if focused == key, appliedFocusRevision != focusRevision, window?.isKeyWindow == true, window?.attachedSheet == nil {
                         if window?.makeFirstResponder(terminal.view) == true { appliedFocusRevision = focusRevision }
                     }

@@ -39,12 +39,12 @@ extension Desk {
         guard let key = focused, canAct(on: key), let rect = activeRects.first(where: { $0.0 == key })?.1 else { return false }
         let size = terminals[key]?.view.frame.size ?? .zero
         let minimum = minimumPaneSize
-        return horizontal ? size.width >= minimum.width * 2 - PaneMetrics.horizontalOverhead && rect.width > 0 : size.height >= minimum.height * 2 - PaneMetrics.verticalOverhead && rect.height > 0
+        return horizontal ? size.width >= minimum.width * 2 - PaneMetrics.horizontalOverhead - PaneMetrics.splitGap && rect.width > 0 : size.height >= minimum.height * 2 - PaneMetrics.verticalOverhead - PaneMetrics.splitGap && rect.height > 0
     }
     var minimumPaneSize: CGSize {
         let font = max(9, UserDefaults.standard.double(forKey: "fontSize") == 0 ? 13.5 : UserDefaults.standard.double(forKey: "fontSize"))
-        // Keep at least 24 columns × 6 rows; preserve the user's type size.
-        return CGSize(width: max(160, font * 0.65 * 24 + PaneMetrics.horizontalOverhead), height: max(100, font * 1.5 * 6 + PaneMetrics.verticalOverhead))
+        // Reserve the largest possible gutter inset as well as 24 columns × 6 rows.
+        return CGSize(width: max(160, font * 0.65 * 24 + PaneMetrics.horizontalOverhead) + PaneMetrics.splitGap, height: max(100, font * 1.5 * 6 + PaneMetrics.verticalOverhead) + PaneMetrics.splitGap)
     }
     func recoveryLabel(_ key: PaneKey) -> String { L("Attachment ended. The server pane may still be running.") }
     func reconnect(_ key: PaneKey) {

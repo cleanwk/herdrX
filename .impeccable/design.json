@@ -519,10 +519,10 @@
           "sharedMetrics": "App/Tabs.swift: TabMetrics; App/Workbench.swift uses the same barHeight for the integrated bar and sidebar header."
         },
         "pane": {
-          "frameInset": "0.5pt on outer edges; shared internal boundaries",
-          "topTitleClearance": "11pt on the first row; internal titles sit below a straight shared edge",
+          "frameInset": "Half of the pixel-aligned stroke on every independent pane edge",
+          "topTitleClearance": "Approximately 11pt on every row; title cutout supplies top perimeter clearance",
           "canvasTopClearanceToken": "spacing.canvas-top-clearance",
-          "firstOutlinePosition": "46pt below the top: 28pt bar + 1pt divider + 6pt clearance + 11pt outline inset",
+          "firstOutlinePosition": "Approximately 40pt below the window top: 28pt bar + 1pt divider + 11pt title reserve; no extra top band",
           "terminalLeftBottomInset": "4pt",
           "terminalWidthReduction": "8pt",
           "terminalHeightReduction": "28pt",
@@ -531,14 +531,17 @@
           "titleTextInset": "4pt",
           "titleContextGap": "10pt",
           "titleMainAvailableFraction": "0.64 with context, otherwise 1.",
-          "minimumSizeIntent": "At least 24 columns and 6 rows. PaneMetrics shares contentInset 4pt, headerHeight 24pt, horizontalOverhead 8pt and verticalOverhead 28pt between rendering, Desk.minimumPaneSize and split eligibility.",
+          "minimumSizeIntent": "At least 24 columns and 6 rows. PaneMetrics shares contentInset 4pt, headerHeight 24pt, horizontalOverhead 8pt, verticalOverhead 28pt and splitGap 8pt between rendering, Desk.minimumPaneSize and split eligibility.",
           "splitKeyboardIncrement": "5 percentage points within minimum pane bounds.",
-          "outerCorners": "11pt continuous outer bottom corners; left only with sidebar hidden; full-screen and internal corners square",
+          "outerCorners": "Square pane corners; window rounding belongs to the window outside the inset canvas",
           "terminalHeaderHeight": "24pt",
-          "minimumSizeFormula": "width=max(160, font*0.65*24+8), height=max(100, font*1.5*6+28), in points; font fallback 13.5pt.",
-          "terminalCornerMask": "Matching continuous 7.5pt concentric bottom mask",
+          "minimumSizeFormula": "width=max(160, font*0.65*24+8)+8, height=max(100, font*1.5*6+28)+8, in points; font fallback 13.5pt.",
+          "terminalCornerMask": "None; terminal content is inset inside square pane frames",
           "closeTarget": "22×22pt, focused opacity 0.5, pane/button hover and VoiceOver 1; 150ms ease-out; hidden hit testing disabled",
-          "restoreTarget": "22×22pt; 10pt medium SF Symbol. Visible while zoomed."
+          "restoreTarget": "22×22pt; 10pt medium SF Symbol. Visible while zoomed.",
+          "outerInsets": "8pt left/right/bottom with sidebar shown or hidden; title reserve supplies the top gap",
+          "splitGap": "8pt between pane frames",
+          "borderWidth": "1.5pt at 2×, rounded to 2pt at 1×"
         },
         "searchResults": {
           "heightFormula": "min(320, max(44, resultCount * 36)) pt",
@@ -946,7 +949,7 @@
       "name": "Terminal Pane",
       "kind": "custom",
       "refersTo": "pane-title",
-      "description": "Real Space-owned Ghostty surface; 11pt canvas-relative top outline, title/context cutout, 22pt native close/restore targets, shared PaneMetrics for rendering and split minimums, and window-aware bottom corner masks.",
+      "description": "Real Space-owned Ghostty surface; independent square outlines, approximately 11pt title reserve, 8pt gutters and outer side/bottom margins, 22pt native close/restore targets, and shared PaneMetrics for rendering and split minimums.",
       "nativeSource": "App/Terminal.swift: TerminalCanvas.Canvas"
     },
     {
