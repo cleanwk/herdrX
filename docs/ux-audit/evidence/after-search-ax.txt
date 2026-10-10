@@ -1,0 +1,38 @@
+The following is a diff from the previous accessibility tree for Window: "" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 0-28, 30-45, 54-64
++54 表单 Secondary Actions: Raise
++	55 container
++		56 文本栏 (settable) Value: Navigation, Placeholder: 搜索 空间、终端或 Agent
++		57 滚动区 Secondary Actions: Scroll Up, Scroll Down
++			58 列表 Secondary Actions: AXScrollToTop, AXScrollToBottom
++				59 按钮 (selected) Description: 长名称任务标签 09 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 09 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
++				60 按钮 Description: 长名称任务标签 02 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 02 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
++				61 按钮 Description: 长名称任务标签 03 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 03 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
++				62 按钮 Description: 长名称任务标签 04 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 04 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
++				63 按钮 Description: 长名称任务标签 05 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 05 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
++				64 按钮 Description: 长名称任务标签 06 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 06 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
++				65 按钮 Description: 长名称任务标签 07 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 07 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
++				66 按钮 Description: 长名称任务标签 08 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 08 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
++				67 按钮 Description: 长名称任务标签 10 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 10 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
++				68 按钮 Description: 长名称任务标签 11 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 11 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
++				69 按钮 Description: 长名称任务标签 12 — Navigation、本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha, Help: 长名称任务标签 12 — Navigation
+本机工作 · ux-a · 登录问题排查与长名称工作空间 Alpha · 终端 · /Users/kai/github/herdrX/build/ux-fixture/alpha
++			70 滚动条 (settable, float) 0
++				71 值指示器 (settable, float) 0
++				72 增箭头按钮
++				73 减箭头按钮
++				74 增页面按钮
++				75 减页面按钮
++		76 文本 ↑ ↓ 选择     ↩ 打开     Esc 关闭
++		77 按钮 取消
+The focused UI element is 56 文本栏 (settable) Value: Navigation, Placeholder: 搜索 空间、终端或 Agent

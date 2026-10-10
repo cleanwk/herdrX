@@ -1,4 +1,5 @@
 import SwiftUI
+import HerdCore
 
 enum AgentToolIcon {
     static func symbol(for tool: String?) -> String {
@@ -37,10 +38,12 @@ struct SidebarGroup<Content: View>: View {
     let title: String
     let id: String
     let empty: Bool
+    let status: String?
+    let connected: Bool
     @ViewBuilder let content: () -> Content
     @AppStorage private var collapsed: Bool
-    init(title: String, id: String, empty: Bool, @ViewBuilder content: @escaping () -> Content) {
-        self.title = title; self.id = id; self.empty = empty; self.content = content
+    init(title: String, id: String, empty: Bool, status: String? = nil, connected: Bool = false, @ViewBuilder content: @escaping () -> Content) {
+        self.title = title; self.id = id; self.empty = empty; self.content = content; self.status = status; self.connected = connected
         _collapsed = AppStorage(wrappedValue: false, "sidebarCollapsed." + id)
     }
     var body: some View {
@@ -49,8 +52,8 @@ struct SidebarGroup<Content: View>: View {
                 if !collapsed { content() }
             } header: {
                 Button { collapsed.toggle() } label: {
-                    HStack(spacing: 6) { Image(systemName: collapsed ? "chevron.right" : "chevron.down").font(.system(size: 9)).frame(width: 12); Text(LocalizedStringKey(title)).font(.system(size: 11, weight: .semibold)).lineLimit(1); Spacer() }.foregroundStyle(.secondary).padding(.horizontal, 8).frame(height: 28).contentShape(Rectangle())
-                }.buttonStyle(.plain).background(Color(nsColor: Theme.content)).accessibilityLabel(title + (collapsed ? ", collapsed" : ", expanded"))
+                    HStack(spacing: 6) { Image(systemName: collapsed ? "chevron.right" : "chevron.down").font(.system(size: 9)).frame(width: 12); Text(title).font(.system(size: 11, weight: .semibold)).lineLimit(1); Spacer(minLength: 2); if let status { Image(systemName: connected ? "circle.fill" : "circle").font(.system(size: 6)).foregroundStyle(connected ? Color.secondary : Color.orange).help(status).accessibilityHidden(true) } }.foregroundStyle(.secondary).padding(.horizontal, 8).frame(height: 28).contentShape(Rectangle())
+                }.buttonStyle(.plain).background(Color(nsColor: Theme.content)).accessibilityLabel(title).accessibilityValue(DisplayTitle.detail([L(collapsed ? "Collapsed" : "Expanded"), status])).accessibilityHint(L(collapsed ? "Expand group" : "Collapse group"))
             }
         }
     }
@@ -58,9 +61,10 @@ struct SidebarGroup<Content: View>: View {
 struct AgentStatus: View {
     let status: String
     let unread: Bool
+    static func color(_ status: String, unread: Bool) -> Color { status == "blocked" ? .orange : status == "working" || unread ? Color(nsColor: Theme.accent) : .secondary }
     var body: some View {
         Image(systemName: status == "working" ? "circle.lefthalf.filled" : status == "blocked" || unread ? "circle.fill" : "circle")
-            .font(.system(size: 8)).foregroundStyle(status == "blocked" ? Color.orange : status == "working" || unread ? .blue : .secondary)
+            .font(.system(size: 8)).foregroundStyle(Self.color(status, unread: unread))
             .accessibilityLabel(L(status == "unknown" ? "Unknown" : unread ? "Completed, unread" : status))
     }
 }

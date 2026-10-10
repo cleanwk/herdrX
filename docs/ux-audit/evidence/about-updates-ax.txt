@@ -1,0 +1,24 @@
+The following is a diff from the previous accessibility tree for Window: "HerdrX设置" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 22-36
+~13 标准窗口 HerdrX设置, ID: com_apple_SwiftUI_Settings_window, Secondary Actions: Raise
+~				17 row (selectable) 外观
+~				20 row (selected) 关于与更新
++		40 滚动区
++			41 标题 HerdrX
++			42 container
++				43 text 版本 0.1.5（1） 检测到 Homebrew 记录，尚未确认此应用由其管理。
++				44 link Description: 项目, Value: github.com/cleanwk/herdrX
++			45 标题 更新
++			46 container
++				47 text 通过现有的 cleanwk tap 安装和升级。 brew update && brew upgrade --cask herdrx
++				48 按钮 复制 Homebrew 更新命令
++				49 按钮 (disabled) 检查直接下载版更新
++				50 文本 此版本未配置发行签名公钥，无法直接更新。请使用 Homebrew 或从项目页面下载发行版。
++			51 显示三角形 Description: 开源声明, Value: off
++	52 工具栏
++		53 按钮 Description: 开关边栏, Help: 隐藏边栏
+~	39 文本 HerdrX设置
+Selected:
+	20 row (selected)
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).

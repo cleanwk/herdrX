@@ -61,7 +61,7 @@ struct ResizeStrip: NSViewRepresentable {
     var direction: Double = 1
     var reset: Double
     func makeNSView(context: Context) -> Strip { Strip() }
-    func updateNSView(_ view: Strip, context: Context) { view.width = width; view.limits = limits; view.direction = direction; view.reset = reset; view.changed = { width = $0 } }
+    func updateNSView(_ view: Strip, context: Context) { view.width = width; view.limits = limits; view.direction = direction; view.reset = reset; view.changed = { width = $0 }; view.setAccessibilityElement(true); view.setAccessibilityRole(.splitter); view.setAccessibilityLabel(L("Sidebar Width")); view.setAccessibilityValue(width) }
     final class Strip: NSView {
         var width = 260.0
         var limits = 200.0...480.0
@@ -70,6 +70,12 @@ struct ResizeStrip: NSViewRepresentable {
         var changed: ((Double) -> Void)?
         private var origin = 0.0
         private var initial = 0.0
+        override var acceptsFirstResponder: Bool { true }
+        override func accessibilityMinValue() -> Any? { limits.lowerBound }
+        override func accessibilityMaxValue() -> Any? { limits.upperBound }
+        override func accessibilityPerformIncrement() -> Bool { changed?(min(limits.upperBound, width + 20)); return true }
+        override func accessibilityPerformDecrement() -> Bool { changed?(max(limits.lowerBound, width - 20)); return true }
+        override func keyDown(with event: NSEvent) { if event.keyCode == 124 { _ = accessibilityPerformIncrement() } else if event.keyCode == 123 { _ = accessibilityPerformDecrement() } else { super.keyDown(with: event) } }
         override var mouseDownCanMoveWindow: Bool { false }
         override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
         override func resetCursorRects() { addCursorRect(bounds, cursor: .resizeLeftRight) }

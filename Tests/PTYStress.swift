@@ -25,6 +25,20 @@ final class Capture: @unchecked Sendable {
             }
         }
         process.stop()
+        process.start("exec /bin/zsh -f")
+        try await Task.sleep(nanoseconds: 200_000_000)
+        guard process.foregroundActivity() == .idle else { fatalError("Idle interactive shell misclassified") }
+        process.write(Data("sleep 30\n".utf8))
+        try await Task.sleep(nanoseconds: 200_000_000)
+        guard process.foregroundActivity() == .running else { process.stop(); fatalError("Foreground child misclassified") }
+        process.write(Data([3]))
+        try await Task.sleep(nanoseconds: 200_000_000)
+        guard process.foregroundActivity() == .idle else { process.stop(); fatalError("Shell did not return to idle") }
+        process.start("exec /bin/cat")
+        try await Task.sleep(nanoseconds: 200_000_000)
+        guard process.foregroundActivity() == .unknown else { process.stop(); fatalError("Exec-ed task mistaken for idle shell") }
+        process.stop()
+        print("PASS: idle shell / foreground child / interrupt / exec-ed task classification")
         print("PASS: 20 actual PTY restart/output/write generations; no previous-run bytes after restart")
     }
 }

@@ -55,11 +55,6 @@ final class TransportTests: XCTestCase {
         do { _ = try await Session.load(RPC(path: server.path)); XCTFail("Unsupported snapshot accepted") }
         catch { XCTAssertTrue(error.localizedDescription.contains("snapshot unavailable")) }
     }
-    func testArgumentsPreserveBoundariesWithoutShellEvaluation() throws {
-        XCTAssertEqual(try Arguments.parse("--model 'my model' \"\" path\\ with\\ spaces $(whoami)"), ["--model", "my model", "", "path with spaces", "$(whoami)"])
-        XCTAssertThrowsError(try Arguments.parse("--model 'unfinished"))
-        XCTAssertThrowsError(try Arguments.parse("unfinished\\"))
-    }
     func testEventHistoryLossRequiresARefreshAndNewSubscription() async throws {
         let server = try Server(requests: 1) { request in [
             .object(["id": request["id"], "result": .object(["type": .string("subscription_started")])]),

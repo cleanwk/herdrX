@@ -8,7 +8,7 @@ import UserNotifications
 struct Preferences: View {
     @EnvironmentObject var desk: Desk
     @State private var selected: String? = "Appearance"
-    private let sections = [("Appearance", "circle.lefthalf.filled"), ("Terminal", "terminal"), ("Agents", "sparkles"), ("Notifications", "bell"), ("Devices", "server.rack"), ("Tailcat", "network"), ("Plugins", "puzzlepiece.extension"), ("Updates", "arrow.down.circle"), ("About", "info.circle")]
+    private let sections = [("Appearance", "circle.lefthalf.filled"), ("Terminal", "terminal"), ("Connections", "server.rack"), ("About & Updates", "info.circle")]
     var body: some View {
         NavigationSplitView {
             List(sections, id: \.0, selection: $selected) { entry in Label(LocalizedStringKey(entry.0), systemImage: entry.1).tag(entry.0) }.listStyle(.sidebar).navigationSplitViewColumnWidth(150)
@@ -16,29 +16,29 @@ struct Preferences: View {
             Group {
                 switch selected {
                 case "Terminal": TerminalSettings()
-                case "Agents": AgentSettings()
-                case "Notifications": Notifications()
-                case "Devices": Devices()
-                case "Tailcat": TailcatSettings()
-                case "Plugins": ExtensionSettings()
-                case "Updates": Updates()
-                case "About": About()
-                default: Appearance()
+                case "Connections": ConnectionsSettings()
+                case "About & Updates": Updates()
+                default: TabView { Appearance().tabItem { Text("Appearance") }; Notifications().tabItem { Text("Behavior") } }.padding(12)
+
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
         }.frame(width: 740, height: 560)
     }
 
 }
+private struct ConnectionsSettings: View {
+    @State private var page = "Devices"
+    var body: some View {
+        VStack(spacing: 0) {
+            Picker("Connections", selection: $page) { Text("Devices").tag("Devices"); Text("Advanced: Tailcat").tag("Tailcat"); Text("Advanced: Plugins").tag("Plugins") }.pickerStyle(.segmented).padding(20)
+            switch page { case "Tailcat": TailcatSettings(); case "Plugins": ExtensionSettings(); default: Devices() }
+        }
+    }
+}
 private struct Devices: View {
     @EnvironmentObject var desk: Desk
-    @State private var name = ""
-    @State private var target = ""
-    @State private var socket = ""
-    @State private var port = ""
-    @State private var sshConfig = ""
-    @State private var local = false
-    @State private var editing: String?
+    @State private var draft = ConnectionDraft()
+    @State private var error: String?
     var body: some View {
         Form {
             Section("Saved devices") {
@@ -48,32 +48,36 @@ private struct Devices: View {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text(device.displayName).fontWeight(.medium); Spacer()
-                            Button("Edit") { editing = device.id; name = device.displayName; target = device.endpoint.target ?? ""; socket = device.endpoint.socketPath; port = device.endpoint.port.map(String.init) ?? ""; local = device.endpoint.kind == "local"; sshConfig = device.endpoint.sshConfig ?? "" }.disabled(device.endpoint.kind == "tailcat")
+                            Button("Edit") { draft = ConnectionDraft(device); error = nil }.disabled(device.endpoint.kind == "tailcat")
                             Button("Retry") { desk.connect(device) }
                             Button("Remove") {
-                                let alert = NSAlert(); alert.messageText = "Forget \(device.displayName)?"; alert.informativeText = L("Only this connection is removed. Server sessions and processes continue."); alert.addButton(withTitle: L("Forget Connection")); alert.addButton(withTitle: L("Cancel"))
-                                if alert.runModal() == .alertFirstButtonReturn { desk.remove(device.id) }
+                                let alert = NSAlert(); alert.messageText = LF("Forget %@?", device.displayName); alert.informativeText = L("Only this connection is removed. Server sessions and processes continue."); alert.addButton(withTitle: L("Forget Connection")); alert.addButton(withTitle: L("Cancel"))
+                                if alert.runModal() == .alertFirstButtonReturn { desk.remove(device.id); if draft.id == device.id { reset() } }
                             }
                         }
-                        Text((device.endpoint.target.map { $0 + " · " } ?? "") + device.endpoint.socketPath).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
-                        Text(LocalizedStringKey(desk.connections[device.id] ?? "Disconnected")).font(.caption).foregroundStyle(.secondary)
+                        Text(DisplayTitle.detail([device.endpoint.target, device.endpoint.socketPath])).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                        Text(desk.connections[device.id] ?? L("Disconnected")).font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
-            Section(LocalizedStringKey(editing == nil ? "Add a connection" : "Edit connection")) {
-                TextField("Name", text: $name)
-                Picker("Connection", selection: $local) { Text("SSH").tag(false); Text("Local Herdr session").tag(true) }.pickerStyle(.segmented)
-                if !local { TextField("SSH host or config alias", text: $target); TextField("Port", text: $port, prompt: Text("Automatic")); TextField("SSH config file (optional)", text: $sshConfig) }
-                TextField("Herdr socket", text: $socket, prompt: Text("/home/user/.config/herdr/herdr.sock"))
+            Section(LocalizedStringKey(draft.id == nil ? "Add a connection" : "Edit connection")) {
+                TextField("Name", text: $draft.name)
+                Picker("Connection", selection: $draft.local) { Text("SSH").tag(false); Text("Local Herdr session").tag(true) }.pickerStyle(.segmented)
+                if !draft.local { TextField("SSH host or config alias", text: $draft.target); TextField("Port", text: $draft.port, prompt: Text("Automatic")); TextField("SSH config file (optional)", text: $draft.sshConfig) }
+                TextField("Herdr socket", text: $draft.socket, prompt: Text("/home/user/.config/herdr/herdr.sock"))
                 Text("Use an absolute socket path for the intended named session. SSH uses your existing keys and SSH configuration.").font(.caption).foregroundStyle(.secondary)
-                Button(LocalizedStringKey(editing == nil ? "Add Device" : "Save Changes")) {
-                    guard socket.hasPrefix("/"), !socket.contains("\n"), local || (!target.hasPrefix("-") && !target.contains(where: \.isWhitespace)), port.isEmpty || Int(port).map({ (1...65535).contains($0) }) == true else { desk.message = "Enter a valid host, port and absolute socket path."; return }
-                    let device = Device(id: editing ?? UUID().uuidString, displayName: name, endpoint: .init(kind: local ? "local" : "ssh", target: local ? nil : target, port: local ? nil : Int(port), socketPath: socket, sshConfig: local || sshConfig.isEmpty ? nil : sshConfig)); if editing != nil { desk.update(device) } else { desk.add(device) }; editing = nil; name = ""; target = ""; socket = ""
-                }.disabled(name.isEmpty || socket.isEmpty || (!local && target.isEmpty))
-                if editing != nil { Button("Cancel Editing") { editing = nil; name = ""; target = ""; socket = "" } }
+                if let error { Text(error).font(.caption).foregroundStyle(.secondary) }
+                HStack {
+                    Button(LocalizedStringKey(draft.id == nil ? "Add Device" : "Save Changes")) {
+                        do { let device = try draft.device(); if draft.id != nil { desk.update(device) } else { desk.add(device) }; reset() }
+                        catch { self.error = L("Enter a valid name, host, port and absolute socket path.") }
+                    }
+                    Button(LocalizedStringKey(draft.id == nil ? "Clear Form" : "Cancel Editing")) { reset() }
+                }
             }
         }.formStyle(.grouped)
     }
+    func reset() { draft = ConnectionDraft(); error = nil }
 }
 private struct TerminalSettings: View {
     @AppStorage("fontSize") private var size = 13.0
@@ -130,21 +134,40 @@ private struct TerminalSettings: View {
 }
 private struct Updates: View {
     @State private var updater: SPUStandardUpdaterController?
+    @State private var channel = "Checking installation…"
+    @State private var reason = ""
+    @State private var copied = false
+    private let brewCommand = "brew update && brew upgrade --cask herdrx"
     var body: some View {
         Form {
-            Text("Homebrew").font(.headline)
-            Text("Install and upgrade from your existing cleanwk tap.")
-            Text("brew install --cask cleanwk/tap/herdrx\nbrew update && brew upgrade --cask herdrx").font(.system(.body, design: .monospaced)).textSelection(.enabled)
-            Text("Homebrew manages Brew installations. Signed direct downloads can use Sparkle when a release signing key is configured.").font(.caption).foregroundStyle(.secondary)
-            Button("Check Direct Download Updates") { updater?.checkForUpdates(nil) }.disabled(updater == nil)
-        }.formStyle(.grouped).onAppear {
-            let brewOwned = ["/opt/homebrew/Caskroom/herdrx", "/usr/local/Caskroom/herdrx"].contains { FileManager.default.fileExists(atPath: $0) }
-            let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String ?? ""
-            if !brewOwned, !key.isEmpty, !key.contains("$(") { updater = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil) }
-        }
+            Section("HerdrX") {
+                Text(LF("Version %@ (%@)", Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? L("Development"), Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"))
+                Text(channel).font(.caption).foregroundStyle(.secondary)
+                Link("Project", destination: URL(string: "https://github.com/cleanwk/herdrX")!)
+            }
+            Section("Updates") {
+                Text("Install and upgrade from your existing cleanwk tap.")
+                Text(brewCommand).font(.system(.body, design: .monospaced)).textSelection(.enabled)
+                Button(LocalizedStringKey(copied ? "Copied" : "Copy Homebrew Update Command")) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(brewCommand, forType: .string); copied = true }
+                Button("Check Direct Download Updates") { updater?.checkForUpdates(nil) }.disabled(updater == nil)
+                Text(reason).font(.caption).foregroundStyle(.secondary)
+            }
+            DisclosureGroup("Open Source Notices") {
+                Text((try? String(contentsOf: Bundle.main.url(forResource: "Notices", withExtension: "txt") ?? URL(fileURLWithPath: "/nonexistent"), encoding: .utf8)) ?? L("See Resources/Notices.txt and Resources/Licenses in the source distribution.")).font(.caption).textSelection(.enabled)
+            }
+        }.formStyle(.grouped).onAppear { identify() }
+    }
+    func identify() {
+        let url = Bundle.main.bundleURL.resolvingSymlinksInPath()
+        let verifiedBrew = ["/opt/homebrew/Caskroom/herdrx/", "/usr/local/Caskroom/herdrx/"].contains { url.path.hasPrefix($0) }
+        let possibleBrew = ["/opt/homebrew/Caskroom/herdrx", "/usr/local/Caskroom/herdrx"].contains { FileManager.default.fileExists(atPath: $0) }
+        channel = L(verifiedBrew ? "Homebrew installation" : possibleBrew ? "Homebrew is installed; ownership of this app is unverified." : "Direct download or development build")
+        let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String ?? ""
+        if verifiedBrew { reason = L("Use Homebrew to update this installation.") }
+        else if key.isEmpty || key.contains("$(") { reason = L("Direct updates are unavailable because this build has no release signing key. Use Homebrew or download a release from the project.") }
+        else { reason = L("Signed direct downloads can check for updates here."); if updater == nil { updater = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil) } }
     }
 }
-
 
 private struct Appearance: View {
     @AppStorage("appearance") private var appearance = "system"
@@ -173,23 +196,12 @@ private struct Notifications: View {
             Text("Agents you are currently watching stay quiet. Click a notification to return to its terminal.").font(.caption).foregroundStyle(.secondary)
             Text(LocalizedStringKey(status)).foregroundStyle(.secondary)
             Button("Open Notification Settings") { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!) }
-        }.formStyle(.grouped).task { await permission() }.onChange(of: enabled) { _, value in
+        }.formStyle(.grouped).onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in Task { await permission() } }.task { await permission() }.onChange(of: enabled) { _, value in
             Task { if value { _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) }; await permission() }
         }
     }
     func permission() async {
         let value = await UNUserNotificationCenter.current().notificationSettings()
         status = value.authorizationStatus == .denied ? "Notifications are disabled in macOS Settings." : value.authorizationStatus == .notDetermined ? "Enable notifications to request macOS permission." : "macOS notifications are allowed."
-    }
-}
-
-private struct About: View {
-    var body: some View {
-        Form {
-            Text("HerdrX").font(.title)
-            Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Development") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"))")
-            Link("Project", destination: URL(string: "https://github.com/cleanwk/herdrX")!)
-            ScrollView { Text((try? String(contentsOf: Bundle.main.url(forResource: "Notices", withExtension: "txt") ?? URL(fileURLWithPath: "/nonexistent"), encoding: .utf8)) ?? "See Resources/Notices.txt and Resources/Licenses in the source distribution.").font(.caption).textSelection(.enabled) }
-        }.formStyle(.grouped)
     }
 }

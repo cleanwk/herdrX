@@ -1,6 +1,6 @@
 ---
 name: HerdrX
-description: A compact native macOS workbench for terminals, coding agents and on-demand files.
+description: A quiet native macOS workbench for terminal tasks, devices and automatically detected agents.
 colors:
   content-light: "#F6F6F6"
   content-dark: "#181818"
@@ -42,9 +42,6 @@ typography:
     fontFamily: "macOS system font"
     fontSize: "11pt"
     fontWeight: 600
-  detail:
-    fontFamily: "macOS system font"
-    fontSize: "10pt"
   pane-title:
     fontFamily: "macOS system monospaced font"
     fontSize: "11pt"
@@ -53,12 +50,16 @@ typography:
     fontFamily: "macOS system monospaced font"
     fontSize: "11pt"
     fontWeight: 600
-  file:
-    fontFamily: "macOS system font"
-    fontSize: "12pt"
-  file-preview:
+  pane-context:
     fontFamily: "macOS system monospaced font"
-    fontSize: "12pt"
+    fontSize: "10pt"
+    fontWeight: 400
+  search-input:
+    fontFamily: "macOS system font"
+    fontSize: "14pt"
+  search-context:
+    fontFamily: "macOS system font"
+    fontSize: "10.5pt"
   terminal:
     fontFamily: "SF Mono"
     fontSize: "13pt"
@@ -69,6 +70,7 @@ rounded:
   sidebar-selection: "8pt"
   agent-selection: "7pt"
   reconnect: "8pt"
+  pane-outer-bottom: "10pt"
 spacing:
   sidebar-row-x: "8pt"
   sidebar-row-y: "7pt"
@@ -79,7 +81,7 @@ spacing:
   list-gap: "4pt"
   content-inset: "12pt"
   toolbar-inset: "16pt"
-  sheet-inset: "20pt"
+  connections-inset: "20pt"
   creation-inset: "24pt"
 components:
   integrated-bar:
@@ -125,34 +127,20 @@ components:
     width: "440pt"
     padding: "0pt 12pt"
   search-input:
+    typography: "{typography.search-input}"
+    height: "22pt"
+  search-header:
     height: "44pt"
   search-result:
     height: "36pt"
     rounded: "{rounded.search-selection}"
-    padding: "0pt 8pt"
-  search-results:
-    height: "320pt"
+    padding: "0pt 10pt"
   search-footer:
     height: "28pt"
-  files:
-    width: "320pt"
-  files-toolbar:
-    height: "36pt"
-    padding: "0pt 10pt"
-  file-row:
-    typography: "{typography.file}"
-    height: "28pt"
-  file-preview:
-    typography: "{typography.file-preview}"
-    padding: "{spacing.content-inset}"
   settings:
     width: "740pt"
     height: "560pt"
-  file-manager:
-    width: "800pt"
-    height: "560pt"
-    padding: "{spacing.sheet-inset}"
-  creation-sheet:
+  space-creation-sheet:
     width: "480pt"
     padding: "{spacing.creation-inset}"
   reconnect:
@@ -166,115 +154,130 @@ components:
 
 **Creative North Star: "Native workbench"**
 
-HerdrX is a simple, clean native macOS workbench. Terminals own the visual field; compact navigation makes local shells, device workspaces and coding agents easy to reach. Files appear beside the terminal only when requested.
+HerdrX is a quiet native macOS workbench. Terminals own the visual field; compact navigation keeps each task, device and session clear. Neutral controls recede around task names, readable state labels and focused terminal content.
 
-SwiftUI and AppKit supply system typography, familiar controls and keyboard behavior; Ghostty supplies the terminal canvas. Preserve HerdrX's name and the user-supplied purple diagonal slash on a white icon tile. Keep that identity in the app icon and product surfaces without repeating it as decoration across the workbench.
+SwiftUI and AppKit supply system typography, familiar controls and keyboard behavior; Ghostty supplies the real terminal canvas. Preserve HerdrX's name and the user-supplied purple diagonal slash on a white icon tile. The original artwork, native Icon Composer packaging and provenance remain documented in [Resources/Icon/README.md](Resources/Icon/README.md) and [Resources/Icon/Prompt.txt](Resources/Icon/Prompt.txt); this refresh creates no raster assets.
 
 **Key Characteristics:**
 
-- Terminal-first density with a single integrated top bar.
-- Theme-aware surfaces, semantic system controls and explicit focus.
-- Stable sidebar actions with compact, collapsible navigation groups.
-- On-demand file browsing and native settings without decorative card chrome.
+- Terminal-first density with one integrated top bar.
+- Neutral chrome, semantic text and distinct selection, focus and execution signals.
+- Task-first, two-line Agent rows with device and session context available.
+- Compact native search, four-section settings and adjustable pane boundaries.
 
-This is a source scan of the current native implementation, refreshed for `docs/parity/SPEC.txt` S01–S07. Frontmatter records observed implementation values in native points; it does not certify all functional or interaction acceptance criteria. The specification remains the target contract, and any implementation differences below remain visible rather than being silently promoted to new requirements. Source evidence: `App/Workbench.swift`, `App/Sidebar.swift`, `App/Tabs.swift`, `App/Theme.swift`, `App/Preferences.swift`, `App/Files.swift`, `App/Terminal.swift`, `App/WindowBehavior.swift` and theme wiring in `App/Main.swift`. Prior review images are not current-render acceptance evidence for this refresh.
+This source-observed refresh follows [PRODUCT.md](PRODUCT.md), the [workbench direction](.impeccable/surfaces/app-workbench-swift.md) and [UX audit SPEC](docs/ux-audit/SPEC.md), with [SCOPE.md](docs/ux-audit/SCOPE.md) overriding earlier parity and conditional transfer requirements. Agent launching, command overrides, file trees, previews, transfer and attachment delivery are removed. Automatic Agent recognition, state and navigation remain. Frontmatter records implemented primitives in native points; dynamic platform roles and constraints live in the JSON sidecar.
+
+Sources: `App/Workbench.swift`, `Sidebar.swift`, `Tabs.swift`, `Terminal.swift`, `Preferences.swift`, `Theme.swift`, `Navigation.swift`, `SearchInput.swift` and `WindowBehavior.swift`. Supplied captures were inspected for [light 980/200](docs/ux-audit/screenshots/workbench-light-980-200.png), [light 980/260](docs/ux-audit/screenshots/workbench-light-980-260.png), [dark 1440/480](docs/ux-audit/screenshots/workbench-dark-1440-480.png), [empty search](docs/ux-audit/screenshots/search-empty-light.png) and [About & Updates](docs/ux-audit/screenshots/about-updates.png). The refreshed workbench captures show native label-colored state words and pane titles; token definitions still follow source rather than sampled pixels. This document does not certify contrast across every accent, VoiceOver operation, IME behavior, performance or the full C01–C90 matrix. Current acceptance belongs in [RESULTS.md](docs/ux-audit/RESULTS.md) and the finish review.
 
 ## Colors
 
-The palette combines explicit theme surfaces with native semantic text, controls and separators. Frontmatter contains only colors actually defined in `Theme.swift`; it does not translate dynamic macOS colors into fixed swatches.
+Explicit theme surfaces support native semantic text, restrained selection and functional state signals. Frontmatter preserves colors defined by `Theme.swift`; platform colors remain dynamic instead of becoming screenshot-derived hex tokens.
 
 ### Primary
 
-- **Theme accent:** `Theme.accent` supplies SwiftUI tint/accent and AppKit tab and pane focus. The default follows `NSColor.controlAccentColor`; the Catppuccin theme uses the frontmatter's violet accent unless the user chooses another accent.
-- **Accent choices:** Graphite, Green, Blue, Purple, Amber, Pink, Red and Orange map to AppKit system color roles. Amber currently maps to `NSColor.systemYellow`. These values remain appearance-aware platform colors.
-- **Selected navigation:** sidebar rows and tabs use accent fill at 0.18 opacity in light appearance and 0.20 in dark appearance, with a one-point accent outline at 0.22. Sidebar and tab hover use native primary/label color at 0.06 opacity. Search selection retains its lighter 0.14 wash, and file selection uses 0.18. Focused panes use the accent directly.
+- **Theme accent:** `Theme.accent` follows `NSColor.controlAccentColor` by default. Catppuccin supplies the violet token when the user follows the theme. Graphite, Green, Blue, Purple, Amber, Pink, Red and Orange use their AppKit system roles; Amber maps to `NSColor.systemYellow`.
+- **Selection and focus:** sidebar rows and tabs use accent fill at 0.18 opacity in light appearance and 0.20 in dark appearance, with a one-point accent outline at 0.22. Search selection uses a 0.14 accent wash. The active pane uses an accent border only while its window is key.
+- **Execution signals:** working and unread glyphs use the theme accent; blocked glyphs use system orange. Agent state words stay `.primary`. Active pane main titles stay `NSColor.labelColor` and gain semibold weight. Accent choice must not become unchecked small-text color.
 
 ### Neutral
 
-- **Workbench surface:** the default light/dark content tokens fill the workbench and pane-title cutouts. Catppuccin has its own light/dark content tokens; Dracula and Nord use their dark content tokens and default content in light appearance.
-- **System surfaces and text:** files use `NSColor.windowBackgroundColor`; the font preview uses `NSColor.textBackgroundColor`. Standard labels, secondary captions and dividers retain native primary, secondary and separator roles. These are not the numeric reference palette in the specification.
-- **Terminal surface, text and selection:** the default terminal tokens in frontmatter are explicit light/dark values from `Theme.apply()`. Catppuccin uses Ghostty's Latte/Mocha definitions; Dracula and Nord use their Ghostty dark definitions and Alabaster in light appearance. Their full palettes remain library-owned. Do not describe every light terminal as Alabaster.
+- **Workbench ground:** default, Catppuccin, Dracula and Nord surfaces use the frontmatter tokens. Dracula and Nord retain the default workbench ground in light appearance.
+- **Chrome and text:** the workbench uses primary foreground and a secondary-label tint for action controls. Labels use native primary/label roles, context uses secondary roles, and separators use `NSColor.separatorColor`. Sidebar and tab hover use primary/label color at 0.06 opacity. The font preview uses `NSColor.textBackgroundColor`.
+- **Terminal ground, text and selection:** default Ghostty colors are explicit light/dark tokens. Catppuccin uses Ghostty Latte/Mocha; Dracula and Nord use their Ghostty dark definitions and Alabaster in light appearance. Library-owned terminal palettes remain library-owned. Follow Herdr resolves supported families from local configuration and falls back to Default for unsupported names.
 
-Working and unread states use system blue; blocked uses system orange; inactive states use secondary emphasis. A half-filled, filled or outlined circle also conveys the state. Device connection dots use green/orange independently of agent status. These are functional signals, not additional brand accents.
+Connected device headers use a small neutral filled circle; offline headers use an orange outline. Device connection and Agent execution remain separate signals. Shape and text carry meaning alongside color.
 
 **The Semantic Color Rule.** Keep platform colors semantic and source-defined theme colors explicit. Do not freeze a screenshot's appearance into a new palette.
 
+**The Readable State Rule.** Keep Agent state words and pane main titles in native label colors; put saturated status and focus color on glyphs and borders.
+
 ## Typography
 
-Use the macOS system font for navigation and native system monospaced type for pane titles and file text. No custom display family is present. Platform styles such as `.headline`, `.title2`, `.body` and `.caption` remain platform-defined instead of receiving fabricated point equivalents.
+Use the macOS system font for navigation and system monospaced type for pane titles and context. No custom display family is present. Native styles such as `.title2`, `.body` and `.caption` keep platform metrics.
 
-The frontmatter records the explicit hierarchy: regular/semibold tabs, regular/medium Space labels, Agent titles, secondary metadata, semibold group headers and small optional detail. Space and Agent rows retain three-point separation between their primary and secondary text. Long names truncate at the tail; full paths remain available through tooltips or selectable text. File names and the file-root path truncate in the middle where implemented.
+The frontmatter records the explicit hierarchy: regular/semibold tabs, regular/medium Space labels, Agent task titles, metadata and semibold group headers. Agent rows are always two lines: task title and state glyph, then tool/Space/device context and a readable state word. Runtime model/account/context/quota details belong in full help when supplied; they do not create a third row or fabricated metadata. Space rows separate title and branch/directory context with the same line gap.
 
-Terminal typography defaults to the SF Mono token and remains user-selectable. Font size spans 9–22 points in half-point steps; line spacing spans 1–1.4 in 0.05 steps. Regular, Medium, Semibold and Bold apply only to the system mono choice. The settings preview uses native system monospaced type with the selected weight for SF Mono, a custom font for other families, and Chinese, ASCII and digits as sample content. It is a settings preview, not a substitute for checking a rendered Ghostty surface.
+Pane titles pair a primary monospaced task name with smaller secondary context. Main titles truncate at the tail and pane context in the middle; help and accessibility labels retain full object identity. Search pairs a primary result title with the search-context role. Its borderless AppKit input uses the search-input role.
+
+Terminal typography defaults to SF Mono and remains user-selectable. Font size spans 9–22 points in half-point steps; line spacing spans 1–1.4 in 0.05 steps. Regular, Medium, Semibold and Bold apply only to SF Mono. The native preview includes Chinese, ASCII and digits. Preserve mouse reporting, thin strokes, copy-on-select and the one-time Ghostty font import; terminal text copy/paste remains available. A settings preview does not establish actual Ghostty rendering or input acceptance.
 
 **The Reading Rule.** Preserve native text metrics and user-selected terminal typography; truncate navigation labels and retain their full context in tooltips.
 
 ## Layout
 
-All measurements are macOS points. The outer window minimum is 980 × 620, enforced by `WindowBehavior`; the main scene's internal minimum height is separate. The hidden-titlebar layout keeps the system traffic lights and reserves 78 points at the left. The main detail uses the single integrated bar token for tabs and actions, followed by a native divider and the terminal canvas. There is no persistent bottom status bar or second device-title strip.
+Measurements are macOS points. `WindowBehavior` enforces a 980 × 620 minimum outer window; this differs from the scene's internal content minimum. The hidden titlebar retains system traffic lights with a 78-point left reserve. The detail region starts with the integrated-bar token, a native divider and terminal canvas. Tabs, New Terminal Tab and Pane Layout share this single row.
 
-The sidebar uses the frontmatter's initial width, persists its width and visibility, and resizes from 200 to 480. Its one-point visible separator has a seven-point drag target, with double-click resetting the default. Below the traffic-light row, New, quick Space and Search remain fixed above the scrollable list; the device filter and Settings stay in the fixed footer. Group headers pin while scrolling, collapse persistently and disappear when their group is empty.
+The sidebar starts at the frontmatter width, persists width and visibility, and resizes from 200 to 480. Its visible separator is one point; its drag target is seven points. Double-click restores the default. The splitter exposes its value and bounds to accessibility, accepts left/right keyboard adjustment and changes in 20-point increments. The New Space action, named-directory options and Search stay above the scrollable groups. Device Filter and Settings stay in the fixed footer. Native section headers pin while scrolling, collapse persistently and omit empty non-device groups.
 
-Sidebar content has the documented outer inset and four-point list spacing. Space/Agent content uses a 12-point leading icon column and the row column gap; two-line content uses the row line gap. Space rows use six-point vertical padding and eight-point corners. Agent rows use seven-point vertical padding and seven-point corners. Other sidebar rows retain the shared seven-point vertical padding and eight-point corners. Row height follows content, allowing real optional Agent metadata to add a line.
+Space and Agent rows keep the shared horizontal padding, distinct vertical padding and corner tokens. The list uses the documented outer inset and list gap. Agent title and state glyph share the first line; context yields space to the fixed-width state word on the second. Group/device headers are secondary, leaving task names dominant at both narrow and wide sidebar widths.
 
-Tabs occupy compact natural widths: measured text plus 20 points, clamped to 40–200. Buttons sit two points from the strip edges, with two-point gaps; their height is in frontmatter. Long rows scroll horizontally. Pane layout follows normalized split rectangles. Each pane draws a one-point rectangular border with a 3.5-point base inset and an additional 3.5-point top clearance, placing the top border seven points below the canvas edge so the fourteen-point centered title remains inside the canvas; its terminal view starts four points from left and bottom, has width reduced by eight and height reduced by eighteen. This leaves room for the embedded title instead of a separate header bar. Split resize hit areas are six points wide.
+Tabs use measured text plus 20 points, clamped to 40–200, with two-point strip insets and gaps. Overflow scrolls horizontally; changing selection reveals the selected tab. Pane layout follows normalized split rectangles. Frames have a 3.5-point base inset and another 3.5 points of top clearance for the embedded title. Terminal views start four points from the left and bottom, reduce width by eight and height by eighteen. Pane split handles are seven points wide, expose adjustable accessibility values and move five percentage points per keyboard/accessibility increment within minimum-size bounds. Split availability preserves room for at least 24 columns and six rows using the current font instead of shrinking text.
 
-The file area is closed initially. Its width persists, starts at the file token, resizes from 240 up to 60% of the available detail width, and resets on double-click. Its divider repeats the one-point line and seven-point hit target. At file-area widths of at least 520, a fixed 210-point tree sits beside the preview; below that threshold, selecting a file replaces the tree with the preview and exposes a Back button. This is native container adaptation, not a web viewport breakpoint.
+Search has the fixed width and header/result/footer tokens, but its results region is content-sized: `min(320, max(44, resultCount × 36))` points. An empty search therefore has a 44-point explanation region. Settings is a native split window with a 150-point navigation column and the frontmatter dimensions. New Space remains a compact named-directory sheet with its own width and inset.
 
-Search uses the frontmatter's width, input/result/footer heights and horizontal inset; the results viewport is currently fixed at 320 points, including the empty state. Settings is a native split window with a 150-point navigation column and the documented overall size. Creation sheets and the two-ended File Manager use their own frontmatter dimensions rather than forcing every native form to one width.
-
-**The Terminal Space Rule.** Keep the main detail area available to terminals; reveal file tools on demand and return their space when closed.
+**The Terminal Space Rule.** Keep the main detail area available to real terminal panes and keep supporting navigation compact.
 
 ## Elevation & Depth
 
-The workbench has no custom shadow vocabulary or explicit motion curve. Thin borders, native dividers, restrained selection fills and pane-title cutouts convey structure. Reconnect uses `.regularMaterial` above terminal content. Sheets, alerts, grouped forms and controls retain platform-managed depth, focus, hover and disabled treatment. Do not substitute decorative shadows for selection or focus.
+The workbench has no custom shadow vocabulary or motion curve. Thin borders, native dividers, restrained selection fills and pane-title cutouts convey structure. The recovery overlay uses `.regularMaterial`. Sheets, alerts, grouped forms and controls retain platform-managed depth, focus and disabled treatment. Native settings group containers do not establish a decorative card system for the workbench.
 
 ## Shapes
 
-Space rows, Agent rows, compact tabs and search results use their distinct frontmatter corner radii. The terminal font preview and reconnect overlay keep their own documented shapes. File rows remain rectangular; pane frames and internal splits remain rectangular in the scanned implementation. There is no implementation claim here for the specification's macOS 26 outer-corner refinement. Status glyphs are eight-point SF Symbols; device connection dots are six-point circles. Native settings controls retain their platform geometry.
+Sidebar rows, Agent rows, tabs, search results, font preview and recovery overlay use their frontmatter radii. Pane frames and internal splits are rectangular. On macOS 26 and later, bottom panes use the pane-outer-bottom radius at the right outer corner and at the left outer corner when the sidebar is hidden; older systems retain rectangular outlines. The source establishes this conditional behavior, without claiming a lower-version runtime pass.
+
+Agent status glyphs are eight-point SF Symbols and device header glyphs are six-point circles. Native settings controls retain platform geometry. Pane close and restore controls use the same compact dimensions; no extra pane toolbar is introduced.
 
 ## Components
 
-### Buttons and native forms
+### Chrome actions and forms
 
-Chrome actions use compact borderless SF Symbol buttons with action/shortcut help. Sidebar and search rows use plain buttons with full-row hit regions. New is a native menu; advanced Space and Agent creation remain native sheets with loading, disabled and error states. Settings uses a sidebar list and grouped forms for Appearance, Terminal, Agents, Notifications, Devices, Tailcat, Plugins, Updates and About. Keep HerdrX names and native plugin surfaces; no ACC settings category belongs here.
+Borderless SF Symbol actions and native text labels keep primary chrome neutral. New Space performs quick creation; its adjacent options menu opens the named-directory sheet. The tab plus creates a terminal tab, and Pane Layout contains split and zoom/restore actions with capability-aware disabled states. Creation displays busy/error state and holds its chosen device through submission. Object menus identify the clicked Space, Tab or Pane; destructive confirmations state their affected object and effect.
 
 ### Sidebar navigation and attention
 
-Local shells, device Spaces, Agents and ordinary terminals occupy collapsible groups. Agent rows keep tool identity separate from execution status: the secondary label includes an SF Symbol, tool name and Space, plus device context when all devices are in scope. Codex uses braces, Claude a sun, Cursor a pointer, Gemini sparkles, Grok an asterisk, Kimi a moon, OpenCode code chevrons, Pi/Oh My Pi a function symbol and Copilot an airplane; unknown tools fall back to Terminal. These are native pictograms, not third-party logos.
+Groups cover local shells, device Spaces, detected Agents and ordinary terminals. Agent task titles come from the same display-title path as their panes. Secondary content combines tool, Space and device when all devices are visible. Full help carries task, device/session, directory and real runtime details. Selection, hover and unread attention are independent treatments.
 
-Agent status uses a blue half-filled circle for working, an orange solid circle for blocked, blue solid for unread completion and secondary outline for read/idle/unknown states, with accessible state text. Optional runtime metadata appears only when supplied. Selection remains separate from hover and unread state. Device failures render near their device group with Retry rather than replacing the whole workbench.
+Agent status uses a half-filled circle for working, a filled circle for blocked or unread completion, and an outline for other states. A readable state word accompanies the glyph in Agent rows; group summaries and search glyphs expose accessible labels. Codex uses braces, Claude a sun, Cursor a pointer, Gemini sparkles, Grok an asterisk, Kimi a moon, OpenCode code chevrons, Pi/Oh My Pi a function and Copilot an airplane. Unknown tools use Terminal. These are SF Symbol pictograms, not third-party logos. Connection failures remain beside their device group with Retry and explicit cached/offline context.
 
-### Tabs and panes
+### Tabs, pane titles and splitters
 
-AppKit tabs use natural width, selected weight, the accent wash/outline and full-title tooltips. A neutral hover fill distinguishes the pointed-to tab without duplicating selected emphasis; a two-point accent insertion marker shows reorder position. Object menus act on the tab or pane under the pointer.
+Tabs use natural widths, selected semibold weight, accent wash/outline and full-title tooltips. Neutral hover does not duplicate selection. A two-point accent insertion marker and edge scrolling support reordering. Tabs expose radio-button selection and pane-count help to accessibility.
 
-Pane titles are drawn into a cutout in the top border using the regular/focused mono roles. The cutout is fourteen points high, offset nine points from the border's left edge, with six-point text inset. Close controls use the frontmatter size and appear on hover or with VoiceOver; a separate matching restore control appears when zoomed. Ghostty surfaces remain mounted across workspace visibility changes, with hidden drawing suspended. Empty terminals use native `ContentUnavailableView`; exited/detached terminals receive the compact material reconnect action.
+A pane title is embedded in the top border cutout, pairing the primary task with secondary device/session context. The cutout is fourteen points high, starts nine points from the frame's left edge, and uses four points before main text and ten points between text runs. Main text gets at most 64% of the available title width when context exists. Its color is always labelColor; only the focused pane in the key window uses semibold weight and an accent border. Close appears on hover or when VoiceOver is enabled; zoom exposes Restore. Full pane context is assigned to the terminal's help and accessibility label.
+
+Native Ghostty surfaces remain mounted when workspaces are hidden; layout and explicit focus requests are separate. Hidden views are not assigned visible frames. Empty workbenches use `ContentUnavailableView` with Open Shell. Ended local shells offer Reopen with exit information; ended server attachment offers Reconnect with ownership confirmation. These source behaviors are not a complete lifecycle acceptance claim.
 
 ### Search
 
-Jump uses a native rounded-border text field, receives initial focus, and combines type icon, one-line title and secondary context in each result. Arrow keys and pointer hover share selection; Return opens it and Escape closes the sheet. The footer exposes keyboard hints. Preserve the empty-state explanation and full object identity rather than relying on label text alone.
+Search uses a borderless native `NSTextField` with a magnifier, initial field focus and keyboard hints. Result rows pair a type/tool pictogram, title, context and optional Agent status. Arrow keys and hover share selection; keyboard navigation keeps the target visible. Return validates the target before opening; Escape, Cancel and sheet close return through the owning presentation. Field-editor command handling leaves marked text to the input method. The compact empty state explains that no spaces, terminals or agents match. Full IME and focus behavior still require the declared native acceptance checks.
 
-### Files and transfer
+### Settings
 
-The file panel uses a compact toolbar, selectable root path, lazy tree, hidden-file toggle and refresh. Tree rows use native folder/document/link symbols, twelve-point indentation per depth and full-path help. Preview text is read-only, selectable system mono; images scale to fit inside a scroll view. Error and loading states remain explicit. The service limits preview to 2 MiB and rejects non-regular files; this source observation is not a claim of completed remote acceptance.
+Four top-level sections organize native controls:
 
-File Manager is a separate native sheet with local and target-device listings, path navigation, Name/Size/Modified columns, single-file transfer controls, conflict choices and visible byte progress. Device management and native plugin actions remain in Settings. Keep this support UI subordinate to the terminal workflow and avoid implying remote or Tailcat behavior is verified by its visual presence.
+- **Appearance:** Appearance and Behavior tabs cover appearance, language, palette, accent and notification preferences.
+- **Terminal:** typography, rendering/input preferences, Ghostty font import, preview and defaults.
+- **Connections:** Devices plus explicit advanced segments for Tailcat and generic Herdr Plugins.
+- **About & Updates:** version, installation context, project link, Homebrew update command, eligible direct-download update action and open-source notices.
+
+Connection editing uses a draft form. Update presentation distinguishes verified Homebrew ownership from a merely detected installation, and gives a reason when direct updates are unavailable. Tailcat, plugins and notifications retain native support UI; their presence does not certify external-service behavior.
 
 ## Do's and Don'ts
 
 ### Do:
 
-- Do retain HerdrX identity and native SwiftUI/AppKit controls.
-- Do keep terminal content dominant, navigation compact and file tools on demand.
-- Do use shape and accessible text with status color; keep device connection and agent execution states distinct.
-- Do verify both appearances, long Chinese labels and the specified window sizes with the running native app.
-- Do treat the source scan, rendered review and behavioral acceptance as separate evidence.
+- Do retain HerdrX identity, original icon provenance and native SwiftUI/AppKit controls.
+- Do keep terminal content dominant, task names primary and device/session context available.
+- Do use native label colors for state words and pane main titles, with shape and color for status glyphs.
+- Do preserve Ghostty appearance, font and input preferences while refining chrome.
+- Do verify both appearances, long Chinese labels, keyboard navigation and accessible splitters in the running native app.
+- Do keep source observations, supplied captures and completed runtime acceptance separate.
 
 ### Don't:
 
-- Don't replace native controls or the real terminal with a web theme, raster mockup or simulated terminal.
-- Don't restore a second fixed toolbar or a persistent bottom status bar.
+- Don't restore Agent launching, command overrides, file trees, previews, transfer or attachment delivery removed by current scope.
+- Don't replace native controls or real terminal content with a web theme, raster mockup or simulated terminal.
+- Don't restore a second fixed toolbar or persistent bottom status bar.
 - Don't invent fixed equivalents for macOS dynamic colors or platform text styles.
 - Don't add decorative shadows, oversized branding or card containers around terminal panes.
-- Don't invent runtime metadata, hide context behind controls or claim full parity from screenshots.
+- Don't invent runtime metadata or claim full contrast, input, accessibility or parity acceptance from screenshots.

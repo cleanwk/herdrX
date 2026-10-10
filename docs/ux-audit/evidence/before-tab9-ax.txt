@@ -1,0 +1,64 @@
+Window: "HerdrX", App: HerdrX.
+0 标准窗口 HerdrX, ID: desk, Secondary Actions: Raise
+	1 container
+		2 按钮 Description: 水平左侧拆分视图, Help: 切换侧栏 · ⌘B
+		3 滚动区
+			4 按钮 Implementation, Description: Implementation, tab
+			5 按钮 长名称任务标签 02 — Navigation, Description: 长名称任务标签 02 — Navigation, tab
+			6 按钮 长名称任务标签 03 — Navigation, Description: 长名称任务标签 03 — Navigation, tab
+			7 按钮 长名称任务标签 04 — Navigation, Description: 长名称任务标签 04 — Navigation, tab
+			8 按钮 长名称任务标签 05 — Navigation, Description: 长名称任务标签 05 — Navigation, tab
+			9 按钮 长名称任务标签 06 — Navigation, Description: 长名称任务标签 06 — Navigation, tab
+			10 按钮 长名称任务标签 07 — Navigation, Description: 长名称任务标签 07 — Navigation, tab
+			11 按钮 长名称任务标签 08 — Navigation, Description: 长名称任务标签 08 — Navigation, tab
+			12 按钮 长名称任务标签 09 — Navigation, Description: 长名称任务标签 09 — Navigation, selected tab
+			13 按钮 长名称任务标签 10 — Navigation, Description: 长名称任务标签 10 — Navigation, tab
+			14 按钮 长名称任务标签 11 — Navigation, Description: 长名称任务标签 11 — Navigation, tab
+			15 按钮 长名称任务标签 12 — Navigation, Description: 长名称任务标签 12 — Navigation, tab
+		16 按钮 Description: 添加, Help: 新建 Tab · ⌘⌥T
+		17 菜单按钮 拆分为二乘一的矩形, ID: rectangle.split.2x1
+		18 菜单按钮 新建, ID: plus
+		19 按钮 Description: 升序叠放的正方形，带A标记, Help: 快速新建 Space · ⌘⇧N
+		20 按钮 Description: 搜索, Help: 搜索 · ⌘K
+		21 滚动区 Secondary Actions: Scroll Up, Scroll Down
+			22 列表 Secondary Actions: AXScrollToTop, AXScrollToBottom
+				23 按钮 Shell 1 · ~
+				24 按钮 (selected) Description: 登录问题排查与长名称工作空间 Alpha、codex/core-ux-subtraction, Help: /Users/kai/github/herdrX/build/ux-fixture/alpha
+				25 按钮 Description: 文档、codex/core-ux-subtraction, Help: /Users/kai/github/herdrX/build/ux-fixture/docs
+				26 文本 Cannot connect to /Users/kai/github/herdrX/build/ux-fixture/offline.sock: No such file or directory · Retrying in 30s
+				27 按钮 重试连接
+				28 按钮 登录问题排查
+				29 按钮 kai@kaideMacBook-Pro:~/github/herdrX/build/ux-fixture/alpha
+				30 按钮 kai@kaideMacBook-Pro:~/github/herdrX/build/ux-fixture/alpha
+				31 按钮 kai@kaideMacBook-Pro:~/github/herdrX/build/ux-fixture/alpha
+				32 按钮 kai@kaideMacBook-Pro:~/github/herdrX/build/ux-fixture/alpha
+				33 按钮 kai@kaideMacBook-Pro:~/github/herdrX/build/ux-fixture/alpha
+				34 按钮 kai@kaideMacBook-Pro:~/github/herdrX/build/ux-fixture/alpha
+				35 按钮 kai@kaideMacBook-Pro:~/github/herdrX/build/ux-fixture/alpha
+				36 按钮 (selected) kai@kaideMacBook-Pro:~/github/herdrX/build/ux-fixture/alpha
+				37 按钮 kai@kaideMacBook-Pro:~/github/herdrX/build/ux-fixture/alpha
+				38 按钮 kai@kaideMacBook-Pro:~/github/herdrX/build/ux-fixture/alpha
+				39 按钮 kai@kaideMacBook-Pro:~/github/herdrX/build/ux-fixture/alpha
+				40 按钮 On This Mac, expanded
+				41 按钮 本机工作 · ux-a, expanded
+				42 按钮 本机离线会话 · ux-c, expanded
+				43 按钮 Terminals, expanded
+			44 滚动条 (settable, float) 0
+				45 值指示器 (settable, float) 0
+				46 增箭头按钮
+				47 减箭头按钮
+				48 增页面按钮
+				49 减页面按钮
+		50 弹出式按钮 Description: 设备, Help: 筛选设备；在设置中管理连接, Value: 所有设备
+		51 按钮 Description: 齿轮形状, Help: 设置 · ⌘,
+	52 关闭按钮
+	53 全屏幕按钮 Help: 此按钮也可以执行缩放窗口的操作, Secondary Actions: 缩放窗口
+	54 最小化按钮
+55 menu bar
+	56 HerdrX
+	57 文件
+	58 编辑
+	59 显示
+	60 工作区
+	61 窗口
+	62 帮助

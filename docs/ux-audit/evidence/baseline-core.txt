@@ -1,0 +1,64 @@
+Building for production...
+[1 / 2] HerdCoreTests-product
+Build complete! (0.57秒)
+Test Suite 'All tests' started at 2026-10-10 16:51:32.644.
+Test Suite 'HerdCoreTests.xctest' started at 2026-10-10 16:51:32.647.
+Test Suite 'AttentionTests' started at 2026-10-10 16:51:32.647.
+Test Case '-[HerdCoreTests.AttentionTests testOrderingDiffersFromAggregation]' started.
+Test Case '-[HerdCoreTests.AttentionTests testOrderingDiffersFromAggregation]' passed (0.003 seconds).
+Test Case '-[HerdCoreTests.AttentionTests testUnreadTransitionsAndDeviceIsolation]' started.
+Test Case '-[HerdCoreTests.AttentionTests testUnreadTransitionsAndDeviceIsolation]' passed (0.000 seconds).
+Test Suite 'AttentionTests' passed at 2026-10-10 16:51:32.650.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.003 (0.003) seconds
+Test Suite 'CoreTests' started at 2026-10-10 16:51:32.650.
+Test Case '-[HerdCoreTests.CoreTests testDeviceScopedPaneIdentity]' started.
+Test Case '-[HerdCoreTests.CoreTests testDeviceScopedPaneIdentity]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.CoreTests testFramingFragmentationAndLimits]' started.
+Test Case '-[HerdCoreTests.CoreTests testFramingFragmentationAndLimits]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.CoreTests testHerdrExtensionRecords]' started.
+Test Case '-[HerdCoreTests.CoreTests testHerdrExtensionRecords]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.CoreTests testIncompleteSnapshotIsRejected]' started.
+Test Case '-[HerdCoreTests.CoreTests testIncompleteSnapshotIsRejected]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.CoreTests testSearchNamePrecedesContextAndPinyinForms]' started.
+Test Case '-[HerdCoreTests.CoreTests testSearchNamePrecedesContextAndPinyinForms]' passed (0.044 seconds).
+Test Case '-[HerdCoreTests.CoreTests testSearchPinyinAndLimit]' started.
+/Users/kai/github/herdrX/Core/Tests/HerdCoreTests/CoreTests.swift:25: Test Case '-[HerdCoreTests.CoreTests testSearchPinyinAndLimit]' measured [Time, seconds] average: 0.001, relative standard deviation: 32.645%, values: [0.001033, 0.001123, 0.002320, 0.001436, 0.000986, 0.000974, 0.001028, 0.001501, 0.001027, 0.000958], performanceMetricID:com.apple.XCTPerformanceMetric_WallClockTime, baselineName: "", baselineAverage: , polarity: prefers smaller, maxPercentRegression: 10.000%, maxPercentRelativeStandardDeviation: 10.000%, maxRegression: 0.100, maxStandardDeviation: 0.100
+Test Case '-[HerdCoreTests.CoreTests testSearchPinyinAndLimit]' passed (0.298 seconds).
+Test Suite 'CoreTests' passed at 2026-10-10 16:51:32.993.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.343 (0.343) seconds
+Test Suite 'FileTests' started at 2026-10-10 16:51:32.993.
+Test Case '-[HerdCoreTests.FileTests testConflictPoliciesAndCancellationPreserveDestination]' started.
+Test Case '-[HerdCoreTests.FileTests testConflictPoliciesAndCancellationPreserveDestination]' passed (0.008 seconds).
+Test Case '-[HerdCoreTests.FileTests testIsolatedSSHTransferWhenConfigured]' started.
+/Users/kai/github/herdrX/Core/Tests/HerdCoreTests/FileTests.swift:39: -[HerdCoreTests.FileTests testIsolatedSSHTransferWhenConfigured] : Test skipped - No isolated SSH fixture configured
+Test Case '-[HerdCoreTests.FileTests testIsolatedSSHTransferWhenConfigured]' skipped (0.001 seconds).
+Test Case '-[HerdCoreTests.FileTests testPreviewLimitsHiddenFilesAndLinks]' started.
+Test Case '-[HerdCoreTests.FileTests testPreviewLimitsHiddenFilesAndLinks]' passed (0.008 seconds).
+Test Suite 'FileTests' passed at 2026-10-10 16:51:33.011.
+	 Executed 3 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.017 (0.017) seconds
+Test Suite 'TabOrderTests' started at 2026-10-10 16:51:33.011.
+Test Case '-[HerdCoreTests.TabOrderTests testFailedFirstMoveKeepsLaterIntent]' started.
+Test Case '-[HerdCoreTests.TabOrderTests testFailedFirstMoveKeepsLaterIntent]' passed (0.000 seconds).
+Test Suite 'TabOrderTests' passed at 2026-10-10 16:51:33.011.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'TransportTests' started at 2026-10-10 16:51:33.011.
+Test Case '-[HerdCoreTests.TransportTests testArgumentsPreserveBoundariesWithoutShellEvaluation]' started.
+Test Case '-[HerdCoreTests.TransportTests testArgumentsPreserveBoundariesWithoutShellEvaluation]' passed (0.000 seconds).
+Test Case '-[HerdCoreTests.TransportTests testEventHistoryLossRequiresARefreshAndNewSubscription]' started.
+Test Case '-[HerdCoreTests.TransportTests testEventHistoryLossRequiresARefreshAndNewSubscription]' passed (0.001 seconds).
+Test Case '-[HerdCoreTests.TransportTests testResponseIdentityCannotCrossRequests]' started.
+Test Case '-[HerdCoreTests.TransportTests testResponseIdentityCannotCrossRequests]' passed (0.001 seconds).
+Test Case '-[HerdCoreTests.TransportTests testRPCReassemblesLargeFragmentedResponse]' started.
+Test Case '-[HerdCoreTests.TransportTests testRPCReassemblesLargeFragmentedResponse]' passed (0.004 seconds).
+Test Case '-[HerdCoreTests.TransportTests testUnsupportedSnapshotIsNotHiddenByLegacyFallback]' started.
+Test Case '-[HerdCoreTests.TransportTests testUnsupportedSnapshotIsNotHiddenByLegacyFallback]' passed (0.001 seconds).
+Test Suite 'TransportTests' passed at 2026-10-10 16:51:33.018.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.007 (0.007) seconds
+Test Suite 'HerdCoreTests.xctest' passed at 2026-10-10 16:51:33.018.
+	 Executed 17 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.370 (0.372) seconds
+Test Suite 'All tests' passed at 2026-10-10 16:51:33.018.
+	 Executed 17 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.370 (0.374) seconds
+◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

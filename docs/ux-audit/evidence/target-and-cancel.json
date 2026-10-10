@@ -1,0 +1,9 @@
+{
+  "server_close_cancel": "w1:p1 remains; A remains 25 panes",
+  "creation": "only B gained one workspace/tab/pane",
+  "a_spaces": 2,
+  "a_panes": 25,
+  "b_spaces": 1,
+  "b_panes": 1,
+  "b_cwd": "/Users/kai/github/herdrX/build/ux-fixture/docs"
+}

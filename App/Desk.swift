@@ -53,6 +53,7 @@ indirect enum Layout {
 }
 struct AgentRow: Identifiable { let device: String; let pane: Item; var id: PaneKey { PaneKey(device: device, pane: pane.id) } }
 struct ShellTab: Identifiable { let id: String; var label: String; var layout: Layout }
+struct SpaceRequest: Identifiable { let id = UUID(); let device: String? }
 struct JumpRow: Identifiable { let id: String; let device: String?; let space: String?; let tab: String?; let pane: String?; let label: String; let detail: String }
 
 @MainActor
@@ -76,9 +77,42 @@ final class Desk: ObservableObject {
     @Published var attentionState = Attention()
     @Published var deviceFilter = ""
     @Published var creatingSpace = false
+    @Published var spaceRequest: SpaceRequest?
+    @Published var busy: Set<String> = []
+    @Published var focusRevision = 0
+    @Published var sidebarReveal: String?
+    @Published var exitStatus: [PaneKey: Int32] = [:]
+    weak var focusReturn: NSResponder?
+    private var focusReturnRevision = 0
+    private var focusReturnWasTerminal = false
+    var canvasSize: CGSize = .zero
+    func requestFocus() { focusRevision += 1 }
+    func captureFocus() {
+        focusReturn = NSApp.keyWindow?.firstResponder; focusReturnRevision = focusRevision
+        focusReturnWasTerminal = terminals.values.contains { $0.view === focusReturn }
+    }
+    func restoreFocus() {
+        if focusRevision != focusReturnRevision { requestFocus() }
+        else if let view = focusReturn as? NSView, let window = view.window, !view.isHiddenOrHasHiddenAncestor { window.makeFirstResponder(view) }
+        else if focusReturnWasTerminal { requestFocus() }
+        focusReturn = nil
+    }
+    func openSearch() { captureFocus(); reindex(); showSearch = true }
+    func canWrite(_ device: String) -> Bool { device == "shell" || connections[device] == "Connected" }
+    func begin(_ key: String, device: String) -> Bool { guard canWrite(device), !busy.contains(key) else { return false }; busy.insert(key); return true }
+    func creationID(_ device: String, _ space: String) -> String { device + "|createTab|" + space }
+    var canCreate: Bool { guard let id = selectedDevice, let space = selectedSpace else { return selectedDevice == nil }; return canWrite(id) && !busy.contains(creationID(id, space)) }
+    var creationDevice: String? {
+        if !deviceFilter.isEmpty { return selectedDevice == nil || selectedDevice == deviceFilter ? deviceFilter : nil }
+        return selectedDevice
+    }
+    var creationHelp: String { creationDevice.flatMap { id in devices.first { $0.id == id }?.displayName }.map { LF("New Space on %@ · ⌘⇧N", $0) } ?? L("Choose a device for New Space · ⌘⇧N") }
+    func showSpaceForm(device: String? = nil) { captureFocus(); spaceRequest = SpaceRequest(device: device ?? creationDevice) }
     @Published var branches: [String: String] = [:]
     var branchRequests: [String: UUID] = [:]
     var branchUpdated: [String: Date] = [:]
+    var branchContexts: [String: String] = [:]
+    @Published var branchStates: [String: BranchState] = [:]
     @Published var tabOrders: [String: TabOrder] = [:]
     private var reorderTasks: [String: Task<Void, Never>] = [:]
     private var paneMemory: [String: PaneKey] = [:]
@@ -102,7 +136,6 @@ final class Desk: ObservableObject {
     private var polls: [String: Task<Void, Never>] = [:]
     private var remoteLayouts: [String: Layout] = [:]
     private var hiddenTask: Task<Void, Never>?
-    private var hiddenAttachments: Set<PaneKey> = []
     private var layoutTask: Task<Void, Never>?
     var dividers: [Layout.Divider] {
         guard !zoomed else { return [] }
@@ -114,12 +147,18 @@ final class Desk: ObservableObject {
         if let device = selectedDevice, let layout = draggingLayout ?? remoteLayouts[device + "|" + selectedTab] { draggingLayout = layout.setting(divider.path[...], ratio: ratio) }
         else { setRatio(divider, ratio: ratio) }
     }
-    func setRatio(_ divider: Layout.Divider, ratio: Double) {
+    func setRatio(_ divider: Layout.Divider, ratio proposed: Double) {
+        let dimension = divider.horizontal ? canvasSize.width * divider.box.width : canvasSize.height * divider.box.height
+        let minimum = divider.horizontal ? minimumPaneSize.width : minimumPaneSize.height
+        let edge = min(0.5, max(0.1, minimum / max(1, dimension)))
+        let ratio = min(1 - edge, max(edge, proposed))
         guard dividers.contains(where: { $0.path == divider.path && $0.panes == divider.panes }) else { return }
         if selectedDevice != nil {
             let tab = selectedTab
-            let device = selectedDevice!
+            let device = selectedDevice!, key = selectedDevice! + "|layout|" + selectedTab
+            guard begin(key, device: device) else { return }
             Task {
+                defer { busy.remove(key) }
                 defer { if selectedDevice == device && selectedTab == tab { draggingLayout = nil } }
                 do { let client = try rpc(device); _ = try await client.call("layout.set_split_ratio", ["tab_id": .string(tab), "path": .array(divider.path.map(JSON.bool)), "ratio": .number(min(0.9, max(0.1, ratio)))]); try await refresh(device, client: client) } catch { message = error.localizedDescription }
             }
@@ -127,8 +166,8 @@ final class Desk: ObservableObject {
     }
     func resize(_ direction: String) {
         guard let focused else { return }
-        if selectedDevice != nil { perform { _ = try await $0.call("pane.resize", ["pane_id": .string(focused.pane), "direction": .string(direction), "amount": .number(0.05)]) } }
-        else if let divider = dividers.last(where: { $0.panes.contains(focused) && $0.horizontal == ["left", "right"].contains(direction) }) { setRatio(divider, ratio: divider.ratio + (["right", "down"].contains(direction) ? 0.05 : -0.05)) }
+        guard canAct(on: focused), let divider = dividers.last(where: { $0.panes.contains(focused) && $0.horizontal == ["left", "right"].contains(direction) }) else { return }
+        setRatio(divider, ratio: divider.ratio + (["right", "down"].contains(direction) ? 0.05 : -0.05))
     }
     private let saveURL = Desk.support.appendingPathComponent("devices.json")
     static var support: URL { if let path = ProcessInfo.processInfo.environment["HERDRX_STATE_DIR"] { return URL(fileURLWithPath: path) }; return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/HerdrX") }
@@ -176,7 +215,7 @@ final class Desk: ObservableObject {
     func discoverSessions() {
         Task {
             do {
-                let bytes = try await FileProcess.run("/bin/zsh", ["-lc", "exec herdr session list --json"], input: Data())
+                let bytes = try await CommandProcess.run("/bin/zsh", ["-lc", "exec herdr session list --json"], input: Data())
                 let value = try JSONDecoder().decode(JSON.self, from: bytes)
                 guard case .array(let rows) = value["sessions"] else { throw Failure("Herdr returned an invalid session list.") }
                 let discovered = try rows.map { row -> Device in
@@ -267,9 +306,9 @@ final class Desk: ObservableObject {
                     guard !Task.isCancelled else { return }
                     guard self.connectionIDs[device.id] == generation else { return }
                     if error.localizedDescription.localizedCaseInsensitiveContains("permission denied") || error.localizedDescription.localizedCaseInsensitiveContains("host key verification failed") {
-                        self.connections[device.id] = error.localizedDescription + " · Authenticate in Terminal, then retry."; return
+                        self.connections[device.id] = error.localizedDescription + " · " + L("Authenticate in Terminal, then retry."); return
                     }
-                    self.connections[device.id] = error.localizedDescription + " · Retrying in \(delay)s"
+                    self.connections[device.id] = error.localizedDescription + " · " + LF("Retrying in %ds", delay)
                 }
                 do { try await Task.sleep(for: .seconds(delay)) } catch { return }
                 delay = min(30, delay * 2)
@@ -285,12 +324,13 @@ final class Desk: ObservableObject {
         let snapshot = try await Session.load(client)
         try Task.checkCancellation()
         guard connectionIDs[id] == connection, paths[id] == client.path, refreshIDs[id] == token, devices.contains(where: { $0.id == id }) else { return }
-        if sessions[id] != snapshot { attentionState.update(device: id, old: sessions[id], new: snapshot); notifyChanges(device: id, old: sessions[id], new: snapshot); sessions[id] = snapshot; reconcile(id); reindex() }
-        connections[id] = "Connected"
+        if sessions[id] != snapshot { let old = sessions[id]; attentionState.update(device: id, old: old, new: snapshot); notifyChanges(device: id, old: old, new: snapshot); sessions[id] = snapshot; reconcile(id, previous: old); reindex() }
+        if connections[id] != "Connected" { connections[id] = "Connected" }
         if let device = devices.first(where: { $0.id == id }) { refreshBranches(device, snapshot: snapshot) }
     }
     func select(device: String?, space: String? = nil, tab: String? = nil, pane: PaneKey? = nil) {
-        let rememberedTab = tab ?? (device == selectedDevice && space == selectedSpace ? selectedTab : nil)
+        requestFocus()
+        let rememberedTab = tab ?? (device == selectedDevice && space == selectedSpace && !selectedTab.isEmpty ? selectedTab : nil)
         let savedMemory = paneMemory
         selectedDevice = device; selectedSpace = space; zoomed = false; draggingLayout = nil
         if let device {
@@ -327,10 +367,9 @@ final class Desk: ObservableObject {
     private func makeTerminal(_ key: PaneKey, command: String) {
         let terminal = Terminal(command: command)
         terminal.view.objectMenu = { [weak self] in self?.paneMenu(key) }
-        terminal.view.pasteAttachment = { [weak self] in self?.pasteAttachment(to: key) ?? false }
         terminal.focused = { [weak self] in if self?.focused != key { self?.focused = key } }
-        terminal.onExit = { [weak self] in self?.ended.insert(key) }
-        terminal.process.inputRejected = { [weak self] in self?.message = "Terminal input is waiting for the process. Try a smaller paste when it responds." }
+        terminal.onExit = { [weak self] status in self?.ended.insert(key); self?.exitStatus[key] = status }
+        terminal.process.inputRejected = { [weak self] in self?.message = L("Terminal input is waiting for the process. Try a smaller paste when it responds.") }
         terminals[key] = terminal
     }
     func newShell(cwd: String? = nil) {
@@ -343,22 +382,25 @@ final class Desk: ObservableObject {
         shellTabs.append(tab); select(device: nil, tab: tab.id); reindex()
     }
     func split(horizontal: Bool) {
-        guard let key = focused else { return }
+        guard let key = focused, canSplit(horizontal: horizontal) else { return }
         if selectedDevice != nil {
-            let tab = selectedTab
-            Task { do {
+            let tab = selectedTab, action = key.device + "|pane|" + key.pane
+            guard begin(action, device: key.device) else { return }
+            let origin = focusRevision, endpoint = currentDevice?.endpoint
+            Task { defer { busy.remove(action) }; do {
                 let rpc = try rpc(key.device)
                 let pane = try await rpc.call("pane.get", ["pane_id": .string(key.pane)])["pane"]
                 guard let cwd = pane["foreground_cwd"].string ?? pane["cwd"].string else { throw Failure("Cannot read current directory; split cancelled") }
+                guard canWrite(key.device), devices.first(where: { $0.id == key.device })?.endpoint == endpoint else { throw Failure(L("The creation target changed. Try again.")) }
                 let result = try await rpc.call("pane.split", ["target_pane_id": .string(key.pane), "direction": .string(horizontal ? "right" : "down"), "cwd": .string(cwd), "focus": .bool(false)])
                 try await refresh(key.device, client: rpc)
-                if selectedDevice == key.device, selectedTab == tab, let id = result["pane"]["pane_id"].string { focused = PaneKey(device: key.device, pane: id) }
+                if origin == focusRevision, selectedDevice == key.device, selectedTab == tab, let id = result["pane"]["pane_id"].string { focused = PaneKey(device: key.device, pane: id); requestFocus() }
             } catch { message = error.localizedDescription } }
         } else {
             guard let index = shellTabs.firstIndex(where: { $0.id == selectedTab }), let cwd = terminals[key]?.process.cwd() else { message = "Cannot read current directory"; return }
             let next = PaneKey(device: "shell", pane: UUID().uuidString)
             makeTerminal(next, command: "cd \(quote(cwd)) && exec /bin/zsh -l")
-            shellTabs[index].layout = shellTabs[index].layout.splitting(key, with: next, horizontal: horizontal); focused = next
+            shellTabs[index].layout = shellTabs[index].layout.splitting(key, with: next, horizontal: horizontal); focused = next; requestFocus()
         }
     }
     func orderedTabs(device: String, space: String?) -> [Item] {
@@ -368,7 +410,7 @@ final class Desk: ObservableObject {
         return order.visible.compactMap { byID[$0] } + tabs.filter { !order.visible.contains($0.id) }
     }
     func reorderTab(_ source: String, insertion: Int) {
-        guard let device = selectedDevice, let space = selectedSpace,
+        guard let device = selectedDevice, let space = selectedSpace, canWrite(device),
               sessions[device]?.tabs.contains(where: { $0.id == source && $0.workspace == space }) == true else { return }
         let key = device + "|" + space
         if tabOrders[key] == nil { tabOrders[key] = TabOrder(orderedTabs(device: device, space: space).map(\.id)) }
@@ -388,72 +430,68 @@ final class Desk: ObservableObject {
         }
     }
     func create() {
+        guard canCreate else { return }
         guard let id = selectedDevice, let space = selectedSpace else { newShell(); return }
-        Task { do { try await createTab(device: id, workspace: space, agent: nil, args: []) } catch { message = error.localizedDescription } }
-    }
-    func createTab(device: String, workspace: String, agent: String?, args: [String]) async throws {
-        let client = try rpc(device)
-        let override = devices.first { $0.id == device }?.endpoint.kind == "local" ? agent.flatMap { UserDefaults.standard.string(forKey: "agentCommand." + $0) } ?? "" : ""
-        let command = try Arguments.parse(override)
-        if let executable = command.first {
-            _ = try await FileProcess.run("/bin/zsh", ["-lc", "export PATH=\"$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"; command -v " + quote(executable)], input: Data())
-        }
-        var params: [String: JSON] = ["focus": .bool(false), "workspace_id": .string(workspace)]
-        if device == selectedDevice, workspace == selectedSpace, let cwd = currentPane?.cwd { params["cwd"] = .string(cwd) }
-        let result = try await client.call("tab.create", params)
-        guard let paneID = result["root_pane"]["pane_id"].string else { throw Failure("Herdr did not return the new pane") }
-        // Publish and select the created terminal even if the agent fails to start.
-        try await refresh(device, client: client)
-        if let pane = sessions[device]?.panes.first(where: { $0.id == paneID }) { select(device: device, space: pane.workspace, tab: pane.tab) }
-        if let agent {
-            if !command.isEmpty {
-                _ = try await client.call("pane.send_text", ["pane_id": .string(paneID), "text": .string((command + args).map(quote).joined(separator: " "))])
-                _ = try await client.call("pane.send_keys", ["pane_id": .string(paneID), "keys": .array([.string("Enter")])])
-                for _ in 0..<30 {
-                    try await Task.sleep(for: .milliseconds(500)); try await refresh(device, client: client)
-                    if sessions[device]?.panes.first(where: { $0.id == paneID })?.agent != nil { return }
-                }
-                throw Failure("Command was sent, but Herdr has not detected an agent. The new pane is available for inspection.")
-            }
-            _ = try await client.call("agent.start", ["kind": .string(agent), "name": .string(agent + "-" + UUID().uuidString.prefix(6)), "pane_id": .string(paneID), "args": .array(args.map(JSON.string)), "timeout_ms": .number(30000)], timeout: 45)
-            try await refresh(device, client: client)
+        let key = creationID(id, space)
+        guard begin(key, device: id) else { return }
+        let pane = focused, origin = focusRevision
+        Task {
+            defer { busy.remove(key) }
+            do {
+                let endpoint = devices.first { $0.id == id }?.endpoint
+                let client = try rpc(id)
+                guard let pane, pane.device == id else { throw Failure(L("Select a pane before creating a terminal tab.")) }
+                let value = try await client.call("pane.get", ["pane_id": .string(pane.pane)])["pane"]
+                guard let cwd = value["foreground_cwd"].string ?? value["cwd"].string,
+                      canWrite(id), devices.first(where: { $0.id == id })?.endpoint == endpoint,
+                      sessions[id]?.panes.contains(where: { $0.id == pane.pane && $0.workspace == space }) == true else { throw Failure(L("The creation target changed. Try again.")) }
+                let result = try await client.call("tab.create", ["workspace_id": .string(space), "cwd": .string(cwd), "focus": .bool(false)])
+                try await refresh(id, client: client)
+                if origin == focusRevision, let paneID = result["root_pane"]["pane_id"].string,
+                   let created = sessions[id]?.panes.first(where: { $0.id == paneID }) { select(device: id, space: created.workspace, tab: created.tab) }
+            } catch { message = error.localizedDescription }
         }
     }
     func createSpace(device: String, name: String, cwd: String) async throws {
-        let client = try rpc(device)
+        let key = device + "|createSpace"
+        guard cwd.hasPrefix("/"), !cwd.contains(where: { $0.isNewline || $0 == "\0" }), begin(key, device: device) else { throw Failure(L("Connect the selected device and enter an absolute directory.")) }
+        defer { busy.remove(key) }
+        let origin = focusRevision, client = try rpc(device)
         var params: [String: JSON] = ["focus": .bool(false), "cwd": .string(cwd)]
-        if !name.isEmpty { params["label"] = .string(name) }
+        if let name = DisplayTitle.clean(name) { params["label"] = .string(name) }
         let result = try await client.call("workspace.create", params)
         try await refresh(device, client: client)
-        if let id = result["workspace"]["workspace_id"].string { select(device: device, space: id) }
+        if origin == focusRevision, let id = result["workspace"]["workspace_id"].string { select(device: device, space: id) }
     }
     func renameSpace(device: String, space: Item) {
-        let prompt = NSAlert(); prompt.messageText = L("Rename Space"); prompt.addButton(withTitle: L("Rename")); prompt.addButton(withTitle: L("Cancel"))
-        let field = NSTextField(string: space.label); field.frame = NSRect(x: 0, y: 0, width: 300, height: 24); prompt.accessoryView = field
-        guard prompt.runModal() == .alertFirstButtonReturn, !field.stringValue.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        let name = field.stringValue
-        Task { do { let client = try rpc(device); _ = try await client.call("workspace.rename", ["workspace_id": .string(space.id), "label": .string(name)]); try await refresh(device, client: client) } catch { message = error.localizedDescription } }
+        guard canAct(device: device, object: "space|" + space.id) else { return }
+        guard canWrite(device), let name = NamePrompt.ask("Rename Space", current: space.label) else { return }
+        objectAction(device: device, method: "workspace.rename", params: ["workspace_id": .string(space.id), "label": .string(name)])
     }
     func perform(_ action: @escaping (RPC) async throws -> Void) {
         guard let id = selectedDevice else { return }
         Task { do { let client = try rpc(id); try await action(client); try await refresh(id, client: client) } catch { message = error.localizedDescription } }
     }
     func closePane(_ target: PaneKey? = nil) {
-        guard let key = target ?? focused else { return }
+        guard let key = target ?? focused, canAct(on: key) else { return }
         if key.device != "shell" {
-            guard confirmClose("Pane “\(paneTitles[key] ?? key.pane)”", device: key.device, count: 1) else { return }
+            guard confirmClose(LF("Pane “%@”", paneTitles[key]?.main ?? key.pane), device: key.device, count: 1) else { return }
             objectAction(device: key.device, method: "pane.close", params: ["pane_id": .string(key.pane)])
         } else if let index = shellTabs.firstIndex(where: { $0.layout.rects().contains { $0.0 == key } }) {
+            guard confirmLocalClose([key]) else { return }
             terminals.removeValue(forKey: key)?.process.stop(); ended.remove(key)
-            if let layout = shellTabs[index].layout.removing(key) { shellTabs[index].layout = layout; if focused == key { focused = layout.rects().first?.0 } }
-            else { let removed = shellTabs.remove(at: index); if selectedTab == removed.id { select(device: nil) } }
+            if let layout = shellTabs[index].layout.removing(key) { shellTabs[index].layout = layout; if focused == key { focused = layout.rects().first?.0; requestFocus() } }
+            else { let removed = shellTabs.remove(at: index); if selectedTab == removed.id { select(device: nil, tab: shellTabs.isEmpty ? nil : shellTabs[min(index, shellTabs.count - 1)].id) } }
             reindex()
         }
     }
-    func reconcile(_ device: String) {
+    func reconcile(_ device: String, previous: Session? = nil) {
         if selectedDevice == device {
-            if sessions[device]?.tabs.contains(where: { $0.id == selectedTab }) != true { selectedTab = sessions[device]?.tabs.first { $0.workspace == selectedSpace }?.id ?? "" }
+            let oldFocus = focused, ownedFocus = focused.flatMap { terminals[$0]?.view } === NSApp.keyWindow?.firstResponder
+            selectedSpace = NeighbourSelection.resolve(selectedSpace, previous: previous?.spaces.map(\.id) ?? [], current: sessions[device]?.spaces.map(\.id) ?? [])
+            selectedTab = NeighbourSelection.resolve(selectedTab, previous: previous?.tabs.filter { $0.workspace == selectedSpace }.map(\.id) ?? [], current: sessions[device]?.tabs.filter { $0.workspace == selectedSpace }.map(\.id) ?? []) ?? ""
             if sessions[device]?.panes.contains(where: { $0.id == focused?.pane && $0.tab == selectedTab }) != true { focused = sessions[device]?.panes.first { $0.tab == selectedTab }.map { PaneKey(device: device, pane: $0.id) } }
+            if ownedFocus, focused != oldFocus { requestFocus() }
             ensureAttachments()
         }
         let valid = Set(sessions[device]?.panes.map(\.id) ?? [])
@@ -466,11 +504,11 @@ final class Desk: ObservableObject {
             return session.spaces.flatMap { space in session.tabs.filter { $0.workspace == space.id }.flatMap { tab in session.panes.filter { $0.tab == tab.id && $0.agent != nil }.map { AgentRow(device: device.id, pane: $0) } } }
         }
         agents = ordered.enumerated().sorted { (rank($0.element.pane.status), $0.offset) < (rank($1.element.pane.status), $1.offset) }.map(\.element)
-        var rows = shellTabs.map { JumpRow(id: "shell|" + $0.id, device: nil, space: nil, tab: $0.id, pane: nil, label: $0.label, detail: "Local shell") }
+        var rows = shellTabs.map { JumpRow(id: "shell|" + $0.id, device: nil, space: nil, tab: $0.id, pane: nil, label: $0.label, detail: L("Local shell")) }
         for device in devices {
             guard let session = sessions[device.id] else { continue }
-            rows += session.spaces.map { JumpRow(id: "space|" + device.id + "|" + $0.id, device: device.id, space: $0.id, tab: nil, pane: nil, label: $0.label, detail: device.displayName + " · " + ($0.cwd ?? "") + " · " + ($0.tokens["branch"]?.string ?? branches[device.id + "|" + $0.id] ?? "Space")) }
-            rows += session.panes.map { pane in JumpRow(id: "pane|" + device.id + "|" + pane.id, device: device.id, space: pane.workspace, tab: pane.tab, pane: pane.id, label: pane.label, detail: device.displayName + " · " + (session.spaces.first { space in space.id == pane.workspace }?.label ?? "") + " · " + (pane.agent ?? "Terminal") + " · " + (pane.cwd ?? pane.status)) }
+            rows += session.spaces.map { JumpRow(id: "space|" + device.id + "|" + $0.id, device: device.id, space: $0.id, tab: nil, pane: nil, label: $0.label, detail: DisplayTitle.detail([device.displayName, spacePath(device: device.id, space: $0.id), branches[device.id + "|" + $0.id]])) }
+            rows += session.panes.map { pane in JumpRow(id: "pane|" + device.id + "|" + pane.id, device: device.id, space: pane.workspace, tab: pane.tab, pane: pane.id, label: title(device: device.id, pane: pane), detail: DisplayTitle.detail([device.displayName, session.spaces.first { space in space.id == pane.workspace }?.label, pane.agent ?? L("Terminal"), pane.cwd])) }
         }
         rows.sort { left, right in
             let a = left.device.flatMap { sessions[$0]?.panes.first { $0.id == left.pane } }.map { rank($0.status) } ?? 3
@@ -480,15 +518,18 @@ final class Desk: ObservableObject {
             return (leftType, a, -(searchActivity[left.id] ?? 0), left.label, left.id) < (rightType, b, -(searchActivity[right.id] ?? 0), right.label, right.id)
         }
         jumpRows = Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
-        search = Search(documents: rows.map { Search.Document(id: $0.id, name: $0.label, context: $0.detail) })
+        search.update(documents: rows.map { Search.Document(id: $0.id, name: $0.label, context: $0.detail) })
     }
     func jump(_ value: String) {
         if let row = jumpRows[value] {
+            guard valid(row) else { message = L("This terminal is no longer available."); return }
+            reveal(device: row.device, space: row.space)
             select(device: row.device, space: row.space, tab: row.tab, pane: row.device.flatMap { device in row.pane.map { PaneKey(device: device, pane: $0) } })
             showSearch = false; return
         }
         let parts = value.split(separator: "|", maxSplits: 1).map(String.init)
-        guard parts.count == 2, let pane = sessions[parts[0]]?.panes.first(where: { $0.id == parts[1] }) else { message = "This terminal is no longer available."; return }
+        guard parts.count == 2, let pane = sessions[parts[0]]?.panes.first(where: { $0.id == parts[1] }) else { message = L("This terminal is no longer available."); return }
+        reveal(device: parts[0], space: pane.workspace)
         select(device: parts[0], space: pane.workspace, tab: pane.tab, pane: PaneKey(device: parts[0], pane: pane.id)); showSearch = false
     }
     func focusDirection(_ direction: String) {
@@ -502,7 +543,7 @@ final class Desk: ObservableObject {
             default: return rect.midY > origin.midY
             }
         }.sorted { hypot($0.1.midX - origin.midX, $0.1.midY - origin.midY) < hypot($1.1.midX - origin.midX, $1.1.midY - origin.midY) }
-        if let next = candidates.first { focused = next.0 }
+        if let next = candidates.first { focused = next.0; requestFocus() }
     }
     func changeTab(_ offset: Int) {
         let ids = selectedDevice.flatMap { orderedTabs(device: $0, space: selectedSpace).map(\.id) } ?? shellTabs.map(\.id)
@@ -520,20 +561,18 @@ final class Desk: ObservableObject {
         jump(next.device + "|" + next.pane.id)
     }
     func quickSpace() {
-        guard !creatingSpace, let device = selectedDevice ?? devices.first(where: { connections[$0.id] == "Connected" })?.id else { message = "Connect a Herdr device to create a space."; return }
+        guard !creatingSpace else { return }
+        guard let device = creationDevice, canWrite(device), selectedDevice == device,
+              let pane = focused, pane.device == device else { showSpaceForm(); return }
         creatingSpace = true
-        let pane = selectedDevice == device ? focused : nil
-        let fallback = sessions[device]?.spaces.first(where: { $0.id == selectedSpace })?.cwd
+        let endpoint = devices.first { $0.id == device }?.endpoint
         Task {
             defer { creatingSpace = false }
             do {
-                let cwd: String
-                if let pane {
-                    let value = try await rpc(device).call("pane.get", ["pane_id": .string(pane.pane)])["pane"]
-                    guard let path = value["foreground_cwd"].string ?? value["cwd"].string else { throw Failure("Cannot read the current pane directory.") }; cwd = path
-                } else if let fallback { cwd = fallback }
-                else if devices.first(where: { $0.id == device })?.endpoint.kind == "local" { cwd = focused.flatMap { terminals[$0]?.process.cwd() } ?? NSHomeDirectory() }
-                else { throw Failure("Select a remote pane or use New Space… to specify its directory.") }
+                let value = try await rpc(device).call("pane.get", ["pane_id": .string(pane.pane)])["pane"]
+                guard let cwd = value["foreground_cwd"].string ?? value["cwd"].string,
+                      devices.first(where: { $0.id == device })?.endpoint == endpoint,
+                      canWrite(device) else { throw Failure(L("The creation target changed. Try again.")) }
                 try await createSpace(device: device, name: "", cwd: cwd)
             } catch { message = error.localizedDescription }
         }
@@ -543,7 +582,7 @@ final class Desk: ObservableObject {
         let previous = Dictionary(uniqueKeysWithValues: old.panes.map { ($0.id, $0.status) })
         for pane in new.panes where pane.agent != nil && ["blocked", "done"].contains(pane.status) && previous[pane.id] != nil && previous[pane.id] != pane.status {
             if NSApp.isActive, focused == PaneKey(device: device, pane: pane.id) { continue }
-            let content = UNMutableNotificationContent(); content.userInfo = ["device": device, "pane": pane.id]; content.title = pane.label; content.body = pane.status == "blocked" ? "Needs your input" : "Finished"; if !UserDefaults.standard.bool(forKey: "silentNotifications") { content.sound = .default }
+            let content = UNMutableNotificationContent(); content.userInfo = ["device": device, "pane": pane.id]; content.title = title(device: device, pane: pane); content.body = L(pane.status == "blocked" ? "Needs your input" : "Finished"); if !UserDefaults.standard.bool(forKey: "silentNotifications") { content.sound = .default }
             UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
         }
     }
@@ -552,15 +591,14 @@ final class Desk: ObservableObject {
         hiddenTask = Task {
             do { try await Task.sleep(for: .milliseconds(1500)) } catch { return }
             guard NSApp.isHidden else { return }
-            for (key, terminal) in terminals where key.device != "shell" && !ended.contains(key) {
-                hiddenAttachments.insert(key); terminal.process.stop(); ended.insert(key)
-            }
+            // Keep attachment ownership. Hidden surfaces stop drawing without
+            // detaching and later stealing a pane from another client.
+            terminals.values.forEach { $0.visible(false) }
         }
     }
     func applicationShown() {
         hiddenTask?.cancel(); hiddenTask = nil
-        for key in hiddenAttachments { if let terminal = terminals[key] { ended.remove(key); terminal.restart() } }
-        hiddenAttachments = []
+        objectWillChange.send()
     }
     func shutdown() { hiddenTask?.cancel(); reorderTasks.values.forEach { $0.cancel() }; layoutTask?.cancel(); Array(polls.keys).forEach { detach($0) }; terminals.values.forEach { $0.process.stop() } }
 }

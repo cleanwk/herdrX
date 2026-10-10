@@ -89,7 +89,7 @@ struct TailcatSettings: View {
             Section(LocalizedStringKey(editing == nil ? "Add Tailcat device" : "Edit connection")) {
                 TextField("Name", text: $name)
                 SecureField("Connection token", text: $token, prompt: Text(editing == nil ? "" : "Leave blank to keep the saved token"))
-                Text("Use a herdr.tailcat host exposing control port 6464 and terminal port 6465. Tokens and the client key are kept in HerdrX’s Keychain namespace. File operations are unavailable for this connection.").font(.caption).foregroundStyle(.secondary)
+                Text("Use a herdr.tailcat host exposing control port 6464 and terminal port 6465. Tokens and the client key are kept in HerdrX’s Keychain namespace.").font(.caption).foregroundStyle(.secondary)
                 Button(LocalizedStringKey(editing == nil ? "Add Device" : "Save Changes")) {
                     let device = Device(id: editing ?? UUID().uuidString, displayName: name, endpoint: .init(kind: "tailcat", socketPath: "/herdr.sock"))
                     do {

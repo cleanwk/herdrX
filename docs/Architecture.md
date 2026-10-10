@@ -41,7 +41,7 @@ RPC 连通、attach 存活、表面可见及 Agent 状态分别保存。断线�
 
 ## 当前边界
 
-2026-10-10 的复刻规格将按需文件树、只读预览与单文件传输纳入范围。FileService 独立于控制 RPC 与终端流，本机使用 Foundation/POSIX，SSH 使用系统 SSH 与目标 Python 3；不支持的连接显式报错。传输先写同目录临时文件，成功后按冲突策略提交，取消清理临时文件。设备实现本机、SSH 与 Tailcat 传输适配。Tailcat 使用独立 Go helper 将控制端口 6464/终端端口 6465 桥接到私有 Unix socket，令牌经 stdin 传入、身份和令牌存于 HerdrX 独立 Keychain service；未获得真实 host，所以源码和 universal 构建通过不代表真实连接已验收。没有额外的 Schema 表单、ACC 提供商或插件市场。
+2026-10-10 的后续 UX 审计与用户补充已覆盖旧复刻范围：移除 Agent 启动器、文件树、预览、传输、附件投递及独占服务。`CommandProcess` 仅供连接发现与 Git 元数据读取，不包含文件传输 API。普通终端文本粘贴仍交给 Ghostty。原有偏好键保持惰性，不清理用户文件。Tailcat 使用独立 Go helper 将控制端口 6464/终端端口 6465 桥接到私有 Unix socket，令牌经 stdin 传入、身份和令牌存于 HerdrX 独立 Keychain service；未获得真实 host，所以源码和 universal 构建通过不代表真实连接已验收。没有额外的 Schema 表单、ACC 提供商或插件市场。
 
 终端兼容性沿用固定版本的 Ghostty，并实现空闲 IME 插入点、Kitty 模式恢复和隐藏尺寸守卫。未复制参考项目的 ANSI 颜色改写器；Pi 等 Agent 的浅色光标及第三方语音输入法仍需要真实环境验收。本次运行与性能证据以 `docs/parity/STATUS.md` 及其 evidence 为准，不沿用参考项目历史指标。
 
@@ -54,3 +54,9 @@ Agent 创建读取 `integration.list` 的 available 工具，不再硬编码 CLI
 `project.yml` 保留 SwiftUI/AppKit、HerdCore 和固定 Ghostty 依赖。Tailcat helper 使用 Go modules，`scripts/tailcat.sh` 构建 arm64/x86_64 后 lipo 合并，由 Xcode post-build 打包并签名。新构建依赖 Go（go.mod 指定工具链），SSH 文件服务依赖目标 Python 3。文件传输不经过终端输入或 Herdr RPC。第三方许可归档在 Resources/Licenses/Tailcat。
 
 DEBUG 可通过 `HERDRX_STATE_DIR` 隔离设备存储，`HERDRX_WINDOW_SIZE` 指定验证窗口，`HERDRX_DIAGNOSTICS` 输出 surface 身份和可见/隐藏 frame；正式运行不会默认记录这些诊断。验收只操作独立命名会话和私有 SSH fixture，不连接已有用户工作 Pane。原生事件、截图、纯状态测试与源码审查分开标记，不能相互替代。
+
+## 本轮交互规则
+
+标题投影、精确快捷键匹配、搜索稳定选择和相邻标签回落放在 HerdCore 的小型纯模型中。搜索索引复用未变化名称/上下文的拼音缓存；AppKit NSTextField 处理方向键和 Return，并先尊重 marked text。Desk 的写操作锁按设备与对象/意图区分，导航不因其他对象忙碌而锁住。创建和插件动作捕获原目标；显式导航有焦点版本号，后台快照和布局不主动抢 first responder。
+
+高级创建与搜索取消恢复原焦点；显式选择目标时恢复新目标。服务器关闭确认显示设备、名称与受影响 Pane 数。本机关闭通过前台进程组和 shell 身份检查，对运行或无法确认空闲的进程显示确认。隐藏应用只暂停表面绘制，保留 attach；不在恢复时自动接管其他客户端。

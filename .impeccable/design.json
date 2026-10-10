@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-10T07:24:06.728283+00:00",
+  "generatedAt": "2026-10-10T09:32:03.538090+00:00",
   "title": "Design System: HerdrX",
   "extensions": {
     "colorMeta": {
@@ -93,35 +93,35 @@
       },
       "metadata": {
         "displayName": "Metadata",
-        "purpose": "Space detail, Agent attribution and status text."
+        "purpose": "Space branch/directory and Agent context/state words."
       },
       "section-label": {
         "displayName": "Group Header",
         "purpose": "Collapsible sticky sidebar group heading."
       },
-      "detail": {
-        "displayName": "Optional Detail",
-        "purpose": "Optional Agent metadata and file-root path."
-      },
       "pane-title": {
         "displayName": "Pane Title",
-        "purpose": "Unfocused native monospaced pane title."
+        "purpose": "Native label-color pane task name at regular weight."
       },
       "pane-title-focused": {
         "displayName": "Focused Pane Title",
-        "purpose": "Focused native monospaced pane title."
-      },
-      "file": {
-        "displayName": "File Row",
-        "purpose": "File tree label."
-      },
-      "file-preview": {
-        "displayName": "Text Preview",
-        "purpose": "Read-only selectable file text."
+        "purpose": "Native label-color pane task name, semibold in the focused pane of the key window."
       },
       "terminal": {
         "displayName": "Terminal Default",
         "purpose": "User-configurable Ghostty font default."
+      },
+      "pane-context": {
+        "displayName": "Pane Context",
+        "purpose": "Secondary monospaced device/session context beside the task name."
+      },
+      "search-input": {
+        "displayName": "Search Input",
+        "purpose": "Borderless AppKit field; native text editing and initial focus."
+      },
+      "search-context": {
+        "displayName": "Search Context",
+        "purpose": "Secondary object context in search results."
       }
     },
     "shadows": [],
@@ -138,27 +138,31 @@
       "dynamicColors": {
         "defaultAccent": "NSColor.controlAccentColor",
         "accentPresets": "NSColor.systemGray/systemGreen/systemBlue/systemPurple/systemYellow/systemPink/systemRed/systemOrange",
-        "fileSurface": "NSColor.windowBackgroundColor",
+        "chromeTint": "NSColor.secondaryLabelColor",
+        "primaryText": "SwiftUI Color.primary / NSColor.labelColor",
+        "secondaryText": "SwiftUI .secondary / NSColor.secondaryLabelColor",
+        "agentStatusWords": "SwiftUI .primary",
+        "paneMainTitle": "NSColor.labelColor in every focus state",
+        "paneContext": "NSColor.secondaryLabelColor",
         "fontPreviewSurface": "NSColor.textBackgroundColor",
         "separator": "NSColor.separatorColor",
-        "primaryText": "SwiftUI Color.primary / native label text",
-        "secondaryText": "SwiftUI .secondary / NSColor.secondaryLabelColor",
-        "workingAndUnread": "SwiftUI Color.blue",
-        "blocked": "SwiftUI Color.orange",
-        "deviceConnected": "SwiftUI Color.green",
-        "deviceOther": "SwiftUI Color.orange"
+        "workingAndUnreadGlyph": "Theme.accent",
+        "blockedGlyph": "SwiftUI Color.orange",
+        "inactiveGlyph": "SwiftUI .secondary",
+        "deviceConnectedGlyph": "SwiftUI .secondary",
+        "deviceOfflineGlyph": "SwiftUI Color.orange"
       },
       "themeSources": {
-        "chrome": "App/Theme.swift; SwiftUI tint and accentColor wired in App/Main.swift.",
+        "chrome": "App/Theme.swift; workbench foreground is primary and control tint is secondaryLabelColor. Theme accent remains available to selection and focus.",
         "defaultTerminal": "Explicit light/dark background, foreground and selection in Theme.apply().",
         "catppuccinTerminal": "GhosttyThemeDefinition.catppuccin_Latte and .catppuccin_Mocha.",
         "draculaTerminal": "Ghostty .alabaster light and .dracula dark.",
         "nordTerminal": "Ghostty .alabaster light and .nord dark.",
-        "herdr": "Theme.apply resolves the supported family from the local Herdr configuration; unsupported families fall back to Default."
+        "herdr": "Theme.apply resolves supported family from local Herdr configuration on app activation; unsupported families fall back to Default."
       },
       "materials": [
         {
-          "name": "Reconnect",
+          "name": "Recovery overlay",
           "value": "SwiftUI .regularMaterial"
         }
       ],
@@ -175,7 +179,9 @@
           "maximum": "480pt",
           "separator": "1pt",
           "resizeHitWidth": "7pt",
-          "persistence": "sidebarWidth and showSidebar"
+          "persistence": "sidebarWidth and showSidebar",
+          "keyboardIncrement": "20pt",
+          "reset": "Double-click restores default width"
         },
         "tabWidth": {
           "minimum": "40pt",
@@ -186,58 +192,138 @@
         },
         "pane": {
           "frameInset": "3.5pt",
+          "topTitleClearance": "Additional 3.5pt above the border; total top border inset 7pt.",
           "terminalLeftBottomInset": "4pt",
           "terminalWidthReduction": "8pt",
           "terminalHeightReduction": "18pt",
-          "splitHitWidth": "6pt",
+          "splitHitWidth": "7pt",
           "titleCutoutOffset": "9pt",
-          "titleTextInset": "6pt",
-          "topTitleClearance": "Additional 3.5pt above the border; total top border inset 7pt keeps the centered 14pt title inside the canvas."
+          "titleTextInset": "4pt",
+          "titleContextGap": "10pt",
+          "titleMainAvailableFraction": "0.64 when context is present; 1 otherwise",
+          "minimumSizeIntent": "At least 24 columns and 6 rows with current font; concrete bounds are computed by Desk.minimumPaneSize.",
+          "splitKeyboardIncrement": "5 percentage points, clamped to minimum pane size",
+          "outerCorners": "On macOS 26+, bottom-right outer corner is rounded; bottom-left is rounded only when sidebar is hidden. Radius refers to rounded.pane-outer-bottom. Other outlines stay rectangular."
         },
-        "files": {
-          "defaultToken": "components.files.width",
-          "minimum": "240pt",
-          "maximum": "60% of available detail width, floored at 240pt",
-          "persistence": "filesWidth",
-          "treeAndPreviewThreshold": "520pt file-area width",
-          "wideTreeWidth": "210pt",
-          "treeDepthIndent": "12pt"
+        "searchResults": {
+          "heightFormula": "min(320, max(44, resultCount * 36)) pt",
+          "emptyHeight": "44pt",
+          "maximumHeight": "320pt",
+          "outerHorizontalInset": "4pt"
         },
         "settingsNavigationWidth": "150pt"
       },
       "stateTreatments": {
         "sidebarSelected": "Accent fill 0.18 light / 0.20 dark and 1pt accent outline 0.22.",
         "sidebarHover": "Color.primary fill 0.06.",
-        "tabSelected": "Theme.accent fill 0.18 light / 0.20 dark and 1pt accent outline 0.22.",
-        "searchSelected": "Color.accentColor fill 0.14.",
-        "fileSelected": "Color.accentColor fill 0.18.",
-        "paneFocused": "Theme.accent border and semibold title.",
-        "paneUnfocused": "NSColor.separatorColor border and secondary regular title.",
+        "tabSelected": "Theme.accent fill 0.18 light / 0.20 dark and 1pt accent outline 0.22; semibold label.",
+        "tabHover": "NSColor.labelColor fill 0.06 for hovered unselected tab.",
+        "searchSelected": "Theme.accent fill 0.14.",
+        "paneFocused": "Theme.accent border and semibold labelColor main title only in key window.",
+        "paneUnfocused": "NSColor.separatorColor border and regular labelColor main title.",
+        "paneContext": "Secondary label color independent of focus.",
         "tabInsertion": "2pt accent line.",
-        "agentStatus": "Working half-filled circle; blocked/unread solid circle; read/idle/unknown outline, with accessible labels.",
-        "tabHover": "NSColor.labelColor fill 0.06 for the hovered unselected tab."
+        "agentStatus": "Working half-filled circle; blocked/unread filled circle; other states outline. Glyph carries status color; Agent row state word is primary.",
+        "deviceConnection": "Connected neutral filled circle; offline orange outline, with explicit accessibility/help status."
       },
-      "componentPreview": "Native SwiftUI/AppKit source descriptions only. No HTML/CSS reconstruction, raster composition or synthetic tonal ramps are supplied; they would not preserve native controls, dynamic platform colors, materials or terminal rendering.",
+      "settingsHierarchy": [
+        {
+          "section": "Appearance",
+          "children": [
+            "Appearance",
+            "Behavior"
+          ]
+        },
+        {
+          "section": "Terminal",
+          "children": [
+            "Font and line spacing",
+            "Input/rendering preferences",
+            "Ghostty font import",
+            "Preview and defaults"
+          ]
+        },
+        {
+          "section": "Connections",
+          "children": [
+            "Devices",
+            "Advanced: Tailcat",
+            "Advanced: Plugins"
+          ]
+        },
+        {
+          "section": "About & Updates",
+          "children": [
+            "Version and installation context",
+            "Homebrew update command",
+            "Direct download update eligibility",
+            "Open Source Notices"
+          ]
+        }
+      ],
+      "ghosttyPreferences": {
+        "fontDefaultToken": "typography.terminal",
+        "fontSizeRange": "9–22pt, step 0.5pt",
+        "lineSpacingRange": "1–1.4, step 0.05",
+        "systemMonoWeights": [
+          "Regular",
+          "Medium",
+          "Semibold",
+          "Bold"
+        ],
+        "retainedControls": [
+          "Report mouse input",
+          "Thin strokes",
+          "Copy selection to clipboard",
+          "Import Ghostty Font Once",
+          "Restore Defaults"
+        ],
+        "fontPreview": "Native monospaced system font for SF Mono, custom selected family otherwise; Chinese, ASCII and digits."
+      },
+      "accessibility": {
+        "sidebar": "Selected row traits, expandable section state and full help context.",
+        "agent": "Readable state word in each two-line Agent row; standalone status glyphs expose accessible labels.",
+        "tabs": "Radio-button role, selected value and pane-count help.",
+        "panes": "Full title/context label on terminal view; contextual close labels and VoiceOver-visible close controls.",
+        "splitters": "Splitter roles with value/min/max, keyboard adjustments and accessibility increment/decrement.",
+        "search": "Native field-editor command routing, marked-text guard and stable result identity; operational acceptance remains separate."
+      },
+      "brandProvenance": {
+        "artwork": "Resources/Icon/Artwork.png",
+        "description": "Original user-supplied purple diagonal slash on a white rounded tile.",
+        "nativePackaging": "App/AppIcon.icon and Apple native icon compiler",
+        "records": [
+          "Resources/Icon/README.md",
+          "Resources/Icon/Prompt.txt"
+        ],
+        "refreshCreatedRasterAssets": false
+      },
+      "componentPreview": "Source descriptions for native SwiftUI/AppKit components. No HTML/CSS facsimiles or synthetic tonal ramps: these would replace native controls, dynamic platform colors, materials or terminal rendering. Frontmatter is the primitive token authority.",
       "evidence": {
-        "mode": "Source scan; merged refresh of existing native design system.",
-        "contract": "docs/parity/SPEC.txt S01–S07",
+        "mode": "Authorized refresh of incumbent design system; current native source scan and supplied screenshot inspection.",
+        "contract": "docs/ux-audit/SPEC.md overridden by docs/ux-audit/SCOPE.md; .impeccable/surfaces/app-workbench-swift.md.",
         "sourceFiles": [
           "App/Workbench.swift",
           "App/Sidebar.swift",
           "App/Tabs.swift",
-          "App/Theme.swift",
-          "App/Preferences.swift",
-          "App/Files.swift",
           "App/Terminal.swift",
-          "App/WindowBehavior.swift",
-          "App/Main.swift",
-          "Core/Sources/HerdCore/Files.swift"
+          "App/Preferences.swift",
+          "App/Theme.swift",
+          "App/Navigation.swift",
+          "App/SearchInput.swift",
+          "App/WindowBehavior.swift"
         ],
-        "renderAcceptance": "No current-render acceptance claim. Prior review snapshots do not establish the result of this refresh.",
-        "behaviorAcceptance": "No full F01–F24 or C01–C32 acceptance claim.",
-        "observedTargetDifferences": [
-          "Pane frames are rectangular; macOS 26 outer-corner refinement is not established by this source scan."
-        ]
+        "inspectedScreenshots": [
+          "docs/ux-audit/screenshots/workbench-light-980-200.png",
+          "docs/ux-audit/screenshots/workbench-light-980-260.png",
+          "docs/ux-audit/screenshots/workbench-dark-1440-480.png",
+          "docs/ux-audit/screenshots/search-empty-light.png",
+          "docs/ux-audit/screenshots/about-updates.png"
+        ],
+        "captureLimit": "Refreshed workbench captures show label-colored state words and pane main titles. The captures establish only their shown states, not every accent or accessibility condition.",
+        "renderAcceptance": "No new app render or GUI operation performed by the documenter; screenshot inspection is limited to supplied states.",
+        "behaviorAcceptance": "No full C01–C90, accent/contrast, VoiceOver, IME, performance or external-service acceptance claim. Current results live in docs/ux-audit/RESULTS.md.",
+        "scopeRemoval": "Agent launcher and command overrides, file tree, preview, transfer, attachment delivery and clipboard file/image interception are removed. C86–C90 and UX28 are REMOVED_BY_SCOPE."
       }
     }
   },
@@ -245,85 +331,84 @@
     {
       "name": "Chrome Action",
       "kind": "button",
-      "description": "Compact native borderless SF Symbol action with contextual help; native focus and disabled states.",
-      "nativeSource": "Workbench.body"
+      "description": "Compact native borderless action with neutral chrome tint, SF Symbol and contextual help; native focus and disabled states.",
+      "nativeSource": "App/Workbench.swift: Workbench.body"
     },
     {
       "name": "Sidebar Navigation",
       "kind": "nav",
       "refersTo": "sidebar-row",
-      "description": "Plain full-row buttons inside persistent collapsible groups with pinned native headers; Space and Agent use distinct padding and radius tokens, with appearance-aware selected fill and neutral hover.",
-      "nativeSource": "SidebarRow / SidebarGroup"
+      "description": "Full-row plain buttons in persistent collapsible groups with pinned headers; selected accent wash/outline and neutral hover.",
+      "nativeSource": "App/Sidebar.swift: SidebarRow / SidebarGroup"
     },
     {
-      "name": "Agent Status",
+      "name": "Agent Row and Status",
       "kind": "custom",
-      "description": "Shape, system color and accessible text convey working, blocked, unread, read and unknown states independently of tool identity.",
-      "nativeSource": "AgentStatus / AgentToolIcon"
+      "refersTo": "agent-row",
+      "description": "Two lines: task plus status glyph, then tool/Space/device context plus primary-colored state word. Real optional metadata stays in full help.",
+      "nativeSource": "App/Workbench.swift: agentRow; App/Sidebar.swift: AgentStatus / AgentToolIcon"
     },
     {
       "name": "Terminal Tab",
       "kind": "nav",
       "refersTo": "tab",
-      "description": "Natural-width AppKit label with selected semibold weight, appearance-aware accent fill/outline, neutral hover, complete-title tooltip and reorder insertion line.",
-      "nativeSource": "Tabs.Strip"
+      "description": "Natural-width AppKit tab, semibold selection, accent wash/outline, neutral hover, full-title help, automatic selected-tab reveal and reorder marker.",
+      "nativeSource": "App/Tabs.swift: Tabs.Strip"
     },
     {
       "name": "Terminal Pane",
       "kind": "custom",
       "refersTo": "pane-title",
-      "description": "Mounted Ghostty surface inside a thin rectangular frame; embedded monospaced title and contextual close/restore controls.",
-      "nativeSource": "TerminalCanvas.Canvas"
+      "description": "Real Ghostty surface with embedded label-color task title and secondary context; key-window focus uses semibold title and accent border. Adjustable native splitters, close and restore controls.",
+      "nativeSource": "App/Terminal.swift: TerminalCanvas.Canvas"
     },
     {
       "name": "Search",
       "kind": "input",
       "refersTo": "search",
-      "description": "Native rounded-border search field, shared keyboard/hover result selection, contextual result labels and a keyboard-hint footer.",
-      "nativeSource": "Jump"
-    },
-    {
-      "name": "Files",
-      "kind": "custom",
-      "refersTo": "files",
-      "description": "On-demand lazy file tree and read-only preview, switching from narrow drill-in to tree/preview columns by available panel width.",
-      "nativeSource": "FilesPanel / FileTree"
+      "description": "Borderless native text field and content-sized results, with type/context/status, shared hover and keyboard selection, stable identity and keyboard hints.",
+      "nativeSource": "App/Workbench.swift: Jump; App/SearchInput.swift: SearchInput"
     },
     {
       "name": "Settings",
       "kind": "nav",
       "refersTo": "settings",
-      "description": "Native split navigation and grouped forms, including a configurable system-mono font preview.",
-      "nativeSource": "Preferences / TerminalSettings"
+      "description": "Four top-level native sections: Appearance, Terminal, Connections, About & Updates. Advanced Tailcat and generic Plugins are nested in Connections.",
+      "nativeSource": "App/Preferences.swift: Preferences / ConnectionsSettings"
     },
     {
-      "name": "File Manager",
+      "name": "New Space",
       "kind": "custom",
-      "refersTo": "file-manager",
-      "description": "Native two-ended file listing with device and path controls, conflict handling, transfer actions and byte progress.",
-      "nativeSource": "FileManagerSheet"
+      "refersTo": "space-creation-sheet",
+      "description": "Native named-directory form bound to the chosen device, with busy/validation/error state and native cancel/default actions.",
+      "nativeSource": "App/Workbench.swift: SpaceCreate"
     },
     {
-      "name": "Reconnect Overlay",
+      "name": "Recovery Overlay",
       "kind": "custom",
       "refersTo": "reconnect",
-      "description": "Compact regular-material explanation and Reconnect action above the affected terminal.",
-      "nativeSource": "Workbench.body"
+      "description": "Compact native regular-material explanation with Reopen for ended local shells or Reconnect for ended server attachment.",
+      "nativeSource": "App/Workbench.swift: Workbench.body; App/Navigation.swift: recoveryLabel / reconnect"
     }
   ],
   "narrative": {
     "northStar": "Native workbench",
-    "overview": "HerdrX is a simple, clean native macOS workbench. Terminals own the visual field; compact navigation makes local shells, device workspaces and coding agents easy to reach. Files appear beside the terminal only when requested.\n\nSwiftUI and AppKit supply system typography, familiar controls and keyboard behavior; Ghostty supplies the terminal canvas. Preserve HerdrX's name and user-supplied purple diagonal slash on a white icon tile. Keep that identity in the app icon and product surfaces without repeating it as decoration across the workbench.",
+    "overview": "HerdrX is a quiet native macOS workbench. Terminals own the visual field; compact navigation keeps each task, device and session clear. Neutral controls recede around task names, readable state labels and focused terminal content.\n\nSwiftUI and AppKit supply system typography, familiar controls and keyboard behavior; Ghostty supplies the real terminal canvas. Preserve HerdrX's name and the user-supplied purple diagonal slash on a white icon tile. The original artwork, native Icon Composer packaging and provenance remain documented in [Resources/Icon/README.md](Resources/Icon/README.md) and [Resources/Icon/Prompt.txt](Resources/Icon/Prompt.txt); this refresh creates no raster assets.",
     "keyCharacteristics": [
-      "Terminal-first density with a single integrated top bar.",
-      "Theme-aware surfaces, semantic system controls and explicit focus.",
-      "Stable sidebar actions with compact, collapsible navigation groups.",
-      "On-demand file browsing and native settings without decorative card chrome."
+      "Terminal-first density with one integrated top bar.",
+      "Neutral chrome, semantic text and distinct selection, focus and execution signals.",
+      "Task-first, two-line Agent rows with device and session context available.",
+      "Compact native search, four-section settings and adjustable pane boundaries."
     ],
     "rules": [
       {
         "name": "The Semantic Color Rule",
         "body": "Keep platform colors semantic and source-defined theme colors explicit. Do not freeze a screenshot's appearance into a new palette.",
+        "section": "colors"
+      },
+      {
+        "name": "The Readable State Rule",
+        "body": "Keep Agent state words and pane main titles in native label colors; put saturated status and focus color on glyphs and borders.",
         "section": "colors"
       },
       {
@@ -333,23 +418,25 @@
       },
       {
         "name": "The Terminal Space Rule",
-        "body": "Keep the main detail area available to terminals; reveal file tools on demand and return their space when closed.",
+        "body": "Keep the main detail area available to real terminal panes and keep supporting navigation compact.",
         "section": "layout"
       }
     ],
     "dos": [
-      "Do retain HerdrX identity and native SwiftUI/AppKit controls.",
-      "Do keep terminal content dominant, navigation compact and file tools on demand.",
-      "Do use shape and accessible text with status color; keep device connection and agent execution states distinct.",
-      "Do verify both appearances, long Chinese labels and the specified window sizes with the running native app.",
-      "Do treat the source scan, rendered review and behavioral acceptance as separate evidence."
+      "Do retain HerdrX identity, original icon provenance and native SwiftUI/AppKit controls.",
+      "Do keep terminal content dominant, task names primary and device/session context available.",
+      "Do use native label colors for state words and pane main titles, with shape and color for status glyphs.",
+      "Do preserve Ghostty appearance, font and input preferences while refining chrome.",
+      "Do verify both appearances, long Chinese labels, keyboard navigation and accessible splitters in the running native app.",
+      "Do keep source observations, supplied captures and completed runtime acceptance separate."
     ],
     "donts": [
-      "Don't replace native controls or the real terminal with a web theme, raster mockup or simulated terminal.",
-      "Don't restore a second fixed toolbar or a persistent bottom status bar.",
+      "Don't restore Agent launching, command overrides, file trees, previews, transfer or attachment delivery removed by current scope.",
+      "Don't replace native controls or real terminal content with a web theme, raster mockup or simulated terminal.",
+      "Don't restore a second fixed toolbar or persistent bottom status bar.",
       "Don't invent fixed equivalents for macOS dynamic colors or platform text styles.",
       "Don't add decorative shadows, oversized branding or card containers around terminal panes.",
-      "Don't invent runtime metadata, hide context behind controls or claim full parity from screenshots."
+      "Don't invent runtime metadata or claim full contrast, input, accessibility or parity acceptance from screenshots."
     ]
   }
 }

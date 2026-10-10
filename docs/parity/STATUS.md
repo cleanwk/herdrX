@@ -1,3 +1,5 @@
+> 历史记录：本文件描述此前版本。当前功能减法、删除范围和逐项结果以 [本轮验收](../ux-audit/RESULTS.md) 为准；不得按旧清单恢复 Agent 启动器、文件预览、传输或附件投递。
+
 # ACCM → HerdrX 交付与验收记录
 
 日期：2026-10-10。基线：`0fe3b8456`（v0.1.3）；分支：`codex/workbench-parity`。原始需求完整保存在 [SPEC.txt](SPEC.txt)，匿名夹具在 [fixture.json](fixture.json)。本提交是可构建、可运行的原生实现，**不是 C01–C32 全部通过的验收声明**。

@@ -1,0 +1,277 @@
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~				16 文本 Cannot connect to /Users/kai/github/herdrX/build/ux-fixture/offline.sock: No such file or directory · 16 秒后重试
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			4 单选按钮 Implementation  2, Description: Implementation, Help: 2 个面板, Value: 0
+~			65 单选按钮 长名称任务标签 02 — Navigation  2, Description: 长名称任务标签 02 — Navigation, Help: 2 个面板, Value: 1
+~				18 按钮 Description: 登录问题排查、codex · 登录问题排查与长名称工作空间 Alpha · 本机工作 · ux-a、等待输入, Help: 登录问题排查
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+fixture only
+~				19 按钮 (selected) Description: 终端兼容性与中文输入修复、claude · 登录问题排查与长名称工作空间 Alpha · 本机工作 · ux-a、工作中, Help: 终端兼容性与中文输入修复
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+fixture only
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			65 单选按钮 长名称任务标签 02 — Navigation  2, Description: 长名称任务标签 02 — Navigation, Help: 2 个面板, Value: 0
+~			66 单选按钮 长名称任务标签 03 — Navigation  2, Description: 长名称任务标签 03 — Navigation, Help: 2 个面板, Value: 1
+~				19 按钮 Description: 终端兼容性与中文输入修复、claude · 登录问题排查与长名称工作空间 Alpha · 本机工作 · ux-a、工作中, Help: 终端兼容性与中文输入修复
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+fixture only
+~				63 按钮 (selected) Description: 长名称任务标签 03 — Navigation, Help: 长名称任务标签 03 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			66 单选按钮 长名称任务标签 03 — Navigation  2, Description: 长名称任务标签 03 — Navigation, Help: 2 个面板, Value: 0
+~			67 单选按钮 长名称任务标签 04 — Navigation  2, Description: 长名称任务标签 04 — Navigation, Help: 2 个面板, Value: 1
+~				63 按钮 Description: 长名称任务标签 03 — Navigation, Help: 长名称任务标签 03 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+~				24 按钮 (selected) Description: 长名称任务标签 04 — Navigation, Help: 长名称任务标签 04 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			67 单选按钮 长名称任务标签 04 — Navigation  2, Description: 长名称任务标签 04 — Navigation, Help: 2 个面板, Value: 0
+~			68 单选按钮 长名称任务标签 05 — Navigation  2, Description: 长名称任务标签 05 — Navigation, Help: 2 个面板, Value: 1
+~				24 按钮 Description: 长名称任务标签 04 — Navigation, Help: 长名称任务标签 04 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+~				26 按钮 (selected) Description: 长名称任务标签 05 — Navigation, Help: 长名称任务标签 05 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			68 单选按钮 长名称任务标签 05 — Navigation  2, Description: 长名称任务标签 05 — Navigation, Help: 2 个面板, Value: 0
+~			69 单选按钮 长名称任务标签 06 — Navigation  2, Description: 长名称任务标签 06 — Navigation, Help: 2 个面板, Value: 1
+~				26 按钮 Description: 长名称任务标签 05 — Navigation, Help: 长名称任务标签 05 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+~				28 按钮 (selected) Description: 长名称任务标签 06 — Navigation, Help: 长名称任务标签 06 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			69 单选按钮 长名称任务标签 06 — Navigation  2, Description: 长名称任务标签 06 — Navigation, Help: 2 个面板, Value: 0
+~			70 单选按钮 长名称任务标签 07 — Navigation  2, Description: 长名称任务标签 07 — Navigation, Help: 2 个面板, Value: 1
+~				28 按钮 Description: 长名称任务标签 06 — Navigation, Help: 长名称任务标签 06 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+~				30 按钮 (selected) Description: 长名称任务标签 07 — Navigation, Help: 长名称任务标签 07 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			70 单选按钮 长名称任务标签 07 — Navigation  2, Description: 长名称任务标签 07 — Navigation, Help: 2 个面板, Value: 0
+~			71 单选按钮 长名称任务标签 08 — Navigation  2, Description: 长名称任务标签 08 — Navigation, Help: 2 个面板, Value: 1
+~				30 按钮 Description: 长名称任务标签 07 — Navigation, Help: 长名称任务标签 07 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+~				32 按钮 (selected) Description: 长名称任务标签 08 — Navigation, Help: 长名称任务标签 08 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			71 单选按钮 长名称任务标签 08 — Navigation  2, Description: 长名称任务标签 08 — Navigation, Help: 2 个面板, Value: 0
+~			72 单选按钮 长名称任务标签 09 — Navigation  2, Description: 长名称任务标签 09 — Navigation, Help: 2 个面板, Value: 1
+~				32 按钮 Description: 长名称任务标签 08 — Navigation, Help: 长名称任务标签 08 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+~				34 按钮 (selected) Description: 长名称任务标签 09 — Navigation, Help: 长名称任务标签 09 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			72 单选按钮 长名称任务标签 09 — Navigation  2, Description: 长名称任务标签 09 — Navigation, Help: 2 个面板, Value: 0
+~			73 单选按钮 长名称任务标签 10 — Navigation  2, Description: 长名称任务标签 10 — Navigation, Help: 2 个面板, Value: 1
+~				34 按钮 Description: 长名称任务标签 09 — Navigation, Help: 长名称任务标签 09 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			73 单选按钮 长名称任务标签 10 — Navigation  2, Description: 长名称任务标签 10 — Navigation, Help: 2 个面板, Value: 0
+~			74 单选按钮 长名称任务标签 11 — Navigation  2, Description: 长名称任务标签 11 — Navigation, Help: 2 个面板, Value: 1
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			74 单选按钮 长名称任务标签 11 — Navigation  2, Description: 长名称任务标签 11 — Navigation, Help: 2 个面板, Value: 0
+~			75 单选按钮 长名称任务标签 12 — Navigation  2, Description: 长名称任务标签 12 — Navigation, Help: 2 个面板, Value: 1
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			4 单选按钮 Implementation  2, Description: Implementation, Help: 2 个面板, Value: 1
+~			75 单选按钮 长名称任务标签 12 — Navigation  2, Description: 长名称任务标签 12 — Navigation, Help: 2 个面板, Value: 0
+~				18 按钮 (selected) Description: 登录问题排查、codex · 登录问题排查与长名称工作空间 Alpha · 本机工作 · ux-a、等待输入, Help: 登录问题排查
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+fixture only
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			4 单选按钮 Implementation  2, Description: Implementation, Help: 2 个面板, Value: 0
+~			65 单选按钮 长名称任务标签 02 — Navigation  2, Description: 长名称任务标签 02 — Navigation, Help: 2 个面板, Value: 1
+~				16 文本 Cannot connect to /Users/kai/github/herdrX/build/ux-fixture/offline.sock: No such file or directory · 30 秒后重试
+~				18 按钮 Description: 登录问题排查、codex · 登录问题排查与长名称工作空间 Alpha · 本机工作 · ux-a、等待输入, Help: 登录问题排查
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+fixture only
+~				19 按钮 (selected) Description: 终端兼容性与中文输入修复、claude · 登录问题排查与长名称工作空间 Alpha · 本机工作 · ux-a、工作中, Help: 终端兼容性与中文输入修复
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+fixture only
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			65 单选按钮 长名称任务标签 02 — Navigation  2, Description: 长名称任务标签 02 — Navigation, Help: 2 个面板, Value: 0
+~			66 单选按钮 长名称任务标签 03 — Navigation  2, Description: 长名称任务标签 03 — Navigation, Help: 2 个面板, Value: 1
+~				19 按钮 Description: 终端兼容性与中文输入修复、claude · 登录问题排查与长名称工作空间 Alpha · 本机工作 · ux-a、工作中, Help: 终端兼容性与中文输入修复
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+fixture only
+~				63 按钮 (selected) Description: 长名称任务标签 03 — Navigation, Help: 长名称任务标签 03 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			66 单选按钮 长名称任务标签 03 — Navigation  2, Description: 长名称任务标签 03 — Navigation, Help: 2 个面板, Value: 0
+~			67 单选按钮 长名称任务标签 04 — Navigation  2, Description: 长名称任务标签 04 — Navigation, Help: 2 个面板, Value: 1
+~				63 按钮 Description: 长名称任务标签 03 — Navigation, Help: 长名称任务标签 03 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+~				24 按钮 (selected) Description: 长名称任务标签 04 — Navigation, Help: 长名称任务标签 04 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			67 单选按钮 长名称任务标签 04 — Navigation  2, Description: 长名称任务标签 04 — Navigation, Help: 2 个面板, Value: 0
+~			68 单选按钮 长名称任务标签 05 — Navigation  2, Description: 长名称任务标签 05 — Navigation, Help: 2 个面板, Value: 1
+~				24 按钮 Description: 长名称任务标签 04 — Navigation, Help: 长名称任务标签 04 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+~				26 按钮 (selected) Description: 长名称任务标签 05 — Navigation, Help: 长名称任务标签 05 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			68 单选按钮 长名称任务标签 05 — Navigation  2, Description: 长名称任务标签 05 — Navigation, Help: 2 个面板, Value: 0
+~			69 单选按钮 长名称任务标签 06 — Navigation  2, Description: 长名称任务标签 06 — Navigation, Help: 2 个面板, Value: 1
+~				26 按钮 Description: 长名称任务标签 05 — Navigation, Help: 长名称任务标签 05 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+~				28 按钮 (selected) Description: 长名称任务标签 06 — Navigation, Help: 长名称任务标签 06 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			69 单选按钮 长名称任务标签 06 — Navigation  2, Description: 长名称任务标签 06 — Navigation, Help: 2 个面板, Value: 0
+~			70 单选按钮 长名称任务标签 07 — Navigation  2, Description: 长名称任务标签 07 — Navigation, Help: 2 个面板, Value: 1
+~				28 按钮 Description: 长名称任务标签 06 — Navigation, Help: 长名称任务标签 06 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+~				30 按钮 (selected) Description: 长名称任务标签 07 — Navigation, Help: 长名称任务标签 07 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			70 单选按钮 长名称任务标签 07 — Navigation  2, Description: 长名称任务标签 07 — Navigation, Help: 2 个面板, Value: 0
+~			71 单选按钮 长名称任务标签 08 — Navigation  2, Description: 长名称任务标签 08 — Navigation, Help: 2 个面板, Value: 1
+~				30 按钮 Description: 长名称任务标签 07 — Navigation, Help: 长名称任务标签 07 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+~				32 按钮 (selected) Description: 长名称任务标签 08 — Navigation, Help: 长名称任务标签 08 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			71 单选按钮 长名称任务标签 08 — Navigation  2, Description: 长名称任务标签 08 — Navigation, Help: 2 个面板, Value: 0
+~			72 单选按钮 长名称任务标签 09 — Navigation  2, Description: 长名称任务标签 09 — Navigation, Help: 2 个面板, Value: 1
+~				32 按钮 Description: 长名称任务标签 08 — Navigation, Help: 长名称任务标签 08 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+~				34 按钮 (selected) Description: 长名称任务标签 09 — Navigation, Help: 长名称任务标签 09 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			72 单选按钮 长名称任务标签 09 — Navigation  2, Description: 长名称任务标签 09 — Navigation, Help: 2 个面板, Value: 0
+~			73 单选按钮 长名称任务标签 10 — Navigation  2, Description: 长名称任务标签 10 — Navigation, Help: 2 个面板, Value: 1
+~				34 按钮 Description: 长名称任务标签 09 — Navigation, Help: 长名称任务标签 09 — Navigation
+本机工作 · ux-a
+/Users/kai/.config/herdr/sessions/herdrx-ux-20261010-a/herdr.sock
+登录问题排查与长名称工作空间 Alpha
+/Users/kai/github/herdrX/build/ux-fixture/alpha
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			73 单选按钮 长名称任务标签 10 — Navigation  2, Description: 长名称任务标签 10 — Navigation, Help: 2 个面板, Value: 0
+~			74 单选按钮 长名称任务标签 11 — Navigation  2, Description: 长名称任务标签 11 — Navigation, Help: 2 个面板, Value: 1
+
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			74 单选按钮 长名称任务标签 11 — Navigation  2, Description: 长名称任务标签 11 — Navigation, Help: 2 个面板, Value: 0
+~			75 单选按钮 长名称任务标签 12 — Navigation  2, Description: 长名称任务标签 12 — Navigation, Help: 2 个面板, Value: 1

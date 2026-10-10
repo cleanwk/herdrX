@@ -1,0 +1,12 @@
+AgentLaunch: no production consumer
+AgentCommand: no production consumer
+FileService: no production consumer
+FileManagerSheet: no production consumer
+FileTree: no production consumer
+deliverFile: no production consumer
+attachmentTarget: no production consumer
+agent.start: no production consumer
+showFiles: no production consumer
+fileSidebarWidth: no production consumer
+Remaining ensureAttachments/Attachment ended refer to terminal PTY attachment, not file delivery. Preview in Terminal Settings is a font preview; previewRatio is divider drag preview. Both remain in scope.
+38 exclusive deleted-feature localization keys removed in each language. Old preference storage retained without consumers.
