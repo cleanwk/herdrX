@@ -56,7 +56,7 @@ final class TerminalView: AppTerminalView {
     private func stopSelection() { selectionTimer?.invalidate(); selectionTimer = nil; edgeDirection = nil; mouseOrigin = nil }
     override func mouseDown(with event: NSEvent) {
         stopSelection(); mouseOrigin = event
-        localSelection = UserDefaults.standard.bool(forKey: "disableMouseReporting") || event.modifierFlags.contains(.shift) || event.clickCount > 1
+        localSelection = (UserDefaults.standard.object(forKey: "disableMouseReporting") as? Bool ?? true) || event.modifierFlags.contains(.shift) || event.clickCount > 1
         super.mouseDown(with: localSelection ? selecting(event) : event)
     }
     override func mouseDragged(with event: NSEvent) {
@@ -182,16 +182,16 @@ struct TerminalCanvas: NSViewRepresentable {
                 // The 14pt title straddles the outline; reserve its full upper half.
                 frame.size.height = max(0, frame.height - 3.5)
                 let active = focused == key && window?.isKeyWindow == true
-                (active ? Theme.accent : NSColor.separatorColor).setStroke()
+                (active ? Theme.accent : Theme.separator).setStroke()
                 if #available(macOS 26, *) {
                     let bottom = abs(rect.maxY - 1) < 0.001
                     outline(frame, left: bottom && roundLeft && rect.minX < 0.001, right: bottom && rect.maxX > 0.999).stroke()
                 } else { NSBezierPath(rect: frame).stroke() }
                 let title = titles[key] ?? PaneTitle(main: L("Terminal"), context: "")
                 let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingTail
-                let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: active ? .semibold : .regular), .foregroundColor: NSColor.labelColor, .paragraphStyle: style]
+                let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: active ? .semibold : .regular), .foregroundColor: active ? Theme.accent : Theme.secondary, .paragraphStyle: style]
                 let contextStyle = NSMutableParagraphStyle(); contextStyle.lineBreakMode = .byTruncatingMiddle
-                let secondary: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 10, weight: .regular), .foregroundColor: NSColor.secondaryLabelColor, .paragraphStyle: contextStyle]
+                let secondary: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 10, weight: .regular), .foregroundColor: Theme.secondary, .paragraphStyle: contextStyle]
                 let available = max(0, frame.width - (zoomed ? 72 : 50))
                 let mainWidth = min(available * (title.context.isEmpty ? 1 : 0.64), (title.main as NSString).size(withAttributes: attributes).width)
                 let contextWidth = min(max(0, available - mainWidth - 10), (title.context as NSString).size(withAttributes: secondary).width)

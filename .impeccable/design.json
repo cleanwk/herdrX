@@ -1,164 +1,366 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-10T09:32:03.538090+00:00",
+  "generatedAt": "2026-10-10T10:39:02.349014+00:00",
   "title": "Design System: HerdrX",
   "extensions": {
     "colorMeta": {
-      "content-light": {
+      "catppuccin-light-background": {
         "role": "neutral",
-        "displayName": "Default Light Workbench",
-        "purpose": "Theme.content, default light appearance."
+        "displayName": "Catppuccin Light Background",
+        "purpose": "Pinned GhosttyTheme source used by Catppuccin and HerdrX Default for workbench and terminal."
       },
-      "content-dark": {
+      "catppuccin-light-foreground": {
         "role": "neutral",
-        "displayName": "Default Dark Workbench",
-        "purpose": "Theme.content, default dark appearance."
+        "displayName": "Catppuccin Light Foreground",
+        "purpose": "Pinned GhosttyTheme source used by Catppuccin and HerdrX Default for workbench and terminal."
       },
-      "terminal-light-background": {
+      "catppuccin-dark-background": {
         "role": "neutral",
-        "displayName": "Default Light Terminal Surface",
-        "purpose": "Theme.apply default light background."
+        "displayName": "Catppuccin Dark Background",
+        "purpose": "Pinned GhosttyTheme source used by Catppuccin and HerdrX Default for workbench and terminal."
       },
-      "terminal-light-foreground": {
+      "catppuccin-dark-foreground": {
         "role": "neutral",
-        "displayName": "Default Light Terminal Text",
-        "purpose": "Theme.apply default light foreground."
+        "displayName": "Catppuccin Dark Foreground",
+        "purpose": "Pinned GhosttyTheme source used by Catppuccin and HerdrX Default for workbench and terminal."
       },
-      "terminal-light-selection": {
+      "dracula-companion-background": {
         "role": "neutral",
-        "displayName": "Default Light Terminal Selection",
-        "purpose": "Ghostty selection background in the default light palette."
+        "displayName": "Dracula Companion Background",
+        "purpose": "HerdrX-authored light companion, not an upstream official light theme."
       },
-      "terminal-dark-background": {
+      "dracula-companion-foreground": {
         "role": "neutral",
-        "displayName": "Default Dark Terminal Surface",
-        "purpose": "Theme.apply default dark background."
+        "displayName": "Dracula Companion Foreground",
+        "purpose": "HerdrX-authored light companion, not an upstream official light theme."
       },
-      "terminal-dark-foreground": {
+      "vesper-companion-background": {
         "role": "neutral",
-        "displayName": "Default Dark Terminal Text",
-        "purpose": "Theme.apply default dark foreground."
+        "displayName": "Vesper Companion Background",
+        "purpose": "HerdrX-authored light companion, not an upstream official light theme."
       },
-      "terminal-dark-selection": {
+      "vesper-companion-foreground": {
         "role": "neutral",
-        "displayName": "Default Dark Terminal Selection",
-        "purpose": "Ghostty selection background in the default dark palette."
+        "displayName": "Vesper Companion Foreground",
+        "purpose": "HerdrX-authored light companion, not an upstream official light theme."
       },
-      "catppuccin-accent": {
+      "accent-blue-light": {
         "role": "primary",
-        "displayName": "Catppuccin Violet Accent",
-        "purpose": "Theme.accent when Catppuccin follows its theme accent."
+        "displayName": "Accent Blue Light",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
       },
-      "catppuccin-content-light": {
-        "role": "neutral",
-        "displayName": "Catppuccin Light Workbench",
-        "purpose": "Theme.content for Catppuccin light appearance."
+      "accent-blue-dark": {
+        "role": "primary",
+        "displayName": "Accent Blue Dark",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
       },
-      "catppuccin-content-dark": {
-        "role": "neutral",
-        "displayName": "Catppuccin Dark Workbench",
-        "purpose": "Theme.content for Catppuccin dark appearance."
+      "accent-graphite-light": {
+        "role": "primary",
+        "displayName": "Accent Graphite Light",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
       },
-      "dracula-content-dark": {
-        "role": "neutral",
-        "displayName": "Dracula Dark Workbench",
-        "purpose": "Theme.content for Dracula dark appearance."
+      "accent-graphite-dark": {
+        "role": "primary",
+        "displayName": "Accent Graphite Dark",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
       },
-      "nord-content-dark": {
-        "role": "neutral",
-        "displayName": "Nord Dark Workbench",
-        "purpose": "Theme.content for Nord dark appearance."
+      "accent-green-light": {
+        "role": "primary",
+        "displayName": "Accent Green Light",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-green-dark": {
+        "role": "primary",
+        "displayName": "Accent Green Dark",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-cyan-light": {
+        "role": "primary",
+        "displayName": "Accent Cyan Light",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-cyan-dark": {
+        "role": "primary",
+        "displayName": "Accent Cyan Dark",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-purple-light": {
+        "role": "primary",
+        "displayName": "Accent Purple Light",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-purple-dark": {
+        "role": "primary",
+        "displayName": "Accent Purple Dark",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-amber-light": {
+        "role": "primary",
+        "displayName": "Accent Amber Light",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-amber-dark": {
+        "role": "primary",
+        "displayName": "Accent Amber Dark",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-pink-light": {
+        "role": "primary",
+        "displayName": "Accent Pink Light",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-pink-dark": {
+        "role": "primary",
+        "displayName": "Accent Pink Dark",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-red-light": {
+        "role": "primary",
+        "displayName": "Accent Red Light",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-red-dark": {
+        "role": "primary",
+        "displayName": "Accent Red Dark",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-orange-light": {
+        "role": "primary",
+        "displayName": "Accent Orange Light",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "accent-orange-dark": {
+        "role": "primary",
+        "displayName": "Accent Orange Dark",
+        "purpose": "Independent appearance-aware accent choice; used for selection, focus and working/unread attention."
+      },
+      "success-light": {
+        "role": "secondary",
+        "displayName": "Success Light",
+        "purpose": "Completed/idle state words and connected-device dots."
+      },
+      "success-dark": {
+        "role": "secondary",
+        "displayName": "Success Dark",
+        "purpose": "Completed/idle state words and connected-device dots."
+      },
+      "warning-light": {
+        "role": "secondary",
+        "displayName": "Warning Light",
+        "purpose": "Blocked/waiting-input state words and glyphs."
+      },
+      "warning-dark": {
+        "role": "secondary",
+        "displayName": "Warning Dark",
+        "purpose": "Blocked/waiting-input state words and glyphs."
+      },
+      "failure-light": {
+        "role": "secondary",
+        "displayName": "Failure Light",
+        "purpose": "Offline-device dots."
+      },
+      "failure-dark": {
+        "role": "secondary",
+        "displayName": "Failure Dark",
+        "purpose": "Offline-device dots."
       }
     },
     "typographyMeta": {
       "tab": {
         "displayName": "Tab",
-        "purpose": "Unselected AppKit tab label."
+        "purpose": "Unselected native tab label."
       },
       "tab-selected": {
-        "displayName": "Selected Tab",
-        "purpose": "Selected AppKit tab label."
+        "displayName": "Tab Selected",
+        "purpose": "Selected native tab label."
       },
       "space": {
         "displayName": "Space",
-        "purpose": "Sidebar Space title."
+        "purpose": "Space row title."
       },
       "space-selected": {
-        "displayName": "Selected Space",
-        "purpose": "Current Space title."
+        "displayName": "Space Selected",
+        "purpose": "Selected Space row title."
       },
       "agent": {
         "displayName": "Agent",
-        "purpose": "Agent title in the sidebar."
+        "purpose": "Agent task title."
       },
       "metadata": {
         "displayName": "Metadata",
-        "purpose": "Space branch/directory and Agent context/state words."
+        "purpose": "Space branch/directory, Agent context and state."
       },
       "section-label": {
-        "displayName": "Group Header",
-        "purpose": "Collapsible sticky sidebar group heading."
+        "displayName": "Section Label",
+        "purpose": "Pinned collapsible device/Agent heading."
       },
       "pane-title": {
         "displayName": "Pane Title",
-        "purpose": "Native label-color pane task name at regular weight."
+        "purpose": "Inactive theme-secondary pane task title."
       },
       "pane-title-focused": {
-        "displayName": "Focused Pane Title",
-        "purpose": "Native label-color pane task name, semibold in the focused pane of the key window."
-      },
-      "terminal": {
-        "displayName": "Terminal Default",
-        "purpose": "User-configurable Ghostty font default."
+        "displayName": "Pane Title Focused",
+        "purpose": "Accent pane task title in the focused pane of the key window."
       },
       "pane-context": {
         "displayName": "Pane Context",
-        "purpose": "Secondary monospaced device/session context beside the task name."
+        "purpose": "Secondary monospaced device/session context."
+      },
+      "settings-body": {
+        "displayName": "Settings Body",
+        "purpose": "Native settings fields and popup labels."
       },
       "search-input": {
         "displayName": "Search Input",
-        "purpose": "Borderless AppKit field; native text editing and initial focus."
+        "purpose": "Borderless AppKit field with native input routing."
       },
       "search-context": {
         "displayName": "Search Context",
-        "purpose": "Secondary object context in search results."
+        "purpose": "Secondary object context in results."
+      },
+      "terminal": {
+        "displayName": "Terminal",
+        "purpose": "Configurable terminal default; Maple Mono CN when installed, otherwise SF Mono."
       }
     },
     "shadows": [],
     "motion": [],
     "breakpoints": [],
     "nativePlatform": {
-      "platform": "macOS 14 and later",
+      "platform": "Native macOS 14 and later",
       "frameworks": [
         "SwiftUI",
         "AppKit",
         "Ghostty"
       ],
       "measurementUnit": "pt",
-      "dynamicColors": {
-        "defaultAccent": "NSColor.controlAccentColor",
-        "accentPresets": "NSColor.systemGray/systemGreen/systemBlue/systemPurple/systemYellow/systemPink/systemRed/systemOrange",
-        "chromeTint": "NSColor.secondaryLabelColor",
-        "primaryText": "SwiftUI Color.primary / NSColor.labelColor",
-        "secondaryText": "SwiftUI .secondary / NSColor.secondaryLabelColor",
-        "agentStatusWords": "SwiftUI .primary",
-        "paneMainTitle": "NSColor.labelColor in every focus state",
-        "paneContext": "NSColor.secondaryLabelColor",
-        "fontPreviewSurface": "NSColor.textBackgroundColor",
-        "separator": "NSColor.separatorColor",
-        "workingAndUnreadGlyph": "Theme.accent",
-        "blockedGlyph": "SwiftUI Color.orange",
-        "inactiveGlyph": "SwiftUI .secondary",
-        "deviceConnectedGlyph": "SwiftUI .secondary",
-        "deviceOfflineGlyph": "SwiftUI Color.orange"
+      "derivedColors": {
+        "content": "Selected GhosttyThemeDefinition.background.",
+        "foreground": "Selected GhosttyThemeDefinition.foreground.",
+        "secondary": "Selected foreground blended toward selected background by 0.20 in light / 0.22 in dark appearance.",
+        "chrome": "Selected background blended toward selected foreground by 0.025 in light / 0.06 in dark appearance.",
+        "paneSeparator": "Theme.foreground at 0.16 alpha.",
+        "nativeSeparator": "NSColor.separatorColor for the sidebar separator and native Divider rendering.",
+        "chromeTint": "Theme.secondary.",
+        "agentStatusWords": "Working/unread: Theme.accent; blocked: Theme.warning; done/idle: Theme.success; unknown: Theme.secondary.",
+        "agentGlyph": "Done/idle use secondary at 0.6; other statuses use AgentStatus.color.",
+        "paneMainTitle": "Theme.accent for active pane in key window; Theme.secondary otherwise.",
+        "paneContext": "Theme.secondary.",
+        "deviceConnection": "Theme.success when connected, Theme.failure when offline.",
+        "fontPreview": "Theme.content with Theme.foreground."
       },
       "themeSources": {
-        "chrome": "App/Theme.swift; workbench foreground is primary and control tint is secondaryLabelColor. Theme accent remains available to selection and focus.",
-        "defaultTerminal": "Explicit light/dark background, foreground and selection in Theme.apply().",
-        "catppuccinTerminal": "GhosttyThemeDefinition.catppuccin_Latte and .catppuccin_Mocha.",
-        "draculaTerminal": "Ghostty .alabaster light and .dracula dark.",
-        "nordTerminal": "Ghostty .alabaster light and .nord dark.",
-        "herdr": "Theme.apply resolves supported family from local Herdr configuration on app activation; unsupported families fall back to Default."
+        "implementation": "App/Theme.swift and Core/Sources/HerdCore/ThemePreference.swift.",
+        "upstream": "Pinned libghostty-spm Sources/GhosttyTheme/Themes definitions; complete ANSI/cursor/selection palettes stay library-owned.",
+        "palettes": [
+          {
+            "id": "default",
+            "label": "HerdrX Default",
+            "light": "catppuccin_Latte",
+            "dark": "catppuccin_Mocha",
+            "accent": "blue"
+          },
+          {
+            "id": "herdr",
+            "label": "Follow Herdr",
+            "resolution": "Local [theme].name through ThemePreference; Catppuccin fallback; no Herdr configuration writes."
+          },
+          {
+            "id": "catppuccin",
+            "label": "Catppuccin",
+            "light": "catppuccin_Latte",
+            "dark": "catppuccin_Mocha",
+            "accent": "blue"
+          },
+          {
+            "id": "tokyo-night",
+            "label": "Tokyo Night",
+            "light": "tokyoNight_Day",
+            "dark": "tokyoNight_Night",
+            "accent": "blue"
+          },
+          {
+            "id": "gruvbox",
+            "label": "Gruvbox",
+            "light": "gruvbox_Light",
+            "dark": "gruvbox_Dark",
+            "accent": "amber"
+          },
+          {
+            "id": "one",
+            "label": "One",
+            "light": "one_Half_Light",
+            "dark": "one_Half_Dark",
+            "accent": "blue"
+          },
+          {
+            "id": "solarized",
+            "label": "Solarized",
+            "light": "iTerm2_Solarized_Light",
+            "dark": "iTerm2_Solarized_Dark",
+            "accent": "blue"
+          },
+          {
+            "id": "kanagawa",
+            "label": "Kanagawa",
+            "light": "kanagawa_Lotus",
+            "dark": "kanagawa_Wave",
+            "accent": "blue"
+          },
+          {
+            "id": "rose-pine",
+            "label": "Rosé Pine",
+            "light": "rose_Pine_Dawn",
+            "dark": "rose_Pine",
+            "accent": "pink"
+          },
+          {
+            "id": "dracula",
+            "label": "Dracula",
+            "light": "HerdrX Dracula Light companion",
+            "dark": "dracula",
+            "accent": "purple"
+          },
+          {
+            "id": "nord",
+            "label": "Nord",
+            "light": "nord_Light",
+            "dark": "nord",
+            "accent": "cyan"
+          },
+          {
+            "id": "vesper",
+            "label": "Vesper",
+            "light": "HerdrX Vesper Light companion",
+            "dark": "vesper",
+            "accent": "amber"
+          }
+        ],
+        "appearance": [
+          "system",
+          "light",
+          "dark"
+        ],
+        "independentPreferences": [
+          "appearance",
+          "palette",
+          "accent"
+        ],
+        "accents": [
+          "blue",
+          "graphite",
+          "green",
+          "cyan",
+          "purple",
+          "amber",
+          "pink",
+          "red",
+          "orange"
+        ],
+        "defaultAccent": "theme",
+        "lightCompanions": "Dracula/Vesper have HerdrX-authored light definitions. Source-derived ANSI hue/saturation is retained while brightness is capped at 0.55; foreground supplies cursor; companion selection is defined by Theme.lightCompanion.",
+        "herdr": "Read ~/.config/herdr/config.toml [theme].name when applying Follow Herdr; unknown or absent values resolve to Catppuccin; never write that file.",
+        "continuity": "Theme.apply updates configuration on existing terminal controller/surfaces; native evidence records mounted sessions and text surviving light Catppuccin / dark Tokyo Night changes."
       },
       "materials": [
         {
@@ -167,6 +369,7 @@
         }
       ],
       "layoutConstraints": {
+        "referenceScale": "Original 3840 × 2100 workbench pixels read at 2× Retina; do not measure the resized image-viewer preview as 1×.",
         "windowMinimum": {
           "width": "980pt",
           "height": "620pt",
@@ -179,9 +382,12 @@
           "maximum": "480pt",
           "separator": "1pt",
           "resizeHitWidth": "7pt",
-          "persistence": "sidebarWidth and showSidebar",
+          "persistence": "sidebarWidth and showSidebar; preserve existing saved width.",
           "keyboardIncrement": "20pt",
-          "reset": "Double-click restores default width"
+          "reset": "Double-click restores components.sidebar.width.",
+          "textStart": "Approximately 36pt from left window edge: spacing.sidebar-inset + spacing.sidebar-row-x + spacing.sidebar-content-indent.",
+          "spaceRenderedHeight": "Approximately 45pt from native text metrics, row-line-gap and space-row-y; no fixed frame height.",
+          "agentRenderedHeight": "Approximately 51pt from native text metrics, row-line-gap and agent-row-y; no fixed frame height."
         },
         "tabWidth": {
           "minimum": "40pt",
@@ -192,7 +398,9 @@
         },
         "pane": {
           "frameInset": "3.5pt",
-          "topTitleClearance": "Additional 3.5pt above the border; total top border inset 7pt.",
+          "topTitleClearance": "Additional 3.5pt above pane border; total border inset 7pt within canvas.",
+          "canvasTopClearanceToken": "spacing.canvas-top-clearance",
+          "firstOutlinePosition": "Approximately 42pt below window top including tab bar, divider and canvas clearance.",
           "terminalLeftBottomInset": "4pt",
           "terminalWidthReduction": "8pt",
           "terminalHeightReduction": "18pt",
@@ -200,97 +408,139 @@
           "titleCutoutOffset": "9pt",
           "titleTextInset": "4pt",
           "titleContextGap": "10pt",
-          "titleMainAvailableFraction": "0.64 when context is present; 1 otherwise",
-          "minimumSizeIntent": "At least 24 columns and 6 rows with current font; concrete bounds are computed by Desk.minimumPaneSize.",
-          "splitKeyboardIncrement": "5 percentage points, clamped to minimum pane size",
-          "outerCorners": "On macOS 26+, bottom-right outer corner is rounded; bottom-left is rounded only when sidebar is hidden. Radius refers to rounded.pane-outer-bottom. Other outlines stay rectangular."
+          "titleMainAvailableFraction": "0.64 with context, otherwise 1.",
+          "minimumSizeIntent": "At least 24 columns and 6 rows; concrete minimum uses Desk.minimumPaneSize.",
+          "splitKeyboardIncrement": "5 percentage points within minimum pane bounds.",
+          "outerCorners": "macOS 26+: bottom-right outer corner rounded; bottom-left rounded only when sidebar hidden. Radius uses rounded.pane-outer-bottom. Older systems remain rectangular."
         },
         "searchResults": {
           "heightFormula": "min(320, max(44, resultCount * 36)) pt",
-          "emptyHeight": "44pt",
-          "maximumHeight": "320pt",
           "outerHorizontalInset": "4pt"
         },
-        "settingsNavigationWidth": "150pt"
+        "settings": {
+          "navigation": "Six native toolbar icon tabs, no settings sidebar.",
+          "contentFrames": "components.settings-* width/height exclude OS-managed titlebar/toolbar.",
+          "appearanceLabelWidth": "48pt",
+          "appearanceLabelControlGap": "10pt",
+          "appearanceControlOrigin": "Approximately 83pt from content left.",
+          "appearanceVerticalRhythm": "spacing.appearance-row-gap and spacing.appearance-inner-gap.",
+          "accentGap": "6pt",
+          "accentSelectedRing": "1.5pt",
+          "terminalFontMenuWidth": "256pt",
+          "terminalGridSpacing": "8pt horizontal / 7pt vertical; 17pt horizontal and bottom inset; settings-inset-top above."
+        },
+        "deviceList": {
+          "heightFormula": "min(360, deviceCount * 46) pt",
+          "rows": "Two-line name/source, connection dot and current checkmark."
+        }
       },
       "stateTreatments": {
-        "sidebarSelected": "Accent fill 0.18 light / 0.20 dark and 1pt accent outline 0.22.",
-        "sidebarHover": "Color.primary fill 0.06.",
-        "tabSelected": "Theme.accent fill 0.18 light / 0.20 dark and 1pt accent outline 0.22; semibold label.",
-        "tabHover": "NSColor.labelColor fill 0.06 for hovered unselected tab.",
-        "searchSelected": "Theme.accent fill 0.14.",
-        "paneFocused": "Theme.accent border and semibold labelColor main title only in key window.",
-        "paneUnfocused": "NSColor.separatorColor border and regular labelColor main title.",
-        "paneContext": "Secondary label color independent of focus.",
+        "spaceSelected": "Accent fill 0.13 light / 0.20 dark; 1pt accent outline at 0.24.",
+        "agentSelected": "Accent fill 0.25 light / 0.30 dark; no visible outline.",
+        "sidebarHover": "Theme.foreground fill at 0.05.",
+        "tabSelected": "Accent fill 0.18 light / 0.20 dark; 1pt outline at 0.22; semibold theme-foreground label.",
+        "tabHover": "Theme.foreground fill at 0.05 on hovered unselected tab.",
+        "searchSelected": "Accent fill at 0.14.",
+        "paneFocused": "Accent border and semibold accent title only in active pane of key window.",
+        "paneUnfocused": "Theme.separator border and regular theme-secondary title.",
         "tabInsertion": "2pt accent line.",
-        "agentStatus": "Working half-filled circle; blocked/unread filled circle; other states outline. Glyph carries status color; Agent row state word is primary.",
-        "deviceConnection": "Connected neutral filled circle; offline orange outline, with explicit accessibility/help status."
+        "deviceSwitcher": "Accent fill at 0.055 resting / 0.18 open.",
+        "agentStatus": "Working half-filled circle; blocked/unread filled circle; other states outline. Readable state text remains in the second row.",
+        "deviceConnection": "6pt green/red filled circle next to device name; accessible status.",
+        "emptyCanvas": "Choose a Space explanation with New Space action.",
+        "endedAttachment": "Reconnect recovery; no independent local-Shell Reopen branch."
       },
       "settingsHierarchy": [
         {
           "section": "Appearance",
           "children": [
-            "Appearance",
-            "Behavior"
+            "System/light/dark",
+            "Palette",
+            "Nine accent swatches and Follow Theme",
+            "Language"
           ]
         },
         {
           "section": "Terminal",
           "children": [
-            "Font and line spacing",
-            "Input/rendering preferences",
-            "Ghostty font import",
-            "Preview and defaults"
+            "Font, size, SF Mono weight, line spacing",
+            "Thin strokes, mouse reporting, copy-on-select",
+            "Restore Defaults and Ghostty import",
+            "Selected-font preview"
           ]
         },
         {
           "section": "Connections",
           "children": [
             "Devices",
-            "Advanced: Tailcat",
             "Advanced: Plugins"
           ]
         },
         {
-          "section": "About & Updates",
+          "section": "Notifications",
+          "children": [
+            "Enable notifications",
+            "Sound",
+            "Permission status and macOS settings"
+          ]
+        },
+        {
+          "section": "Tailcat",
+          "children": [
+            "Existing Tailcat identity and connection controls"
+          ]
+        },
+        {
+          "section": "About",
           "children": [
             "Version and installation context",
             "Homebrew update command",
-            "Direct download update eligibility",
+            "Direct-update eligibility",
             "Open Source Notices"
           ]
         }
       ],
+      "preferenceMenu": {
+        "implementation": "NSPopUpButton through App/PreferenceMenu.swift.",
+        "paletteStructure": "Twelve choices with native separator after Default and Follow Herdr.",
+        "updateIdentity": "Compare non-separator item titles; preserve an unchanged menu during ordinary view updates.",
+        "nativeBehavior": "System keyboard, focus, popup and disabled states."
+      },
       "ghosttyPreferences": {
         "fontDefaultToken": "typography.terminal",
+        "fontDefaultResolution": "Maple Mono CN when NSFont finds it installed, otherwise SF Mono; preserve saved family.",
         "fontSizeRange": "9–22pt, step 0.5pt",
         "lineSpacingRange": "1–1.4, step 0.05",
-        "systemMonoWeights": [
+        "lineSpacingDefault": 1,
+        "visibleSystemMonoWeights": [
+          "Light",
           "Regular",
-          "Medium",
+          "Medium"
+        ],
+        "legacyWeightPreview": [
           "Semibold",
           "Bold"
         ],
-        "retainedControls": [
-          "Report mouse input",
-          "Thin strokes",
-          "Copy selection to clipboard",
-          "Import Ghostty Font Once",
-          "Restore Defaults"
-        ],
-        "fontPreview": "Native monospaced system font for SF Mono, custom selected family otherwise; Chinese, ASCII and digits."
+        "weightDefault": "Regular",
+        "thinStrokesDefault": true,
+        "mouseReportingDefault": false,
+        "copyOnSelectDefault": true,
+        "fontImport": "Read font-family/font-size once from user-selected Ghostty configuration; no continuous sync.",
+        "restoreDefaults": "Restore font default, 13.5pt, Regular weight, 100% spacing, thin/copy on and mouse reporting off.",
+        "fontPreview": "Actual chosen family, or native monospaced font with selected SF Mono weight; Chinese, ASCII and digits."
       },
       "accessibility": {
-        "sidebar": "Selected row traits, expandable section state and full help context.",
-        "agent": "Readable state word in each two-line Agent row; standalone status glyphs expose accessible labels.",
+        "sidebar": "Selected traits, expandable headings and full help context.",
+        "agent": "Readable state words and symbol shapes; status glyphs expose accessible labels.",
         "tabs": "Radio-button role, selected value and pane-count help.",
-        "panes": "Full title/context label on terminal view; contextual close labels and VoiceOver-visible close controls.",
-        "splitters": "Splitter roles with value/min/max, keyboard adjustments and accessibility increment/decrement.",
-        "search": "Native field-editor command routing, marked-text guard and stable result identity; operational acceptance remains separate."
+        "panes": "Full title/context label; contextual close labels; close control also visible when VoiceOver enabled.",
+        "splitters": "Roles, value/min/max and keyboard/accessibility increments.",
+        "search": "Native field-editor routing, marked-text guard and stable result identity.",
+        "verification": "These are source behaviors; VoiceOver and IME runtime acceptance remains untested this pass."
       },
       "brandProvenance": {
         "artwork": "Resources/Icon/Artwork.png",
-        "description": "Original user-supplied purple diagonal slash on a white rounded tile.",
+        "description": "Original user-supplied purple diagonal slash on white tile.",
         "nativePackaging": "App/AppIcon.icon and Apple native icon compiler",
         "records": [
           "Resources/Icon/README.md",
@@ -298,32 +548,59 @@
         ],
         "refreshCreatedRasterAssets": false
       },
-      "componentPreview": "Source descriptions for native SwiftUI/AppKit components. No HTML/CSS facsimiles or synthetic tonal ramps: these would replace native controls, dynamic platform colors, materials or terminal rendering. Frontmatter is the primitive token authority.",
+      "componentPreview": "Native source descriptions only. No HTML/CSS controls or synthetic tonal ramps: the shipping system uses appearance-dependent palette definitions and OS-rendered controls. DESIGN.md frontmatter owns primitive tokens.",
       "evidence": {
-        "mode": "Authorized refresh of incumbent design system; current native source scan and supplied screenshot inspection.",
-        "contract": "docs/ux-audit/SPEC.md overridden by docs/ux-audit/SCOPE.md; .impeccable/surfaces/app-workbench-swift.md.",
+        "mode": "Authorized replacement toward ACCM references; current native source scan and supplied native screenshot inspection.",
+        "contract": "docs/accm-fidelity/DIRECTION.md and .impeccable/surfaces/app-workbench-swift.md; earlier UX scope removals remain applicable.",
         "sourceFiles": [
+          "App/Theme.swift",
+          "Core/Sources/HerdCore/ThemePreference.swift",
           "App/Workbench.swift",
           "App/Sidebar.swift",
           "App/Tabs.swift",
           "App/Terminal.swift",
           "App/Preferences.swift",
-          "App/Theme.swift",
-          "App/Navigation.swift",
+          "App/PreferenceMenu.swift",
+          "App/DeviceSwitcher.swift",
           "App/SearchInput.swift",
           "App/WindowBehavior.swift"
         ],
         "inspectedScreenshots": [
-          "docs/ux-audit/screenshots/workbench-light-980-200.png",
-          "docs/ux-audit/screenshots/workbench-light-980-260.png",
-          "docs/ux-audit/screenshots/workbench-dark-1440-480.png",
-          "docs/ux-audit/screenshots/search-empty-light.png",
-          "docs/ux-audit/screenshots/about-updates.png"
+          "docs/accm-fidelity/screenshots/workbench-light.png",
+          "docs/accm-fidelity/screenshots/workbench-tokyo-dark.png",
+          "docs/accm-fidelity/screenshots/settings-appearance.png",
+          "docs/accm-fidelity/screenshots/settings-terminal.png"
         ],
-        "captureLimit": "Refreshed workbench captures show label-colored state words and pane main titles. The captures establish only their shown states, not every accent or accessibility condition.",
-        "renderAcceptance": "No new app render or GUI operation performed by the documenter; screenshot inspection is limited to supplied states.",
-        "behaviorAcceptance": "No full C01–C90, accent/contrast, VoiceOver, IME, performance or external-service acceptance claim. Current results live in docs/ux-audit/RESULTS.md.",
-        "scopeRemoval": "Agent launcher and command overrides, file tree, preview, transfer, attachment delivery and clipboard file/image interception are removed. C86–C90 and UX28 are REMOVED_BY_SCOPE."
+        "runtimeRecords": [
+          "docs/accm-fidelity/evidence/native-checks.json",
+          "docs/accm-fidelity/evidence/theme-menu.json",
+          "docs/accm-fidelity/evidence/space-actions-rpc.json"
+        ],
+        "buildAndTestRecords": [
+          "docs/accm-fidelity/evidence/build-validation.json",
+          "docs/accm-fidelity/evidence/core-tests.txt",
+          "docs/accm-fidelity/evidence/pty-tests.txt",
+          "docs/accm-fidelity/evidence/release-tests.txt"
+        ],
+        "fixture": "herdrx-fidelity-20261010: synthetic Agent names/statuses/illustrative content with real PTY, attach and Space/tab/split RPC; production state is not test data.",
+        "visualCoverage": "Catppuccin light and Tokyo Night dark only. Full native palette-menu selection verifies binding, not every family visually.",
+        "documenterBoundary": "Source/evidence reads and supplied screenshot inspection; no independent app operation or runtime certification by the documenter.",
+        "finishReview": "docs/accm-fidelity/FINISH-REVIEW.md",
+        "untested": [
+          "Live Tailcat",
+          "Live SSH in this pass",
+          "Notification permission/delivery",
+          "VoiceOver",
+          "IME",
+          "Older macOS runtime",
+          "Every palette/accent contrast"
+        ],
+        "scopeRemoval": "Independent client-owned local Shells, their lists/create entries; dedicated Agent launcher, command overrides, file tree, previews, transfer, attachments and clipboard file/image interception. Space-owned sessions, Agents, tabs and splits remain.",
+        "claimsExcluded": [
+          "Literal pixel identity with ACCM",
+          "Production Agent activity in fixture screenshots",
+          "New release"
+        ]
       }
     }
   },
@@ -331,112 +608,119 @@
     {
       "name": "Chrome Action",
       "kind": "button",
-      "description": "Compact native borderless action with neutral chrome tint, SF Symbol and contextual help; native focus and disabled states.",
+      "description": "Compact native borderless SF Symbol action with contextual help and capability-aware disabled state.",
       "nativeSource": "App/Workbench.swift: Workbench.body"
     },
     {
-      "name": "Sidebar Navigation",
+      "name": "Space Navigation",
       "kind": "nav",
-      "refersTo": "sidebar-row",
-      "description": "Full-row plain buttons in persistent collapsible groups with pinned headers; selected accent wash/outline and neutral hover.",
-      "nativeSource": "App/Sidebar.swift: SidebarRow / SidebarGroup"
+      "refersTo": "space-row",
+      "description": "Two-line Space title and branch/directory; light accent fill with outline, persisted device groups and full identity help.",
+      "nativeSource": "App/Workbench.swift: deviceGroup; App/Sidebar.swift: SidebarRow / SidebarGroup"
     },
     {
       "name": "Agent Row and Status",
       "kind": "custom",
       "refersTo": "agent-row",
-      "description": "Two lines: task plus status glyph, then tool/Space/device context plus primary-colored state word. Real optional metadata stays in full help.",
+      "description": "Two-line task/context row, stronger selected fill and trailing semantic state word; true metadata only.",
       "nativeSource": "App/Workbench.swift: agentRow; App/Sidebar.swift: AgentStatus / AgentToolIcon"
     },
     {
       "name": "Terminal Tab",
       "kind": "nav",
       "refersTo": "tab",
-      "description": "Natural-width AppKit tab, semibold selection, accent wash/outline, neutral hover, full-title help, automatic selected-tab reveal and reorder marker.",
+      "description": "Natural-width AppKit tab with semibold selection, accent fill/outline, overflow reveal and reorder marker.",
       "nativeSource": "App/Tabs.swift: Tabs.Strip"
     },
     {
       "name": "Terminal Pane",
       "kind": "custom",
       "refersTo": "pane-title",
-      "description": "Real Ghostty surface with embedded label-color task title and secondary context; key-window focus uses semibold title and accent border. Adjustable native splitters, close and restore controls.",
+      "description": "Real Space-owned Ghostty surface; embedded title/context, active accent border/title and native adjustable splits.",
       "nativeSource": "App/Terminal.swift: TerminalCanvas.Canvas"
     },
     {
       "name": "Search",
       "kind": "input",
       "refersTo": "search",
-      "description": "Borderless native text field and content-sized results, with type/context/status, shared hover and keyboard selection, stable identity and keyboard hints.",
+      "description": "Borderless native field with content-sized results, stable identities and keyboard selection.",
       "nativeSource": "App/Workbench.swift: Jump; App/SearchInput.swift: SearchInput"
     },
     {
       "name": "Settings",
       "kind": "nav",
-      "refersTo": "settings",
-      "description": "Four top-level native sections: Appearance, Terminal, Connections, About & Updates. Advanced Tailcat and generic Plugins are nested in Connections.",
-      "nativeSource": "App/Preferences.swift: Preferences / ConnectionsSettings"
+      "refersTo": "settings-appearance",
+      "description": "Six native toolbar icon tabs: Appearance, Terminal, Connections, Notifications, Tailcat and About; OS-managed controls.",
+      "nativeSource": "App/Preferences.swift: Preferences"
+    },
+    {
+      "name": "Device Chooser",
+      "kind": "nav",
+      "refersTo": "device-popover",
+      "description": "Native popover with two-line name/source, connection dots, selection checkmark and Add Device.",
+      "nativeSource": "App/DeviceSwitcher.swift: DeviceSwitcher"
     },
     {
       "name": "New Space",
       "kind": "custom",
       "refersTo": "space-creation-sheet",
-      "description": "Native named-directory form bound to the chosen device, with busy/validation/error state and native cancel/default actions.",
+      "description": "Native named-directory form bound to intended device with validation, busy/error state and cancel/default actions.",
       "nativeSource": "App/Workbench.swift: SpaceCreate"
     },
     {
       "name": "Recovery Overlay",
       "kind": "custom",
       "refersTo": "reconnect",
-      "description": "Compact native regular-material explanation with Reopen for ended local shells or Reconnect for ended server attachment.",
-      "nativeSource": "App/Workbench.swift: Workbench.body; App/Navigation.swift: recoveryLabel / reconnect"
+      "description": "Native regular-material recovery for ended Herdr attachments with Reconnect action.",
+      "nativeSource": "App/Workbench.swift: Workbench.body; App/Navigation.swift: reconnect"
     }
   ],
   "narrative": {
     "northStar": "Native workbench",
-    "overview": "HerdrX is a quiet native macOS workbench. Terminals own the visual field; compact navigation keeps each task, device and session clear. Neutral controls recede around task names, readable state labels and focused terminal content.\n\nSwiftUI and AppKit supply system typography, familiar controls and keyboard behavior; Ghostty supplies the real terminal canvas. Preserve HerdrX's name and the user-supplied purple diagonal slash on a white icon tile. The original artwork, native Icon Composer packaging and provenance remain documented in [Resources/Icon/README.md](Resources/Icon/README.md) and [Resources/Icon/Prompt.txt](Resources/Icon/Prompt.txt); this refresh creates no raster assets.",
+    "overview": "HerdrX follows the compact ACCM reference: a palette-colored native workbench where Spaces and Agent tasks lead directly to real terminal content. The sidebar, tab strip and terminal ground belong to the same theme; outlined Space selection, stronger Agent selection and readable execution states make the working context clear.\n\nSwiftUI and AppKit provide system type, controls and keyboard behavior; Ghostty provides the terminal canvas. Preserve the HerdrX name and original purple diagonal slash icon. The artwork and native packaging provenance remain in [Resources/Icon/README.md](Resources/Icon/README.md) and [Resources/Icon/Prompt.txt](Resources/Icon/Prompt.txt). This iteration adds no shipping raster assets.",
     "keyCharacteristics": [
-      "Terminal-first density with one integrated top bar.",
-      "Neutral chrome, semantic text and distinct selection, focus and execution signals.",
-      "Task-first, two-line Agent rows with device and session context available.",
-      "Compact native search, four-section settings and adjustable pane boundaries."
+      "Compact Space navigation and a single integrated tab strip around the terminal canvas.",
+      "Switchable palette families with independent appearance and accent preferences.",
+      "Two-line Space and Agent rows with aligned text and visible trailing state.",
+      "Six native settings toolbar tabs and a two-line device chooser."
     ],
     "rules": [
       {
-        "name": "The Semantic Color Rule",
-        "body": "Keep platform colors semantic and source-defined theme colors explicit. Do not freeze a screenshot's appearance into a new palette.",
+        "name": "The Theme Continuity Rule",
+        "body": "Apply the selected family to chrome and terminal together, preserve independent appearance/accent preferences, and keep existing sessions mounted when colors change.",
         "section": "colors"
       },
       {
-        "name": "The Readable State Rule",
-        "body": "Keep Agent state words and pane main titles in native label colors; put saturated status and focus color on glyphs and borders.",
+        "name": "The State Meaning Rule",
+        "body": "Keep selection, pane focus, Agent execution and device connection as distinct signals, with state text and glyphs alongside color.",
         "section": "colors"
       },
       {
         "name": "The Reading Rule",
-        "body": "Preserve native text metrics and user-selected terminal typography; truncate navigation labels and retain their full context in tooltips.",
+        "body": "Keep compact native navigation type, preserve user terminal preferences, and retain full context in help when labels truncate.",
         "section": "typography"
       },
       {
         "name": "The Terminal Space Rule",
-        "body": "Keep the main detail area available to real terminal panes and keep supporting navigation compact.",
+        "body": "Keep the main detail area available to real Space-owned terminal panes and keep supporting navigation compact.",
         "section": "layout"
       }
     ],
     "dos": [
-      "Do retain HerdrX identity, original icon provenance and native SwiftUI/AppKit controls.",
-      "Do keep terminal content dominant, task names primary and device/session context available.",
-      "Do use native label colors for state words and pane main titles, with shape and color for status glyphs.",
-      "Do preserve Ghostty appearance, font and input preferences while refining chrome.",
-      "Do verify both appearances, long Chinese labels, keyboard navigation and accessible splitters in the running native app.",
-      "Do keep source observations, supplied captures and completed runtime acceptance separate."
+      "Do retain HerdrX identity, original icon provenance and native SwiftUI/AppKit/Ghostty rendering.",
+      "Do follow the ACCM reference's compact spacing using original Retina pixels and native points.",
+      "Do keep ten theme families plus Default/Follow Herdr, with appearance and accent independent.",
+      "Do preserve saved sidebar width, terminal preferences, Space sessions, Agent navigation, tabs and splits.",
+      "Do distinguish Space selection, Agent selection, pane focus, execution status and device connectivity.",
+      "Do keep source facts, synthetic fixture content, screenshots and completed runtime checks separate."
     ],
     "donts": [
-      "Don't restore Agent launching, command overrides, file trees, previews, transfer or attachment delivery removed by current scope.",
-      "Don't replace native controls or real terminal content with a web theme, raster mockup or simulated terminal.",
+      "Don't restore independent local Shells, their lists/create entries, Agent launching, file trees, previews, transfer or attachments.",
+      "Don't freeze the app to one screenshot palette or present HerdrX light companions as upstream official themes.",
+      "Don't replace native controls or real terminals with web styling, raster mockups or simulated terminals.",
       "Don't restore a second fixed toolbar or persistent bottom status bar.",
-      "Don't invent fixed equivalents for macOS dynamic colors or platform text styles.",
       "Don't add decorative shadows, oversized branding or card containers around terminal panes.",
-      "Don't invent runtime metadata or claim full contrast, input, accessibility or parity acceptance from screenshots."
+      "Don't claim pixel identity, production Agent activity, every palette's contrast, external-service acceptance or a new release from this evidence."
     ]
   }
 }

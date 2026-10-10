@@ -18,8 +18,10 @@
 </p>
 
 <p align="center">
-  <img src="docs/ux-audit/screenshots/workbench-dark-1440-480.png" alt="HerdrX Workbench" width="100%">
+  <img src="docs/accm-fidelity/screenshots/workbench-tokyo-dark.png" alt="HerdrX Space workbench in Tokyo Night dark appearance" width="100%">
 </p>
+
+<p align="center"><small>当前开发版原生截图；Agent 名称、状态和示例输出为合成测试内容，PTY 与 Space 会话真实运行。</small></p>
 
 ---
 
@@ -34,6 +36,8 @@
 ---
 
 > 0.1.6 移除 Agent 启动器、文件树、预览、传输和附件投递，聚焦终端工作台。详见 [版本说明](docs/releases/0.1.6.md)与[实现和验收记录](docs/ux-audit/RESULTS.md)。
+
+0.1.7 按 ACCM 参考调整原生界面，移除独立本机 Shell 与终端列表入口，保留 Space 内的普通会话、Agent、标签和分屏。支持十个配色主题族，以及默认和跟随 Herdr；系统 / 浅色 / 深色与强调色可以分别选择。详见 [版本说明](docs/releases/0.1.7.md)、[改版方向](docs/accm-fidelity/DIRECTION.md)和[验证记录](docs/accm-fidelity/evidence/native-checks.json)。
 
 ## 核心特性
 
@@ -80,7 +84,7 @@ brew update && brew upgrade --cask herdrx
 
 ## 快速上手
 
-1. **开箱即用**：启动 HerdrX 即可直接获得一个本地原生 Shell，普通终端无需配置任何后台服务。
+1. **准备 Herdr**：在要使用的本机或远端设备运行 Herdr。HerdrX 中的终端属于 Herdr Space；启动应用后选择或新建 Space，不再自动创建独立本机 Shell。
 2. **连接 Herdr 与远端**：
    - 打开 **Settings (⌘,)** → **Connections（连接）**，即可添加本机命名会话或远程 SSH 连接。
    - 本机默认读取 `~/.config/herdr/herdr.sock`（需对应设备运行 Herdr 0.9.3+）。
@@ -96,7 +100,7 @@ brew update && brew upgrade --cask herdrx
 
 | 快捷键 | 功能说明 |
 | :--- | :--- |
-| **⌘T** | 新建当前设备终端标签页 |
+| **⌘T** | 在当前 Space 新建终端标签页 |
 | **⌘⇧N** | 继承当前目录新建 Space；目标不明确时选择设备 |
 | **⌘D** / **⌘⇧D** | 向右分屏 / 向下分屏（继承当前目录） |
 | **⌘⌥ 方向键** | 在分屏间切换焦点 |
@@ -104,7 +108,7 @@ brew update && brew upgrade --cask herdrx
 | **⌘⇧Return** | 最大化 / 还原当前分屏 Pane |
 | **⌘1 … ⌘9** | 快速切换至第 1 ~ 9 个标签 |
 | **⌘⇧[** / **⌘⇧]** | 左右轮换标签 |
-| **⌘K** | 全局搜索 Space、Shell 与 Agent（支持拼音与首字母） |
+| **⌘K** | 全局搜索 Space、内部终端与 Agent（支持拼音与首字母） |
 | **⌘⇧J** | 一键跳转至等待输入或完成未读的 Agent |
 | **⌘B** | 显示 / 隐藏侧边栏 |
 | **⌘⇧R** | 恢复终端输入模式（不发送 Ctrl-C） |

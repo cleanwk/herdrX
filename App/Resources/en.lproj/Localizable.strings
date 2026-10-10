@@ -284,3 +284,29 @@
 "Authenticate in Terminal, then retry." = "Authenticate in Terminal, then retry.";
 
 "Retrying in %ds" = "Retrying in %ds";
+
+"Choose a Space" = "Choose a Space";
+"Your spaces and agents appear in the sidebar." = "Your spaces and agents appear in the sidebar.";
+"%d devices · %d connected" = "%d devices · %d connected";
+"Add Device…" = "Add Device…";
+"Color mode" = "Color mode";
+"HerdrX Default" = "HerdrX Default";
+"Follow theme" = "Follow theme";
+"Follow theme accent" = "Follow theme accent";
+"Session appearance follows the app theme." = "Session appearance follows the app theme.";
+"Pane focus, active tabs and selection." = "Pane focus, active tabs and selection.";
+"Weight" = "Weight";
+"Light weight" = "Light weight";
+"Font size" = "Font size";
+"Font weight is available for SF Mono." = "Font weight is available for SF Mono.";
+"Use finer font strokes for clear, balanced Agent output." = "Use finer font strokes for clear, balanced Agent output.";
+"Mouse reporting" = "Mouse reporting";
+"Forward clicks to terminal apps. Hold Shift to select text locally." = "Forward clicks to terminal apps. Hold Shift to select text locally.";
+"Copy on select" = "Copy on select";
+"Copy text to the clipboard when you finish selecting it." = "Copy text to the clipboard when you finish selecting it.";
+"Import from Ghostty…" = "Import from Ghostty…";
+"Cyan" = "Cyan";
+
+"System mode" = "System mode";
+"Generate Client Identity" = "Generate Client Identity";
+"Connection token" = "Connection token";

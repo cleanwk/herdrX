@@ -1,0 +1,30 @@
+{
+  "environment": {
+    "platform": "macOS",
+    "fixture_session": "herdrx-fidelity-20261010",
+    "state": "build/fidelity-state",
+    "production_state_modified": false
+  },
+  "native_actions": [
+    "Command-K search inbox then Return selected the Space",
+    "Command-T created an internal tab in inbox",
+    "Split Right created a second pane in that tab",
+    "Typed printf command produced HERDRX_SPACE_INPUT_OK in actual PTY",
+    "Light Catppuccin to dark Tokyo Night and back retained mounted sessions and text",
+    "Restore Defaults selected available Maple Mono CN, 13.5pt, thin strokes on, mouse reporting off, copy on select on",
+    "All 10 theme families plus Default and Follow Herdr selected in native menu",
+    "Device picker selected Local and updated Space/Agent context",
+    "Window 980x620 shows scrollable sidebar and overflowing tab strip"
+  ],
+  "limits": [
+    "Agent names, statuses, and descriptive terminal content are synthetic test fixture; PTY and Herdr RPC are real",
+    "Visual snapshots cover Catppuccin light and Tokyo Night dark; remaining palettes were selected through native menu but not individually visually audited",
+    "No Tailcat live service, SSH host, OS notification permission, VoiceOver, or lower-macOS run in this pass",
+    "Native macOS controls can differ with OS appearance; no claim of literal pixel identity"
+  ],
+  "cleanup": {
+    "preview_app": "Quit after final captures",
+    "fixture_server": "Named session herdrx-fidelity-20261010 stopped",
+    "user_sessions": "Not stopped or modified"
+  }
+}

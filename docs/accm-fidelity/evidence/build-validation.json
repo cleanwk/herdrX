@@ -1,0 +1,9 @@
+{
+  "debug": "BUILD SUCCEEDED",
+  "release": "BUILD SUCCEEDED",
+  "architectures": "x86_64 arm64",
+  "core_release_tests": "Executed 20 tests, with 0 failures",
+  "build_script_exit": 0,
+  "signature_verification": "scripts/build.sh codesign --verify --deep --strict passed",
+  "version_changed": false
+}

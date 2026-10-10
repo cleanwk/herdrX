@@ -4,7 +4,10 @@ import HerdCore
 struct PaneTitle: Equatable { let main: String; let context: String; var full: String { DisplayTitle.detail([main, context]) } }
 
 extension Desk {
-    func title(device: String, pane: Item) -> String { DisplayTitle.pane(pane, tab: sessions[device]?.tabs.first { $0.id == pane.tab }, fallback: L("Terminal")) }
+    func title(device: String, pane: Item) -> String {
+        if pane.agent == nil { return pane.customLabel ?? pane.terminalTitle ?? pane.cwd ?? L("Terminal") }
+        return DisplayTitle.pane(pane, tab: sessions[device]?.tabs.first { $0.id == pane.tab }, fallback: L("Terminal"))
+    }
     func spacePath(device: String, space: String) -> String? {
         let snapshot = sessions[device]
         return snapshot?.spaces.first { $0.id == space }?.cwd ?? snapshot?.panes.first { $0.workspace == space && $0.id == focused?.pane }?.cwd ?? snapshot?.panes.first { $0.workspace == space }?.cwd
@@ -16,14 +19,14 @@ extension Desk {
         return ([title(device: row.device, pane: row.pane)] + context.compactMap { $0 } + metadata).joined(separator: "\n")
     }
     func valid(_ row: JumpRow) -> Bool {
-        guard let device = row.device else { return shellTabs.contains { $0.id == row.tab } }
+        guard let device = row.device else { return false }
         guard let session = sessions[device], devices.contains(where: { $0.id == device }) else { return false }
         if let pane = row.pane { return session.panes.contains { $0.id == pane && $0.workspace == row.space && $0.tab == row.tab } }
         return session.spaces.contains { $0.id == row.space }
     }
     func reveal(device: String?, space: String?) {
         if let device, !deviceFilter.isEmpty, deviceFilter != device { deviceFilter = "" }
-        UserDefaults.standard.set(false, forKey: "sidebarCollapsed." + (device.map { "device-" + $0 } ?? "shells"))
+        UserDefaults.standard.set(false, forKey: "sidebarCollapsed." + (device.map { "device-" + $0 } ?? ""))
         sidebarReveal = device.flatMap { id in space.map { id + "|" + $0 } }
     }
     func copyDirectory(_ key: PaneKey) {
@@ -43,23 +46,10 @@ extension Desk {
         // Keep at least 24 columns × 6 rows; preserve the user's type size.
         return CGSize(width: max(160, font * 0.65 * 24 + 8), height: max(100, font * 1.5 * 6 + 18))
     }
-    func confirmLocalClose(_ keys: [PaneKey]) -> Bool {
-        let uncertain = keys.filter { !ended.contains($0) && terminals[$0]?.process.foregroundActivity() != .idle }
-        guard !uncertain.isEmpty else { return true }
-        let alert = NSAlert(); alert.messageText = L("Close running shell tasks?")
-        alert.informativeText = LF("%d pane(s) may have a foreground task. Closing sends a termination signal. Cancel keeps them running.", uncertain.count)
-        alert.addButton(withTitle: L("Close")); alert.addButton(withTitle: L("Cancel"))
-        return alert.runModal() == .alertFirstButtonReturn
-    }
-    func recoveryLabel(_ key: PaneKey) -> String {
-        guard key.device == "shell" else { return L("Attachment ended. The server pane may still be running.") }
-        guard let status = exitStatus[key] else { return L("Shell launch failed.") }
-        if status == 0 { return L("Shell exited normally.") }
-        return LF("Shell exited with status %@.", (status & 0x7f) == 0 ? String(status >> 8) : LF("signal %d", status & 0x7f))
-    }
+    func recoveryLabel(_ key: PaneKey) -> String { L("Attachment ended. The server pane may still be running.") }
     func reconnect(_ key: PaneKey) {
-        guard terminals[key] != nil, key.device == "shell" || (canWrite(key.device) && sessions[key.device]?.panes.contains(where: { $0.id == key.pane }) == true) else { return }
-        if key.device != "shell" {
+        guard terminals[key] != nil, canWrite(key.device) && sessions[key.device]?.panes.contains(where: { $0.id == key.pane }) == true else { return }
+        do {
             let alert = NSAlert(); alert.messageText = L("Reconnect to this pane?"); alert.informativeText = L("This takes attachment ownership from any other client. The server process keeps running.")
             alert.addButton(withTitle: L("Reconnect")); alert.addButton(withTitle: L("Cancel")); guard alert.runModal() == .alertFirstButtonReturn else { return }
         }

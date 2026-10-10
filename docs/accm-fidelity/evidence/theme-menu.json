@@ -1,0 +1,19 @@
+{
+  "selectedInNativeUI": [
+    "Gruvbox",
+    "One",
+    "Solarized",
+    "Kanagawa",
+    "Rosé Pine",
+    "Dracula",
+    "Nord",
+    "Vesper",
+    "HerdrX 默认",
+    "跟随 Herdr",
+    "Catppuccin",
+    "Tokyo Night",
+    "Catppuccin",
+    "Tokyo Night"
+  ],
+  "verified": "Final fix build: 14 sequential native menu selections, all succeeded without selection retries while isolated Herdr polling ran. Full visual comparison covers Catppuccin light and Tokyo Night dark."
+}

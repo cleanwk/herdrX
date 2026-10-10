@@ -19,7 +19,7 @@
 "Dark" = "深色";
 "Palette" = "配色";
 "Default" = "默认";
-"Accent" = "强调色";
+"Accent" = "主题色";
 "Language" = "语言";
 "Font" = "字体";
 "Size (pt)" = "字号 (pt)";
@@ -284,3 +284,29 @@
 "Authenticate in Terminal, then retry." = "请在终端完成认证和主机信任，再重试。";
 
 "Retrying in %ds" = "%d 秒后重试";
+
+"Choose a Space" = "选择空间";
+"Your spaces and agents appear in the sidebar." = "空间和 Agent 会显示在侧栏中。";
+"%d devices · %d connected" = "%d 台设备 · %d 台已连接";
+"Add Device…" = "添加设备…";
+"Color mode" = "主题";
+"HerdrX Default" = "HerdrX 默认";
+"Follow theme" = "跟随主题";
+"Follow theme accent" = "跟随主题的强调色";
+"Session appearance follows the app theme." = "会话外观跟随应用主题。";
+"Pane focus, active tabs and selection." = "用于聚焦面板边框、当前标签页和选中状态。";
+"Weight" = "字重";
+"Light weight" = "细";
+"Font size" = "字号";
+"Font weight is available for SF Mono." = "SF Mono 支持调整字重。";
+"Use finer font strokes for clear, balanced Agent output." = "使用较细的笔画显示文字，避免 Agent 输出中的粗体显得过重。";
+"Mouse reporting" = "鼠标上报";
+"Forward clicks to terminal apps. Hold Shift to select text locally." = "向终端应用转发点击；拖动仍然选择文字。按住 Shift 也可以选择文字。";
+"Copy on select" = "选中即复制";
+"Copy text to the clipboard when you finish selecting it." = "用鼠标选中文字后立即复制到剪贴板，与 Herdr 的 copy_on_select 一致。";
+"Import from Ghostty…" = "从 Ghostty 导入…";
+"Cyan" = "青蓝";
+
+"System mode" = "系统";
+"Generate Client Identity" = "生成客户端身份";
+"Connection token" = "连接令牌";

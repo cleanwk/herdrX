@@ -50,7 +50,8 @@ struct Tabs: NSViewRepresentable {
             var x: CGFloat = 2
             for (index, button) in buttons.enumerated() {
                 button.tag = index; button.title = entries[index].title + (entries[index].count > 1 ? "  \(entries[index].count)" : "")
-                button.font = .systemFont(ofSize: 12, weight: selected == entries[index].id ? .semibold : .regular)
+                button.font = .systemFont(ofSize: 12, weight: .medium)
+                button.contentTintColor = selected == entries[index].id ? Theme.foreground : Theme.secondary
                 let width = min(200, max(40, (button.title as NSString).size(withAttributes: [.font: button.font!]).width + 20))
                 button.frame = NSRect(x: x, y: 2, width: width, height: 24); x += width + 2
                 button.setAccessibilityRole(.radioButton); button.setAccessibilityLabel(entries[index].title); button.setAccessibilityValue(selected == entries[index].id ? 1 : 0); button.setAccessibilityHelp(LF("%d panes", entries[index].count)); button.toolTip = entries[index].title
@@ -88,7 +89,7 @@ struct Tabs: NSViewRepresentable {
         }
         override func draw(_ dirtyRect: NSRect) {
             if let hover, buttons.indices.contains(hover), entries.indices.contains(hover), selected != entries[hover].id {
-                NSColor.labelColor.withAlphaComponent(0.06).setFill()
+                Theme.foreground.withAlphaComponent(0.05).setFill()
                 NSBezierPath(roundedRect: buttons[hover].frame.insetBy(dx: 0.5, dy: 0.5), xRadius: 5, yRadius: 5).fill()
             }
             for (index, entry) in entries.enumerated() where buttons.indices.contains(index) && selected == entry.id {

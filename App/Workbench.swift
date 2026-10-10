@@ -13,16 +13,15 @@ struct Workbench: View {
                 VStack(spacing: 0) {
                     HStack { Spacer(); Button { showSidebar = false } label: { Image(systemName: "sidebar.left") }.help("Toggle Sidebar · ⌘B").accessibilityLabel("Hide Sidebar") }
                         .buttonStyle(.borderless).padding(.leading, 78).padding(.trailing, 12).frame(height: 28)
-                    HStack(spacing: 10) {
-                        Button { desk.quickSpace() } label: { Label("New Space", systemImage: "plus") }.disabled(desk.creatingSpace).help(desk.creationHelp)
+                    HStack(spacing: 5) {
+                        Button { desk.quickSpace() } label: { Label("New", systemImage: "plus") }.disabled(desk.creatingSpace).help(desk.creationHelp)
                         Menu { Button("New Space with Name and Directory…") { desk.showSpaceForm() } } label: { Image(systemName: "chevron.down") }.menuIndicator(.hidden).fixedSize().accessibilityLabel("Space Options")
                         Spacer(minLength: 0)
                         Button { desk.openSearch() } label: { Image(systemName: "magnifyingglass") }.help("Search · ⌘K").accessibilityLabel("Search")
-                    }.buttonStyle(.borderless).padding(.horizontal, 16).frame(height: 40)
+                    }.font(.system(size: 12, weight: .medium)).buttonStyle(.borderless).padding(.horizontal, 16).frame(height: 40)
                     sidebarView
-                    Divider()
                     HStack {
-                        Picker("Device Filter", selection: $desk.deviceFilter) { Text("All Devices").tag(""); ForEach(desk.devices) { Text($0.displayName).tag($0.id) } }.labelsHidden().help("Filter devices; manage connections in Settings")
+                        DeviceSwitcher()
                         Spacer(minLength: 0)
                         SettingsLink { Image(systemName: "gearshape") }.help("Settings · ⌘,").accessibilityLabel("Settings")
                     }.buttonStyle(.borderless).padding(.horizontal, 12).frame(height: 40)
@@ -32,26 +31,32 @@ struct Workbench: View {
             VStack(spacing: 0) {
                 HStack(spacing: 4) {
                     if !showSidebar { Button { showSidebar = true } label: { Image(systemName: "sidebar.left") }.padding(.leading, 78).help("Show Sidebar · ⌘B").accessibilityLabel("Show Sidebar") }
-                    Tabs(scope: (desk.selectedDevice ?? "shell") + "|" + (desk.selectedSpace ?? ""), entries: tabs, selected: desk.selectedTab, select: { id in desk.select(device: desk.selectedDevice, space: desk.selectedSpace, tab: id) }, move: reorder, rename: { desk.renameTab($0) }, close: { desk.closeTab($0) }, writable: desk.selectedDevice.map(desk.canWrite) ?? true)
+                    Tabs(scope: (desk.selectedDevice ?? "") + "|" + (desk.selectedSpace ?? ""), entries: tabs, selected: desk.selectedTab, select: { id in desk.select(device: desk.selectedDevice, space: desk.selectedSpace, tab: id) }, move: reorder, rename: { desk.renameTab($0) }, close: { desk.closeTab($0) }, writable: desk.selectedDevice.map(desk.canWrite) ?? false)
                     Button { desk.create() } label: { Image(systemName: "plus") }.disabled(!desk.canCreate).help("New Terminal Tab · ⌘T").accessibilityLabel("New Terminal Tab")
                     Menu {
                         Button("Split Right") { desk.split(horizontal: true) }.disabled(!desk.canSplit(horizontal: true))
                         Button("Split Down") { desk.split(horizontal: false) }.disabled(!desk.canSplit(horizontal: false))
                         Button(LocalizedStringKey(desk.zoomed ? "Restore Pane" : "Zoom Pane")) { desk.zoomed.toggle() }.disabled(desk.focused == nil)
-                    } label: { Image(systemName: "rectangle.split.2x1") }.frame(width: 28).accessibilityLabel("Pane Layout").help("Splits require room for at least 24 columns and 6 rows per pane.")
-                }.buttonStyle(.borderless).padding(.trailing, 8).frame(height: 28).zIndex(1)
+                    } label: { Image(systemName: "rectangle.split.2x1") }.menuIndicator(.hidden).frame(width: 22).accessibilityLabel("Pane Layout").help("Splits require room for at least 24 columns and 6 rows per pane.")
+                }.font(.system(size: 12)).buttonStyle(.borderless).padding(.trailing, 8).frame(height: 28).background(Color(nsColor: Theme.chrome)).zIndex(1)
                 Divider()
                 ZStack(alignment: .bottom) {
                     TerminalCanvas(terminals: desk.canvas, focused: desk.focused, dividers: desk.dividers, setRatio: desk.setRatio, previewRatio: desk.previewRatio, titles: desk.paneTitles, close: { desk.closePane($0) }, zoomed: desk.zoomed, restore: { desk.zoomed = false }, focusRevision: desk.focusRevision, minimumPaneSize: desk.minimumPaneSize, actions: WorkbenchActions(perform: command, enabled: enabled), roundLeft: !showSidebar)
                     if let key = desk.focused, desk.ended.contains(key) {
-                        HStack { Text(desk.recoveryLabel(key)); Button(LocalizedStringKey(key.device == "shell" ? "Reopen" : "Reconnect")) { desk.reconnect(key) }.disabled(!desk.canWrite(key.device)) }.padding(12).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 8)).padding(20)
+                        HStack { Text(desk.recoveryLabel(key)); Button("Reconnect") { desk.reconnect(key) }.disabled(!desk.canWrite(key.device)) }.padding(12).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 8)).padding(20)
                     }
                     if desk.activeRects.isEmpty {
-                        ContentUnavailableView { Label("No active terminal", systemImage: "terminal") } description: { Text("Choose a space or open a local shell.") } actions: { Button("Open Shell") { desk.newShell() } }
+                        VStack(spacing: 10) {
+                            Image(systemName: "square.stack.3d.up").font(.system(size: 28, weight: .light)).foregroundStyle(Color(nsColor: Theme.secondary))
+                            Text("Choose a Space").font(.system(size: 17, weight: .medium))
+                            Text("Your spaces and agents appear in the sidebar.").font(.system(size: 12)).foregroundStyle(Color(nsColor: Theme.secondary))
+                            Button("New Space…") { desk.showSpaceForm() }.padding(.top, 4)
+                        }.frame(maxWidth: .infinity, maxHeight: .infinity)
+
                     }
-                }.background(GeometryReader { geo in Color.clear.onAppear { desk.canvasSize = geo.size }.onChange(of: geo.size) { desk.canvasSize = $1 } }).clipped()
+                }.background(GeometryReader { geo in Color.clear.onAppear { desk.canvasSize = geo.size }.onChange(of: geo.size) { desk.canvasSize = $1 } }).clipped().padding(.top, 6)
             }
-        }.foregroundStyle(.primary).tint(Color(nsColor: .secondaryLabelColor))
+        }.foregroundStyle(Color(nsColor: Theme.foreground)).tint(Color(nsColor: Theme.secondary))
         .overlay(alignment: .leading) { if showSidebar { ResizeStrip(width: $sidebar, limits: 200...480, reset: 260).frame(width: 7).offset(x: sidebar - 3) } }
         .background(Color(nsColor: Theme.content)).background(WindowBehavior()).ignoresSafeArea(.container, edges: .top)
         .sheet(isPresented: $desk.showSearch, onDismiss: desk.restoreFocus) { Jump().environmentObject(desk).environment(\.locale, locale).background(SheetCloseHandler { desk.showSearch = false }) }
@@ -65,27 +70,19 @@ struct Workbench: View {
     }
     var tabs: [TabEntry] {
         if let device = desk.selectedDevice { return desk.orderedTabs(device: device, space: desk.selectedSpace).map { tab in TabEntry(id: tab.id, title: tab.label, count: desk.sessions[device]?.panes.filter { $0.tab == tab.id }.count ?? 0) } }
-        return desk.shellTabs.map { TabEntry(id: $0.id, title: $0.label, count: $0.layout.rects().count) }
+        return []
     }
     func reorder(_ source: String, _ insertion: Int) {
-        if desk.selectedDevice != nil { desk.reorderTab(source, insertion: insertion) }
-        else if let index = desk.shellTabs.firstIndex(where: { $0.id == source }) {
-            let tab = desk.shellTabs.remove(at: index); desk.shellTabs.insert(tab, at: min(desk.shellTabs.count, max(0, insertion > index ? insertion - 1 : insertion))); desk.reindex()
-        }
+        desk.reorderTab(source, insertion: insertion)
     }
+
     var sidebarView: some View {
         ScrollViewReader { reader in ScrollView {
-            LazyVStack(alignment: .leading, spacing: 4, pinnedViews: [.sectionHeaders]) {
-                SidebarGroup(title: L("On This Mac"), id: "shells", empty: desk.shellTabs.isEmpty) {
-                    ForEach(desk.shellTabs) { tab in SidebarRow(selected: desk.selectedDevice == nil && desk.selectedTab == tab.id, action: { desk.select(device: nil, tab: tab.id) }) { Label(tab.label, systemImage: "terminal").lineLimit(1).frame(maxWidth: .infinity, alignment: .leading) }.help(tab.label) }
-                }
+            LazyVStack(alignment: .leading, spacing: 2, pinnedViews: [.sectionHeaders]) {
                 ForEach(desk.devices.filter { desk.deviceFilter.isEmpty || $0.id == desk.deviceFilter }) { device in deviceGroup(device) }
                 let agents = desk.agents.filter { desk.deviceFilter.isEmpty || $0.device == desk.deviceFilter }
                 SidebarGroup(title: L("Agents"), id: "agents", empty: agents.isEmpty) { ForEach(agents) { row in agentRow(row) } }
-                let terminals = desk.devices.filter { desk.deviceFilter.isEmpty || $0.id == desk.deviceFilter }.flatMap { device in (desk.sessions[device.id]?.panes ?? []).filter { $0.agent == nil && (desk.selectedSpace == nil || (device.id == desk.selectedDevice && $0.workspace == desk.selectedSpace)) }.map { AgentRow(device: device.id, pane: $0) } }
-                SidebarGroup(title: L("Terminals"), id: "terminals", empty: terminals.isEmpty) {
-                    ForEach(terminals) { row in SidebarRow(selected: desk.focused == row.id, action: { desk.jump(row.device + "|" + row.pane.id) }) { Label(desk.title(device: row.device, pane: row.pane), systemImage: "terminal").lineLimit(1).frame(maxWidth: .infinity, alignment: .leading) }.help(desk.paneHelp(row)).contextMenu { paneActions(row) } }
-                }
+
             }.padding(.horizontal, 10).padding(.bottom, 8)
         }.onChange(of: desk.sidebarReveal) { _, value in if let value { reader.scrollTo(value) } } }
     }
@@ -100,13 +97,13 @@ struct Workbench: View {
             }
             let spaces = desk.sessions[device.id]?.spaces ?? []
             ForEach(spaces) { space in
-                SidebarRow(selected: desk.selectedDevice == device.id && desk.selectedSpace == space.id, action: { desk.select(device: device.id, space: space.id) }, verticalPadding: 6) {
+                SidebarRow(selected: desk.selectedDevice == device.id && desk.selectedSpace == space.id, action: { desk.select(device: device.id, space: space.id) }, verticalPadding: 6.5) {
                     HStack(spacing: 6) {
-                        VStack(alignment: .leading, spacing: 3) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(space.label).font(.system(size: 13, weight: desk.selectedDevice == device.id && desk.selectedSpace == space.id ? .medium : .regular)).lineLimit(1)
                             let branch = desk.branchStates[device.id + "|" + space.id]
-                            Label(branch?.text ?? L("Loading directory…"), systemImage: branch?.symbol ?? "folder").font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).frame(height: 13)
-                        }.frame(maxWidth: .infinity, alignment: .leading)
+                            Label(branch?.text ?? L("Directory"), systemImage: branch?.symbol ?? "folder").font(.system(size: 11)).foregroundStyle(Color(nsColor: Theme.secondary)).lineLimit(1).frame(height: 13)
+                        }.frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 18)
                         if let status = desk.attentionState.summary(device: device.id, panes: (desk.sessions[device.id]?.panes ?? []).filter { $0.workspace == space.id }) { AgentStatus(status: status, unread: status == "unread") }
                     }
                 }.id(device.id + "|" + space.id).help(DisplayTitle.detail([space.label, desk.spacePath(device: device.id, space: space.id), desk.branchStates[device.id + "|" + space.id]?.detail]))
@@ -128,15 +125,15 @@ struct Workbench: View {
     func moveSpace(_ device: String, _ space: String, _ index: Int) { desk.objectAction(device: device, method: "workspace.move", params: ["workspace_id": .string(space), "insert_index": .number(Double(index))]) }
     func agentRow(_ row: AgentRow) -> some View {
         let unread = desk.attentionState.unread.contains(row.id)
-        let context = DisplayTitle.detail([row.pane.agent, desk.sessions[row.device]?.spaces.first { $0.id == row.pane.workspace }?.label, desk.deviceFilter.isEmpty ? desk.devices.first { $0.id == row.device }?.displayName : nil])
-        return SidebarRow(selected: desk.focused == row.id, action: { desk.jump(row.device + "|" + row.pane.id) }, radius: 7) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) { Text(desk.title(device: row.device, pane: row.pane)).font(.system(size: 13.5)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading); AgentStatus(status: row.pane.status, unread: unread).accessibilityHidden(true) }
+        let context = DisplayTitle.detail([row.pane.agent, desk.sessions[row.device]?.spaces.first { $0.id == row.pane.workspace }?.label, desk.deviceFilter.isEmpty && desk.devices.count > 1 ? desk.devices.first { $0.id == row.device }?.displayName : nil])
+        return SidebarRow(selected: desk.focused == row.id, action: { desk.jump(row.device + "|" + row.pane.id) }, verticalPadding: 9.5, radius: 7, filledSelection: true) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) { Text(desk.title(device: row.device, pane: row.pane)).font(.system(size: 13)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading); AgentStatus(status: row.pane.status, unread: unread).accessibilityHidden(true) }
                 HStack(spacing: 5) {
-                    Label(context, systemImage: AgentToolIcon.symbol(for: row.pane.agent)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(.secondary)
-                    Text(L(unread ? "Completed, unread" : row.pane.stateLabel)).lineLimit(1).foregroundStyle(.primary).fixedSize(horizontal: true, vertical: false)
+                    Label(context, systemImage: AgentToolIcon.symbol(for: row.pane.agent)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(Color(nsColor: Theme.secondary))
+                    Text(L(unread ? "Completed, unread" : row.pane.stateLabel)).lineLimit(1).foregroundStyle(AgentStatus.color(row.pane.status, unread: unread)).fixedSize(horizontal: true, vertical: false)
                 }.font(.system(size: 11))
-            }
+            }.padding(.leading, 18)
         }.help(desk.paneHelp(row)).contextMenu { paneActions(row) }
     }
     @ViewBuilder func paneActions(_ row: AgentRow) -> some View {
@@ -154,7 +151,7 @@ struct Workbench: View {
         if action.hasPrefix("tab"), let number = Int(action.dropFirst(3)) { return number <= tabs.count }
         if ["close", "closePane"].contains(action) { return desk.focused.map(desk.canAct) ?? false }
         if ["zoom", "repair", "interrupt", "left", "right", "up", "down", "resizeLeft", "resizeRight", "resizeUp", "resizeDown"].contains(action) { return desk.focused != nil }
-        if action == "closeTab" { return !tabs.isEmpty && (desk.selectedDevice.map(desk.canWrite) ?? true) }
+        if action == "closeTab" { return !tabs.isEmpty && (desk.selectedDevice.map(desk.canWrite) ?? false) }
         if ["previous", "next"].contains(action) { return !tabs.isEmpty }
         return true
     }
