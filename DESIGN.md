@@ -168,7 +168,7 @@ components:
 
 HerdrX is a simple, clean native macOS workbench. Terminals own the visual field; compact navigation makes local shells, device workspaces and coding agents easy to reach. Files appear beside the terminal only when requested.
 
-SwiftUI and AppKit supply system typography, familiar controls and keyboard behavior; Ghostty supplies the terminal canvas. Preserve HerdrX's name and original ivory H-shaped herd-animal icon on charcoal. Keep that identity in the app icon and product surfaces without repeating it as decoration across the workbench.
+SwiftUI and AppKit supply system typography, familiar controls and keyboard behavior; Ghostty supplies the terminal canvas. Preserve HerdrX's name and the user-supplied purple diagonal slash on a white icon tile. Keep that identity in the app icon and product surfaces without repeating it as decoration across the workbench.
 
 **Key Characteristics:**
 
