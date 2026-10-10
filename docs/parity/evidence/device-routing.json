@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "assertions": [
+    "UI selection to SSH w1:p1 while Local w1:p1 remains distinct",
+    "native key entry reaches SSH server only",
+    "Agent rows from other spaces remain available"
+  ],
+  "local": {
+    "type": "pane_read",
+    "read": {
+      "pane_id": "w1:p1",
+      "workspace_id": "w1",
+      "tab_id": "w1:t1",
+      "source": "visible",
+      "format": "text",
+      "text": "HerdrX fixture — real PTY\nfixture $\n",
+      "revision": 0,
+      "truncated": false
+    }
+  },
+  "ssh": {
+    "type": "pane_read",
+    "read": {
+      "pane_id": "w1:p1",
+      "workspace_id": "w1",
+      "tab_id": "w1:t1",
+      "source": "visible",
+      "format": "text",
+      "text": "HerdrX isolated SSH terminal\nssh-fixture $ printf 'SSH_UI_SENTINEL\\n'\nSSH_UI_SENTINEL\nssh-fixture $\n",
+      "revision": 0,
+      "truncated": false
+    }
+  }
+}

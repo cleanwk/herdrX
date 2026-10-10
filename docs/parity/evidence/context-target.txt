@@ -1,0 +1,8 @@
+The following is a diff from the previous accessibility tree for Window: "" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 0-62
++71 对话框 Description: 警告, Secondary Actions: Raise
++	72 图像 HerdrX 警告
++	73 text Close Pane “Shell · Atlas · 长名称中文工作空间与英文 Project Atlas”? This terminates 1 server pane(s) and their processes on Local Fixture. Disconnecting only releases the client attachment.
++	74 按钮 Cancel, ID: action-button-2
++	75 按钮 Close, ID: action-button-1
+The focused UI element is 71 对话框 Description: 警告, Secondary Actions: Raise

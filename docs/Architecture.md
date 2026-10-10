@@ -9,9 +9,9 @@ HerdrX 是 Herdr 的原生客户端。Herdr 是服务端会话拓扑与插件行
 | `Core/Sources/HerdCore` | Foundation 数据模型、NDJSON RPC、事件订阅、快照事务和搜索 |
 | `Core/Sources/PTY` | `forkpty`、`execve`、前台进程 CWD 的薄 C 桥 |
 | `App/Desk.swift` | 设备连接、选择、缓存、会话操作、通知与布局 |
-| `App/PTY.swift` | 串行异步读写、进程退出代次、关闭与回收 |
+| `App/PTY.swift` | 串行异步读写、读写与退出代次、关闭与回收 |
 | `App/Terminal.swift` | Ghostty 原生表面、IME、绘制可见性和分屏画布 |
-| `App/Workbench.swift` | 侧栏、原生标签、快捷键与搜索 |
+| `App/Workbench.swift` | 工作台布局与搜索；Sidebar/Tabs/Commands 分别封装行、标签和原生命令 |
 | `App/Extensions.swift` | Herdr 插件动作、启停、日志和面板的原生呈现 |
 | `scripts` / `distribution` | 构建、公证、发布元数据与现有 tap 的同步逻辑 |
 
@@ -23,11 +23,11 @@ PTY 负责原始 ANSI 字节。读写在串行 IO 队列上执行，直接连接
 
 ## 身份与生命周期
 
-终端缓存唯一使用 `DeviceID + PaneID`，不随 Agent 检测状态改变。Agent attach 使用 Pane ID，普通终端 attach 使用 Terminal ID。每次 PTY 启动都有代次；旧进程的退出回调无法结束新 attach。被其他客户端接管后不自动抢回。
+终端缓存唯一使用 `DeviceID + PaneID`，不随 Agent 检测状态改变。独立 Shell 使用客户端所有的 pane key，不保证服务器会话持久性。Agent attach 使用 Pane ID，普通终端 attach 使用 Terminal ID。每次 PTY 启动都有代次；旧进程 read/write/exit 都受当前 run 保护，旧退出回调无法结束新 attach。被其他客户端接管后不自动抢回。
 
 RPC 连通、attach 存活、表面可见及 Agent 状态分别保存。断线只更新对应设备的错误，保留最后完整快照。旧请求完成后会检查取消状态与刷新 token，避免覆盖更新的读取或重新插入已删除设备。
 
-每个 SSH 命名会话有单独的随机本地 socket。GUI 不扫描凭据、不创建密钥，认证和主机信任交给系统 SSH。隧道启用连接超时与 keepalive；每次尝试独立拥有 socket 和诊断文件，取消旧连接不会清理新连接。断开时清理自身创建的 socket。设备描述符只保存名称和连接参数。
+每个 SSH 命名会话有单独的随机本地 socket。SSH 连接不扫描凭据、不创建密钥，认证和主机信任交给系统 SSH。隧道启用连接超时与 keepalive；每次尝试独立拥有 socket 和诊断文件，取消旧连接不会清理新连接。断开时清理自身创建的 socket。设备描述符只保存名称和连接参数。
 
 关闭 GUI 或忘记连接不调用服务器 `pane.close`。只有用户明确关闭服务器 Pane 才调用该方法。当前选中的服务器标签才创建 attach；已创建的表面切换后仍然挂载。隐藏表面暂停绘制、释放 drawable 并保留尺寸，不因其他标签的几何变化修改后台 PTY 的 viewport。
 
@@ -41,8 +41,16 @@ RPC 连通、attach 存活、表面可见及 Agent 状态分别保存。断线�
 
 ## 当前边界
 
-按用户要求，宿主不内置文件树、目录浏览、预览或传输。设备支持本机与 SSH；Tailcat 桥没有可验证的契约，不能执行终端动作。没有额外的 Schema 表单、ACC 提供商或插件市场。
+2026-10-10 的复刻规格将按需文件树、只读预览与单文件传输纳入范围。FileService 独立于控制 RPC 与终端流，本机使用 Foundation/POSIX，SSH 使用系统 SSH 与目标 Python 3；不支持的连接显式报错。传输先写同目录临时文件，成功后按冲突策略提交，取消清理临时文件。设备实现本机、SSH 与 Tailcat 传输适配。Tailcat 使用独立 Go helper 将控制端口 6464/终端端口 6465 桥接到私有 Unix socket，令牌经 stdin 传入、身份和令牌存于 HerdrX 独立 Keychain service；未获得真实 host，所以源码和 universal 构建通过不代表真实连接已验收。没有额外的 Schema 表单、ACC 提供商或插件市场。
 
-终端兼容性沿用固定版本的 Ghostty，并实现空闲 IME 插入点、Kitty 模式恢复和隐藏尺寸守卫。未复制参考项目的 ANSI 颜色改写器；Pi 等 Agent 的浅色光标及第三方语音输入法仍需要真实环境验收。运行与性能证据只以 Validation 记录为准，不沿用参考项目历史指标。
+终端兼容性沿用固定版本的 Ghostty，并实现空闲 IME 插入点、Kitty 模式恢复和隐藏尺寸守卫。未复制参考项目的 ANSI 颜色改写器；Pi 等 Agent 的浅色光标及第三方语音输入法仍需要真实环境验收。本次运行与性能证据以 `docs/parity/STATUS.md` 及其 evidence 为准，不沿用参考项目历史指标。
 
-Agent 创建读取 `integration.list` 的 available 工具，不再硬编码 CLI。参数解析为 argv，不作 shell 展开；工具执行仍交给 `agent.start`。新空间显式选择设备、名称和目录，使用 `workspace.create`，不提供目录浏览。通知仅由 Agent 状态转换产生，携带设备与 Pane 路由；当前正在看的 Agent 不提醒。
+Agent 创建读取 `integration.list` 的 available 工具，不再硬编码 CLI。参数解析为 argv，不作 shell 展开；默认工具执行交给 `agent.start`。本机显式命令覆盖经登录 PATH 检查和 shell 参数引用后写入新 Pane，再等待服务端识别；本机覆盖不会传给远端。快速新空间读取目标 Pane 的当前目录，使用 `workspace.create` 并选择返回的 Space；高级表单保留明确设备、名称和目录。通知仅由 Agent 状态转换产生，携带设备与 Pane 路由；当前正在看的 Agent 不提醒。
+
+客户端注意力由 HerdCore.Attention 管理，与通知开关分离。TabOrder 保存以相邻 Tab 为锚点的意图队列，串行提交失败后只移除失败操作，后续意图继续投影。文件浏览器以根代次与预览请求 ID 丢弃过期结果。
+
+## 构建与验收
+
+`project.yml` 保留 SwiftUI/AppKit、HerdCore 和固定 Ghostty 依赖。Tailcat helper 使用 Go modules，`scripts/tailcat.sh` 构建 arm64/x86_64 后 lipo 合并，由 Xcode post-build 打包并签名。新构建依赖 Go（go.mod 指定工具链），SSH 文件服务依赖目标 Python 3。文件传输不经过终端输入或 Herdr RPC。第三方许可归档在 Resources/Licenses/Tailcat。
+
+DEBUG 可通过 `HERDRX_STATE_DIR` 隔离设备存储，`HERDRX_WINDOW_SIZE` 指定验证窗口，`HERDRX_DIAGNOSTICS` 输出 surface 身份和可见/隐藏 frame；正式运行不会默认记录这些诊断。验收只操作独立命名会话和私有 SSH fixture，不连接已有用户工作 Pane。原生事件、截图、纯状态测试与源码审查分开标记，不能相互替代。

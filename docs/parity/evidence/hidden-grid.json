@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "hiddenFrameComparisons": 74,
+  "source": "surfaces.jsonl (consecutive identical frame reports omitted)",
+  "assertion": "Retained hidden surface frames equal their previous recorded frame; no claim about uninstrumented resize/ioctl counts"
+}

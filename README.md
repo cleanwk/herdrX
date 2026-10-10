@@ -27,19 +27,25 @@ brew update && brew upgrade --cask herdrx
 
 | 快捷键 | 操作 |
 | --- | --- |
-| ⌘N / ⌘T | 新建 Agent / Shell |
-| ⌘⇧N / ⌘⌥T | 新建 Space / Tab |
+| ⌘N / ⌘T | 新建 Agent / 当前设备终端（也可从新建菜单打开独立 Shell） |
+| ⌘⇧N / ⌘⌥T | 继承当前目录快速新建 Space / Tab |
 | ⌘D / ⌘⇧D | 向右 / 向下分屏，继承当前目录 |
 | ⌘⌥方向键 / ⌘⌃方向键 | 移动焦点 / 调整分屏比例 |
 | ⌘⇧Return | 放大或还原当前 Pane |
 | ⌘1…9 / ⌘⇧[ / ⌘⇧] | 选择或轮换标签 |
-| ⌘W | 关闭当前 Pane；最后一个本地 Shell 关闭窗口 |
+| ⌘W | 优先关闭 Sheet，然后当前 Pane，无目标时关闭窗口 |
+| ⌘⇧W / ⌘⌥W | 关闭 Pane / Tab |
 | ⌘B | 隐藏或显示侧栏 |
 | ⌘K | 搜索 Space、Shell 与 Agent，支持拼音和首字母 |
-| ⌘⇧J | 跳至其他等待输入或已完成的 Agent |
-| ⌘⇧R | 恢复终端输入模式 |
+| ⌘⇧J | 跳至等待输入或未读完成的 Agent |
+| ⌘⇧R | 恢复终端输入模式（不发送 Ctrl-C） |
+| ⌘⇧E / ⌘⇧F | 文件辅助区 / 双端文件管理 |
 
-侧栏分隔线可拖动，双击恢复默认宽度。分屏分隔线支持拖动；服务端比例在放开鼠标时提交。New Agent 从 Herdr 获取可用工具，选择设备、空间与可选参数后启动；New Space 显式输入名称和目录。侧栏按设备筛选，Space 右键重命名。Settings → Appearance 选择系统、浅色或深色；Terminal 调整字体和行距并预览，Notifications 主动开启通知及声音，点击提醒返回对应 Pane。HerdrX 不内置文件目录、文件预览或文件传输。
+侧栏宽度200–480pt并持久保存，双击恢复260pt；分组可折叠。分屏比例在放开鼠标时提交。New Agent从目标Herdr获取工具与目录上下文；快速New Space继承当前目录，高级表单保留明确名称和目录。Space、Tab、Pane均有对象菜单；Agent未读与系统通知分别管理。
+
+Settings提供外观/配色/强调色/语言、终端字体/字重/行距/鼠标/复制，以及本机Agent命令覆盖。文件辅助区默认隐藏，可只读预览最多2MiB的文本或图片；文件管理支持本机/SSH单文件传输、冲突处理和取消。SSH文件操作要求目标设备有Python3。
+
+Tailcat设置与传输helper已实现，凭据保存在独立Keychain命名空间；尚未在真实Tailcat host验收，且不支持文件操作。本轮完整实现状态、截图及未验证边界见[复刻验收记录](docs/parity/STATUS.md)，不是全功能通过声明。
 
 ## Herdr 扩展
 
@@ -49,10 +55,10 @@ Herdr v1 的扩展面板是终端面板；HerdrX 不另建 manifest、插件进�
 
 ## 构建
 
-安装 Xcode 27、完成首次启动，并安装 XcodeGen：
+安装 Xcode 27、完成首次启动，并安装 XcodeGen 和 Go（Tailcat helper 使用 `Tools/Tailcat/go.mod` 指定的工具链）：
 
 ```sh
-brew install xcodegen
+brew install xcodegen go
 scripts/build.sh
 scripts/package.sh
 ```
@@ -64,6 +70,8 @@ scripts/package.sh
 ```sh
 swift test --package-path Core -c release
 python3 -m unittest discover -s scripts -p 'test_*.py'
+scripts/test-pty.sh
+scripts/test-ssh.sh
 ```
 
 代码分为 `App`、`Core`、`scripts` 和 `distribution` 四块；见 [Architecture](docs/Architecture.md)、[Validation](docs/Validation.md) 和 [第三方许可](Resources/Notices.txt)。

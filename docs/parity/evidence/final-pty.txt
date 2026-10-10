@@ -1,0 +1,1 @@
+PASS: 20 actual PTY restart/output/write generations; no previous-run bytes after restart

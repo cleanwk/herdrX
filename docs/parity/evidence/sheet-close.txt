@@ -1,0 +1,41 @@
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 53-72
+~48 标准窗口 HerdrX, ID: desk, Secondary Actions: Raise
+~		50 按钮 Description: Split View Horizontally Left, Help: Toggle Sidebar · ⌘B
+~		51 滚动区
+~			52 按钮 Implementation, Description: Implementation, tab
++			53 按钮 Review, Description: Review, selected tab
++		54 按钮 Description: Add, Help: New Tab · ⌘⌥T
++		55 菜单按钮 Rectangle Split Two By One, ID: rectangle.split.2x1
++		56 菜单按钮 New, ID: plus
++		57 按钮 Description: Stack Of Squares Ascending With An A Badge, Help: Quick New Space · ⌘⇧N
++		58 按钮 Description: Search, Help: Search · ⌘K
++		59 滚动区 Secondary Actions: Scroll Up, Scroll Down
++			60 列表 Secondary Actions: AXScrollToTop, AXScrollToBottom
++				61 按钮 Shell 1 · ~
++				62 按钮 (selected) Description: 长名称中文工作空间与英文 Project Atlas, feature/parity, blocked, Help: /private/tmp/herdrx-fixture/atlas
++				63 按钮 Description: 文档, Directory, working, Help: /private/tmp/herdrx-fixture/docs
++				64 按钮 Description: atlas, Directory, Help: /private/tmp/herdrx-fixture/atlas
++				65 按钮 Description: SSH Docs, Directory, working, Help: /private/tmp/herdrx-fixture/docs
++				66 按钮 (selected) blocked, Review, blocked, codex · 长名称中文工作空间与英文 Project Atlas · Local Fixture, fixture-model · 12%
++				67 按钮 working, Write docs, working, claude · 文档 · Local Fixture, fixture-model · 12%
++				68 按钮 working, SSH Review, working, codex · SSH Docs · SSH Fixture, fixture-model · 12%
++				69 按钮 Shell · Atlas
++				70 按钮 Shell · Atlas
++				71 按钮 Shell · Atlas
++				72 按钮 On This Mac, expanded
++				73 按钮 Local Fixture, expanded
++				74 按钮 SSH Fixture, expanded
++				75 按钮 Agents, expanded
++				76 按钮 Terminals, expanded
++			77 滚动条 (settable, float) 0
++				78 值指示器 (settable, float) 0
++				79 增箭头按钮
++				80 减箭头按钮
++				81 增页面按钮
++				82 减页面按钮
++		83 弹出式按钮 Description: Devices, Help: Filter devices; manage connections in Settings, Value: All Devices
++		84 按钮 Description: Gear Shape, Help: Settings · ⌘,
++	85 关闭按钮
++	86 全屏幕按钮 Help: 此按钮也可以执行缩放窗口的操作, Secondary Actions: 缩放窗口
++	87 最小化按钮

@@ -1,16 +1,73 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-09T18:04:17.711937+00:00",
+  "generatedAt": "2026-10-10T07:24:06.728283+00:00",
   "title": "Design System: HerdrX",
   "extensions": {
     "colorMeta": {
+      "content-light": {
+        "role": "neutral",
+        "displayName": "Default Light Workbench",
+        "purpose": "Theme.content, default light appearance."
+      },
+      "content-dark": {
+        "role": "neutral",
+        "displayName": "Default Dark Workbench",
+        "purpose": "Theme.content, default dark appearance."
+      },
+      "terminal-light-background": {
+        "role": "neutral",
+        "displayName": "Default Light Terminal Surface",
+        "purpose": "Theme.apply default light background."
+      },
+      "terminal-light-foreground": {
+        "role": "neutral",
+        "displayName": "Default Light Terminal Text",
+        "purpose": "Theme.apply default light foreground."
+      },
+      "terminal-light-selection": {
+        "role": "neutral",
+        "displayName": "Default Light Terminal Selection",
+        "purpose": "Ghostty selection background in the default light palette."
+      },
       "terminal-dark-background": {
         "role": "neutral",
-        "displayName": "Terminal Dark Surface"
+        "displayName": "Default Dark Terminal Surface",
+        "purpose": "Theme.apply default dark background."
       },
       "terminal-dark-foreground": {
         "role": "neutral",
-        "displayName": "Terminal Dark Text"
+        "displayName": "Default Dark Terminal Text",
+        "purpose": "Theme.apply default dark foreground."
+      },
+      "terminal-dark-selection": {
+        "role": "neutral",
+        "displayName": "Default Dark Terminal Selection",
+        "purpose": "Ghostty selection background in the default dark palette."
+      },
+      "catppuccin-accent": {
+        "role": "primary",
+        "displayName": "Catppuccin Violet Accent",
+        "purpose": "Theme.accent when Catppuccin follows its theme accent."
+      },
+      "catppuccin-content-light": {
+        "role": "neutral",
+        "displayName": "Catppuccin Light Workbench",
+        "purpose": "Theme.content for Catppuccin light appearance."
+      },
+      "catppuccin-content-dark": {
+        "role": "neutral",
+        "displayName": "Catppuccin Dark Workbench",
+        "purpose": "Theme.content for Catppuccin dark appearance."
+      },
+      "dracula-content-dark": {
+        "role": "neutral",
+        "displayName": "Dracula Dark Workbench",
+        "purpose": "Theme.content for Dracula dark appearance."
+      },
+      "nord-content-dark": {
+        "role": "neutral",
+        "displayName": "Nord Dark Workbench",
+        "purpose": "Theme.content for Nord dark appearance."
       }
     },
     "typographyMeta": {
@@ -22,108 +79,277 @@
         "displayName": "Selected Tab",
         "purpose": "Selected AppKit tab label."
       },
+      "space": {
+        "displayName": "Space",
+        "purpose": "Sidebar Space title."
+      },
+      "space-selected": {
+        "displayName": "Selected Space",
+        "purpose": "Current Space title."
+      },
+      "agent": {
+        "displayName": "Agent",
+        "purpose": "Agent title in the sidebar."
+      },
       "metadata": {
         "displayName": "Metadata",
-        "purpose": "Status bar and space detail."
+        "purpose": "Space detail, Agent attribution and status text."
       },
       "section-label": {
-        "displayName": "Section Label",
-        "purpose": "Uppercase sidebar group heading."
+        "displayName": "Group Header",
+        "purpose": "Collapsible sticky sidebar group heading."
+      },
+      "detail": {
+        "displayName": "Optional Detail",
+        "purpose": "Optional Agent metadata and file-root path."
+      },
+      "pane-title": {
+        "displayName": "Pane Title",
+        "purpose": "Unfocused native monospaced pane title."
+      },
+      "pane-title-focused": {
+        "displayName": "Focused Pane Title",
+        "purpose": "Focused native monospaced pane title."
+      },
+      "file": {
+        "displayName": "File Row",
+        "purpose": "File tree label."
+      },
+      "file-preview": {
+        "displayName": "Text Preview",
+        "purpose": "Read-only selectable file text."
       },
       "terminal": {
         "displayName": "Terminal Default",
-        "purpose": "User-configurable fixed-pitch terminal text."
+        "purpose": "User-configurable Ghostty font default."
       }
     },
     "shadows": [],
     "motion": [],
     "breakpoints": [],
     "nativePlatform": {
+      "platform": "macOS 14 and later",
+      "frameworks": [
+        "SwiftUI",
+        "AppKit",
+        "Ghostty"
+      ],
       "measurementUnit": "pt",
       "dynamicColors": {
-        "accent": "Color.accentColor / NSColor.controlAccentColor",
-        "windowSurface": "NSColor.windowBackgroundColor",
+        "defaultAccent": "NSColor.controlAccentColor",
+        "accentPresets": "NSColor.systemGray/systemGreen/systemBlue/systemPurple/systemYellow/systemPink/systemRed/systemOrange",
+        "fileSurface": "NSColor.windowBackgroundColor",
+        "fontPreviewSurface": "NSColor.textBackgroundColor",
         "separator": "NSColor.separatorColor",
-        "secondaryText": ".secondary",
-        "positiveState": "Color.green",
-        "attentionState": "Color.orange"
+        "primaryText": "SwiftUI Color.primary / native label text",
+        "secondaryText": "SwiftUI .secondary / NSColor.secondaryLabelColor",
+        "workingAndUnread": "SwiftUI Color.blue",
+        "blocked": "SwiftUI Color.orange",
+        "deviceConnected": "SwiftUI Color.green",
+        "deviceOther": "SwiftUI Color.orange"
       },
-      "appearance": "macOS light/dark; terminal light palette owned by Ghostty .alabaster",
-      "componentPreview": "Native SwiftUI/AppKit descriptions only. No HTML/CSS preview is supplied because platform semantic values, material and native control states have no faithful drop-in CSS equivalent.",
-      "captureMode": "Scan mode from native source; reference-based documenter fallback, no named shipped documenter role available."
+      "themeSources": {
+        "chrome": "App/Theme.swift; SwiftUI tint and accentColor wired in App/Main.swift.",
+        "defaultTerminal": "Explicit light/dark background, foreground and selection in Theme.apply().",
+        "catppuccinTerminal": "GhosttyThemeDefinition.catppuccin_Latte and .catppuccin_Mocha.",
+        "draculaTerminal": "Ghostty .alabaster light and .dracula dark.",
+        "nordTerminal": "Ghostty .alabaster light and .nord dark.",
+        "herdr": "Theme.apply resolves the supported family from the local Herdr configuration; unsupported families fall back to Default."
+      },
+      "materials": [
+        {
+          "name": "Reconnect",
+          "value": "SwiftUI .regularMaterial"
+        }
+      ],
+      "layoutConstraints": {
+        "windowMinimum": {
+          "width": "980pt",
+          "height": "620pt",
+          "scope": "Outer NSWindow frame"
+        },
+        "trafficLightsReserve": "78pt",
+        "sidebar": {
+          "defaultToken": "components.sidebar.width",
+          "minimum": "200pt",
+          "maximum": "480pt",
+          "separator": "1pt",
+          "resizeHitWidth": "7pt",
+          "persistence": "sidebarWidth and showSidebar"
+        },
+        "tabWidth": {
+          "minimum": "40pt",
+          "maximum": "200pt",
+          "formula": "Measured title width + 20pt",
+          "gap": "2pt",
+          "edgeInset": "2pt"
+        },
+        "pane": {
+          "frameInset": "3.5pt",
+          "terminalLeftBottomInset": "4pt",
+          "terminalWidthReduction": "8pt",
+          "terminalHeightReduction": "18pt",
+          "splitHitWidth": "6pt",
+          "titleCutoutOffset": "9pt",
+          "titleTextInset": "6pt",
+          "topTitleClearance": "Additional 3.5pt above the border; total top border inset 7pt keeps the centered 14pt title inside the canvas."
+        },
+        "files": {
+          "defaultToken": "components.files.width",
+          "minimum": "240pt",
+          "maximum": "60% of available detail width, floored at 240pt",
+          "persistence": "filesWidth",
+          "treeAndPreviewThreshold": "520pt file-area width",
+          "wideTreeWidth": "210pt",
+          "treeDepthIndent": "12pt"
+        },
+        "settingsNavigationWidth": "150pt"
+      },
+      "stateTreatments": {
+        "sidebarSelected": "Accent fill 0.18 light / 0.20 dark and 1pt accent outline 0.22.",
+        "sidebarHover": "Color.primary fill 0.06.",
+        "tabSelected": "Theme.accent fill 0.18 light / 0.20 dark and 1pt accent outline 0.22.",
+        "searchSelected": "Color.accentColor fill 0.14.",
+        "fileSelected": "Color.accentColor fill 0.18.",
+        "paneFocused": "Theme.accent border and semibold title.",
+        "paneUnfocused": "NSColor.separatorColor border and secondary regular title.",
+        "tabInsertion": "2pt accent line.",
+        "agentStatus": "Working half-filled circle; blocked/unread solid circle; read/idle/unknown outline, with accessible labels.",
+        "tabHover": "NSColor.labelColor fill 0.06 for the hovered unselected tab."
+      },
+      "componentPreview": "Native SwiftUI/AppKit source descriptions only. No HTML/CSS reconstruction, raster composition or synthetic tonal ramps are supplied; they would not preserve native controls, dynamic platform colors, materials or terminal rendering.",
+      "evidence": {
+        "mode": "Source scan; merged refresh of existing native design system.",
+        "contract": "docs/parity/SPEC.txt S01–S07",
+        "sourceFiles": [
+          "App/Workbench.swift",
+          "App/Sidebar.swift",
+          "App/Tabs.swift",
+          "App/Theme.swift",
+          "App/Preferences.swift",
+          "App/Files.swift",
+          "App/Terminal.swift",
+          "App/WindowBehavior.swift",
+          "App/Main.swift",
+          "Core/Sources/HerdCore/Files.swift"
+        ],
+        "renderAcceptance": "No current-render acceptance claim. Prior review snapshots do not establish the result of this refresh.",
+        "behaviorAcceptance": "No full F01–F24 or C01–C32 acceptance claim.",
+        "observedTargetDifferences": [
+          "Pane frames are rectangular; macOS 26 outer-corner refinement is not established by this source scan."
+        ]
+      }
     }
   },
   "components": [
     {
-      "name": "Toolbar Button",
+      "name": "Chrome Action",
       "kind": "button",
-      "description": "Borderless native SF Symbol button with action and shortcut tooltip."
-    },
-    {
-      "name": "Jump Field",
-      "kind": "input",
-      "description": "Native rounded-border text field; initial focus, Return activation and Escape cancellation."
+      "description": "Compact native borderless SF Symbol action with contextual help; native focus and disabled states.",
+      "nativeSource": "Workbench.body"
     },
     {
       "name": "Sidebar Navigation",
       "kind": "nav",
-      "description": "Plain full-width rows with system-accent selection at 0.14 opacity and six-point corners."
+      "refersTo": "sidebar-row",
+      "description": "Plain full-row buttons inside persistent collapsible groups with pinned native headers; Space and Agent use distinct padding and radius tokens, with appearance-aware selected fill and neutral hover.",
+      "nativeSource": "SidebarRow / SidebarGroup"
+    },
+    {
+      "name": "Agent Status",
+      "kind": "custom",
+      "description": "Shape, system color and accessible text convey working, blocked, unread, read and unknown states independently of tool identity.",
+      "nativeSource": "AgentStatus / AgentToolIcon"
     },
     {
       "name": "Terminal Tab",
       "kind": "nav",
-      "description": "AppKit tab: 150-point slot, 142 by 30-point button, 12-point system type; selected weight semibold, accent wash and subtle outline.",
-      "refersTo": "tab"
+      "refersTo": "tab",
+      "description": "Natural-width AppKit label with selected semibold weight, appearance-aware accent fill/outline, neutral hover, complete-title tooltip and reorder insertion line.",
+      "nativeSource": "Tabs.Strip"
+    },
+    {
+      "name": "Terminal Pane",
+      "kind": "custom",
+      "refersTo": "pane-title",
+      "description": "Mounted Ghostty surface inside a thin rectangular frame; embedded monospaced title and contextual close/restore controls.",
+      "nativeSource": "TerminalCanvas.Canvas"
+    },
+    {
+      "name": "Search",
+      "kind": "input",
+      "refersTo": "search",
+      "description": "Native rounded-border search field, shared keyboard/hover result selection, contextual result labels and a keyboard-hint footer.",
+      "nativeSource": "Jump"
+    },
+    {
+      "name": "Files",
+      "kind": "custom",
+      "refersTo": "files",
+      "description": "On-demand lazy file tree and read-only preview, switching from narrow drill-in to tree/preview columns by available panel width.",
+      "nativeSource": "FilesPanel / FileTree"
+    },
+    {
+      "name": "Settings",
+      "kind": "nav",
+      "refersTo": "settings",
+      "description": "Native split navigation and grouped forms, including a configurable system-mono font preview.",
+      "nativeSource": "Preferences / TerminalSettings"
+    },
+    {
+      "name": "File Manager",
+      "kind": "custom",
+      "refersTo": "file-manager",
+      "description": "Native two-ended file listing with device and path controls, conflict handling, transfer actions and byte progress.",
+      "nativeSource": "FileManagerSheet"
     },
     {
       "name": "Reconnect Overlay",
       "kind": "custom",
-      "description": "Native regular-material overlay with 12-point padding, eight-point radius and Reconnect action.",
-      "refersTo": "reconnect"
-    },
-    {
-      "name": "Terminal Canvas",
-      "kind": "custom",
-      "description": "Mounted Ghostty terminal surfaces, separator gutters, six-point resize handles and accent focus boundary."
-    },
-    {
-      "name": "Status Bar",
-      "kind": "custom",
-      "description": "26-point native bar, 11-point system text, six-point state dot plus readable connection label."
+      "refersTo": "reconnect",
+      "description": "Compact regular-material explanation and Reconnect action above the affected terminal.",
+      "nativeSource": "Workbench.body"
     }
   ],
   "narrative": {
     "northStar": "Native workbench",
-    "overview": "A simple, clean native macOS workbench. Terminals own the visual field; system controls and compact navigation make sessions easy to reach. SwiftUI and AppKit supply dynamic colors, system typography and familiar keyboard behavior. The original ivory H-shaped herd animal on charcoal remains the app identity.",
+    "overview": "HerdrX is a simple, clean native macOS workbench. Terminals own the visual field; compact navigation makes local shells, device workspaces and coding agents easy to reach. Files appear beside the terminal only when requested.\n\nSwiftUI and AppKit supply system typography, familiar controls and keyboard behavior; Ghostty supplies the terminal canvas. Preserve HerdrX's name and original ivory H-shaped herd-animal icon on charcoal. Keep that identity in the app icon and product surfaces without repeating it as decoration across the workbench.",
     "keyCharacteristics": [
-      "Terminal-first density with restrained chrome.",
-      "Appearance-aware system surfaces and accent selection.",
-      "Familiar native controls, SF Symbols and keyboard access.",
-      "Flat navigation with clear selected-space and focused-pane states."
+      "Terminal-first density with a single integrated top bar.",
+      "Theme-aware surfaces, semantic system controls and explicit focus.",
+      "Stable sidebar actions with compact, collapsible navigation groups.",
+      "On-demand file browsing and native settings without decorative card chrome."
     ],
     "rules": [
       {
         "name": "The Semantic Color Rule",
-        "body": "Keep chrome bound to platform semantic colors. Do not freeze a screenshot appearance into a new palette.",
+        "body": "Keep platform colors semantic and source-defined theme colors explicit. Do not freeze a screenshot's appearance into a new palette.",
         "section": "colors"
       },
       {
         "name": "The Reading Rule",
-        "body": "Preserve terminal legibility and native text metrics; truncate long navigation labels instead of shrinking their type.",
+        "body": "Preserve native text metrics and user-selected terminal typography; truncate navigation labels and retain their full context in tooltips.",
         "section": "typography"
+      },
+      {
+        "name": "The Terminal Space Rule",
+        "body": "Keep the main detail area available to terminals; reveal file tools on demand and return their space when closed.",
+        "section": "layout"
       }
     ],
     "dos": [
-      "Do use semantic system colors and verify both macOS appearances.",
-      "Do keep terminal content dominant and controls compact.",
-      "Do pair status color with readable text and preserve native keyboard focus.",
-      "Do retain the recognizable original app icon."
+      "Do retain HerdrX identity and native SwiftUI/AppKit controls.",
+      "Do keep terminal content dominant, navigation compact and file tools on demand.",
+      "Do use shape and accessible text with status color; keep device connection and agent execution states distinct.",
+      "Do verify both appearances, long Chinese labels and the specified window sizes with the running native app.",
+      "Do treat the source scan, rendered review and behavioral acceptance as separate evidence."
     ],
     "donts": [
-      "Don’t replace native controls with a web-style component theme.",
-      "Don’t invent fixed equivalents for dynamic colors or platform text styles.",
-      "Don’t add decorative shadows, oversized branding or card chrome around terminal panes.",
-      "Don’t hide long labels behind controls; retain truncation and tooltips."
+      "Don't replace native controls or the real terminal with a web theme, raster mockup or simulated terminal.",
+      "Don't restore a second fixed toolbar or a persistent bottom status bar.",
+      "Don't invent fixed equivalents for macOS dynamic colors or platform text styles.",
+      "Don't add decorative shadows, oversized branding or card containers around terminal panes.",
+      "Don't invent runtime metadata, hide context behind controls or claim full parity from screenshots."
     ]
   }
 }

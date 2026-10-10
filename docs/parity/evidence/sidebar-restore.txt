@@ -1,0 +1,31 @@
+The following is a diff from the previous accessibility tree for Window: "HerdrX" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~		58 按钮 Description: 水平左侧拆分视图, Help: 切换侧栏 · ⌘B
++		59 菜单按钮 新建
++		60 按钮 Description: 升序叠放的正方形，带A标记, Help: 快速新建 Space · ⌘⇧N
++		61 按钮 Description: 搜索, Help: 搜索 · ⌘K
++		62 滚动区 Secondary Actions: Scroll Up, Scroll Down
++			63 列表 Secondary Actions: AXScrollToTop, AXScrollToBottom
++				64 按钮 Shell 1 · ~
++				65 按钮 Description: 长名称中文工作空间与英文 Project Atlas、feature/parity、等待输入, Help: /private/tmp/herdrx-fixture/atlas
++				66 按钮 Description: 文档、目录、工作中, Help: /private/tmp/herdrx-fixture/docs
++				67 按钮 (selected) Description: atlas、目录, Help: /private/tmp/herdrx-fixture/atlas
++				68 按钮 Description: SSH Docs、目录、工作中, Help: /private/tmp/herdrx-fixture/docs
++				69 按钮 Description: docs、目录, Help: /private/tmp/herdrx-fixture/docs
++				70 按钮 等待输入、Review、等待输入、codex · 长名称中文工作空间与英文 Project Atlas · Local Fixture、fixture-model · 12%
++				71 按钮 工作中、Write docs、工作中、claude · 文档 · Local Fixture、fixture-model · 12%
++				72 按钮 工作中、SSH Review、工作中、codex · SSH Docs · SSH Fixture、fixture-model · 12%
++				73 按钮 Shell · Quick Space
++				74 按钮 (selected) kai@kaideMacBook-Pro:/private/tmp/herdrx-fixture/atlas
++				75 按钮 On This Mac, expanded
++				76 按钮 Local Fixture, expanded
++				77 按钮 SSH Fixture, expanded
++				78 按钮 Agents, expanded
++				79 按钮 Terminals, expanded
++			80 滚动条 (settable, float) 0
++				81 值指示器 (settable, float) 0
++				82 增箭头按钮
++				83 减箭头按钮
++				84 增页面按钮
++				85 减页面按钮
++		86 弹出式按钮 Description: 设备, Help: 筛选设备；在设置中管理连接, Value: 所有设备
++		87 按钮 Description: 齿轮形状, Help: 设置 · ⌘,

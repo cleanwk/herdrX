@@ -1,0 +1,753 @@
+ACCM → HerdrX 功能、页面与交互复刻说明（自包含版）
+本文可整篇复制给 HerdrX 开发者或其 Codex。正文包含功能对比、页面规格、实施任务、验收清单、启动指令和匿名测试数据，不依赖图片、附件或本次聊天。源码路径与公开网址仅供追溯，不是理解和实施本文的前置依赖。
+结论：HerdrX 已有可用的终端与 Herdr 会话基础，主要差距是工作台的信息组织、操作上下文、状态反馈、设置完整度和文件辅助能力。应在现有 HerdrX 架构上分阶段补齐，不需要重新开发运行时。
+目标是复刻 ACCM 的通用功能与页面交互，保留 HerdrX 品牌；排除 ACC 业务集成。本文给出可独立实施的规格，不以开发者能访问 ACCM 内网仓库为前提。
+1. 基线与证据边界
+对象
+本次核验基线
+证据
+ACCM 源码
+e497efc6d4d5fbbf07eef2ff2f6a4e1a9a58873b，初始工作树干净
+本地 Git、Swift 源码及测试
+ACCM 安装包
+0.13.2/build 27，dev.accm.app，显示名 acc
+/Applications/accm.app/Contents/Info.plist
+HerdrX 源码
+0fe3b8456a9c915b11ab3162ece00dc9445a87f7，HEAD 与 v0.1.3 相同
+2026-10-10 从官方仓库克隆并核对
+HerdrX 安装包
+0.1.3/build 4，io.github.cleanwk.herdrx
+/Applications/HerdrX.app/Contents/Info.plist
+现场界面
+两应用主窗口、外观设置、终端设置
+原生辅助功能树与截图；未执行服务端创建、关闭或接管测试
+HerdrX 官方参考：固定版本源码、README、设计说明。
+本文“已有”指该基线存在实现；“现场”仅指实际观察到的页面；未重新跑两应用完整自动化或远端测试。没有测得谁更快，不给性能提升百分比。两主窗口现场尺寸不同，不用截图直接比较可见行数。布局差异的数值来自代码中的 pt，而不是截图像素。
+本机 ACCM 外观为浅色 + Catppuccin 配色，终端字体为 Maple Mono CN 13.5pt。这是用户偏好，不是 ACCM 出厂默认，也不是字体分发要求。参考图中的效果不能简单解释为“SwiftUI 默认控件更漂亮”。
+本单文档版使用文字参数与结构图表达界面，不嵌入截图。原应用设置中的 ACC 栏不属于目标，系统屏幕共享提示等叠层也不属于应用设计。
+1.1 范围解释
+保留：本机/SSH/Tailcat 设备、Space/Tab/Pane、Agent、独立 Shell、终端交互、搜索、注意力、通知、主题、语言、文件、设备管理及通用系统集成。
+排除：ACC 账号关注、机器订阅、SIM 发现/创建、Code Studio 接入、ACC CLI 安装与自动同步、ACCKit 业务 DTO、ACC 专属设置/菜单/快捷键、ACC 内网更新渠道。无需建设旧蓝图中另拟的宿主插件 SDK。
+Herdr 原生插件仍保留。 HerdrX 现有 plugin.* 功能不等于 ACC 插件；不要误删 Settings → Plugins、动作、日志、终端插件面板。运行时上报的模型/账号/额度信息也不天然属于 ACC；仅在真实有数据时呈现。
+HerdrX 当前 PRODUCT 明确不做文件浏览/预览/传输，这是此前产品取舍，并非意外缺陷。本次“除 ACC 外复刻”的目标将它们纳入；开发者实施时应同步修订该产品范围。Tailcat、文件和完整设置都不能因排期靠后而从“完整复刻”定义里消失。
+2. 为什么 ACCM 的交互更完整
+2.1 主窗口减少重复结构
+HerdrX Workbench 是 48pt 工具栏 + 38pt 标签栏 + 26pt 底部状态栏，另有分隔线。ACCM 的详情区将 Tab 与窗口顶部整合，TitlebarMetrics.height = 28pt，Pane 标题嵌入细边框。按这些组件名义高度计算，常驻横条为 112pt 对 28pt；这是结构预算差，不是实测净可用高度差，还需考虑系统安全区与 Pane 内边距。
+HerdrX 把 Jump/New Agent/加号/分屏/设置都放在顶部，设备过滤又在侧栏上部，设备名在多个位置重复。ACCM 将定位操作固定在左侧，空间标签在上方，设备/设置在左下；用户更容易记住操作位置。
+以下为匿名结构示意，非运行截图；以 pt 规格为实施依据。
+HerdrX 0.1.3 当前结构
+┌─────────────────────────────────────────────────────────────────┐
+│ This Mac                  Jump  New Agent  +  分屏  设置  [48pt] │
+├─────────────────┬───────────────────────────────────────────────┤
+│ All Devices ▾   │ [Shell 1] [Tab 2]                      [38pt] │
+│ ON THIS MAC     ├───────────────────────────────────────────────┤
+│ Shell 1         │                                               │
+│ This Mac        │ 真实终端                                     │
+│   Project Atlas │                                               │
+│   /tmp/atlas    │                                               │
+│ AGENTS          │                                               │
+│   Review        │                                               │
+│ TERMINALS       │                                               │
+├─────────────────┴───────────────────────────────────────────────┤
+│ Local shell                                 Shell  ⌘K   [26pt] │
+└─────────────────────────────────────────────────────────────────┘
+​
+目标：ACCM 的通用工作台结构，保留 HerdrX 品牌
+┌─────────────────┬───────────────────────────────────────────────┐
+│ ● ● ●    侧栏   │ [Review] [Implementation]       + 分栏 [28pt] │
+├─────────────────┼───────────────────────────────────────────────┤
+│ ＋新建 ▾  ▣  ⌕  │ ┌─ codex · Project Atlas ──────────────────┐ │
+│                 │ │                                          │ │
+│ ▾ Local ●       │ │ 真实终端                                 │ │
+│   Project Atlas │ │                                          │ │
+│   ⑂ feature/ui ◐│ │                 文件区按需展开           │ │
+│   Docs          │ │                                          │ │
+│   ▱ 目录        │ └──────────────────────────────────────────┘ │
+│ ▾ Agent         │ ┌─ Shell ───────────┐ ┌─ claude · Docs ───┐ │
+│   Review     ●  │ │                   │ │                   │ │
+│   codex · Atlas │ │ 第二个 Pane       │ │ 第三个 Pane       │ │
+│   Write docs ◐  │ │                   │ │                   │ │
+│ ▾ 终端          │ │                   │ │                   │ │
+│   Shell         │ └───────────────────┘ └───────────────────┘ │
+├─────────────────┤                                               │
+│ Local ● ▾    ⚙  │                                               │
+└─────────────────┴───────────────────────────────────────────────┘
+侧栏顶部操作区和底部设备/设置区固定，中间分组滚动；终端主区没有默认常驻状态条。分屏数量由实际布局决定，示意图不规定默认创建三个 Pane。
+2.2 好处来自状态语义，不只是颜色
+	▪	Space 第二行使用分支或安静的“目录”，完整路径放辅助信息，避免每一行都被长路径占据。
+	▪	Agent 有独立选中背景、工具图标、所属 Space、状态文字；工作中、等待输入、完成未读有不同图形。
+	▪	Space 汇总其内部 Agent 的注意力，用户不展开所有内容也知道哪里需要处理。
+	▪	跨 Space Agent 汇总与当前项目导航同时存在，点击 Agent 直接定位对应 Space/Tab/Pane。
+	▪	当前 HerdrX 已跨 Space 汇总，但 Agent 行只有简化状态点，没有 ACCM 同级的选中/未读表达；排序也不同，不能把“已有列表”当成体验等价。
+2.3 高频操作有捷径，低频能力按需展开
+ACCM 快速新 Space 继承当前目录，成功后进入默认 Pane；HerdrX 必须经过设备/名称/绝对目录表单。ACCM 文件区默认隐藏，需要时在现有终端旁展开；主题、鼠标、复制和字体控制集中在设置。熟练用户日常少走表单，复杂选项仍可发现。
+2.4 HerdrX 应保留的基础
+HerdrX 已有真实 Ghostty 终端、隐藏表面复用、设备作用域、分屏/拖动、拼音搜索、通知路由、SSH 退避重连、服务端 Pane 关闭确认及原生 Herdr 插件接口。它的首次启动可直接用本地 Shell，无需 Herdr。这些都是可继续使用的基础；复刻过程中不得退化。
+3. 功能差异与交付矩阵
+“补齐”表示本次目标差距；“验证”表示已有底层或文档声明，但本次未证明等价。
+ID
+功能
+ACCM 0.13.2
+HerdrX 0.1.3
+交付动作
+F01
+窗口布局
+集成 28pt 标签顶栏、侧栏固定头尾
+三层常驻横条
+T1 重排布局
+F02
+侧栏
+分组可折叠/吸顶、设备底部切换、持久宽度
+一个 ScrollView、顶端过滤；宽度为 @State
+T1 补齐结构及持久化
+F03
+Space 行
+分支/目录、注意力、hover、拖动、菜单
+标题+路径/tokens、重命名
+T2 补齐提示、排序和菜单
+F04
+Agent 行
+跨 Space、状态图形、选中、未读、附加统计
+跨 Space、简化点与文字
+T2 补齐语义及呈现
+F05
+Tab
+紧凑、重命名/关闭/排序、记住 Pane
+固定宽标签、拖动、快捷切换
+T2 补齐动作与焦点记忆
+F06
+Pane
+内嵌名称/上下文、聚焦边框、右键命令
+终端画布与聚焦线
+T1/T2 补齐 Pane chrome
+F07
+新 Space
+快速创建继承目录
+必填名称和绝对路径的 Sheet
+T2 增加快速路径、保留高级表单
+F08
+Agent 创建
+工具目录、上下文、CLI 覆盖
+已有 integration.list 和 argv 表单
+T2 保留并补齐目录/配置上下文
+F09
+搜索
+缓存索引、名称/设备/目录/分支、拼音、50项
+已有索引/拼音/键盘结果选择
+T2 增补字段与呈现；不重做已支持能力
+F10
+注意力/通知
+blocked + 未读 done；Space 汇总
+blocked + 全部 done；通知已有
+T2 增加客户端未读集合
+F11
+主题与语言
+外观/配色/强调色/中英文联动
+System/Light/Dark
+T3 补齐主题系统及本地化
+F12
+终端设置
+字体字号字重行距、细笔画、鼠标、复制、导入
+字体字号行距、预览、恢复默认
+T3 补齐控件及即时应用
+F13
+Agent 配置
+工具命令/路径覆盖
+无独立 Agent 设置页
+T3 新增
+F14
+工作目录文件区
+懒加载树、文本/图片预览、2MiB上限
+明确不包含
+T4 新增只读辅助区
+F15
+独立文件管理
+双端浏览、单文件传输、取消/冲突处理
+明确不包含
+T4 新增
+F16
+本机/SSH 设备
+发现、导入、添加/编辑/移除、认证
+添加/移除 local/SSH、手填 socket
+T5 补齐设备管理与发现
+F17
+Tailcat
+有专门设置与连接实现
+未支持可执行连接
+T5 独立接入并验收
+F18
+连接/会话
+每设备生命周期、attach 恢复、服务端持久
+已有隔离、重连与保活
+T6 验证行为等价，保留现有能力
+F19
+输入/选择/链接
+IME、TUI鼠标、边缘拖选、右键、链接修复
+主要依赖同版本 Ghostty，少量宿主补丁
+T6 实测后补差，不宣称全部缺失
+F20
+附件/远端投递
+按 Agent 能力选择图片/路径/暂存
+未见同等宿主编排
+T6 补齐能力驱动的投递
+F21
+性能/隐藏窗口
+缓存投影、隐藏绘制/网格、PTY代次隔离
+已有表面复用、隐藏尺寸与代次
+T6 基线比较及回归，不套用旧性能结论
+F22
+原生菜单/可访问性
+CommandState、对象右键、焦点/关闭语义
+大量快捷键通过隐藏按钮提供
+T2/T7 补齐可发现菜单与 AX
+F23
+Herdr 扩展
+动作及运行时扩展信息
+Plugins 页/动作/日志/Open in Tab
+保留 HerdrX 实现，补真实状态展示
+F24
+身份/更新/关于
+ACCM 自有身份和 Sparkle
+HerdrX 自有身份/Brew/条件 Sparkle
+T7 保留 HerdrX 渠道，补关于/声明
+4. 页面与控件规格
+规格级别：以下标明“当前值”的尺寸来自 ACCM 源码；“目标约定”是为独立实现补全的约束。文字参数和行为定义构成该单文档版的实施基线。
+S01 主工作台
+当前最小窗口 980×620pt，侧栏初始 260pt，可在 200–480pt 拖动，分隔线 1pt、命中宽 7pt，双击恢复 260pt；宽度与折叠保存在 HerdrX 偏好空间。顶部高 28pt，左侧交通灯预留 78pt。窗口仍可拖动、双击缩放，全屏可用。
+左侧：顶部新建菜单、快速新 Space、搜索；中间设备/Space、Agent、终端分组；底部 40pt 设备切换与设置，列表滚动不带走头尾。设备分组及 Agent/终端分组可折叠，分组标题吸顶；无多余空分组。侧栏隐藏后，顶栏仍可恢复侧栏。
+右侧：顶栏显示当前 Space 的 Tabs、加号、分栏与文件菜单；下方直接为终端 Pane。无固定第二条设备标题栏、无默认常驻底部状态条。连接错误在相关设备/Pane 附近提示，不用整页错误遮蔽其他设备。
+目标约定：保留 HerdrX 首启本地 Shell。无 Herdr 时可输入命令，设备列表展示明确连接状态及接入入口，不弹阻断式初始化向导。
+S02 侧栏行与注意力
+共同列：外 inset 10pt、行 inset 8pt、图标列 12pt、列间距 6pt，正文起点相对列表内容为 26pt。标题行高 28pt。行的点击区域覆盖整行；hover 为中性浅底，选中使用主题色浅底与细边，不能把 hover 画成第二个选中项。
+Space 标题 13pt、当前项 medium，次行 11pt，垂直间距 3pt、上下 padding 6pt。两行结构常驻；分支查询未返回时保留不可见占位，查询成功无分支才显示文件夹和“目录”。右侧放聚合注意力图标。圆角 8pt。名称尾部截断，路径可 tooltip/复制，不用长路径替代分支行。
+Agent 标题 13.5pt；次行 11pt，展示工具图标、工具名、所属 Space，多设备范围时增加设备上下文；状态文字靠右。上下 padding 7pt，选中圆角 7pt。可选附加行展示服务端确实提供的模型/账号/上下文/额度；无值不留空条、不猜数据。允许附加行增加高度，不强压为单行。
+状态映射：working 用蓝色半实圆；blocked 用警示色实圆；done 未读用蓝色实圆；done 已读及 idle/unknown 用低强调空圆，并有对应可访问文字。unknown 不能显示为“完成”。设备色和连接状态色独立。
+Space 聚合优先级为 blocked → unread done → working → none。Agent 列表排序则是 blocked → working → done → idle → unknown，同等级按设备、Space、Tab 顺序稳定排序；这两种规则不要混用。HerdrX 当前 rank() 是 blocked → done → working，应调整到目标规则。
+Agent 列表范围为当前设备筛选下的所有 Space。选择 Space 不应隐藏其他 Space 的 Agent；普通终端列表可按所选 Space 缩小。点 Agent 时同时设置正确 device/space/tab/pane，保持侧栏选择和终端焦点一致。
+S03 Tab、Pane 与对象菜单
+Tab 顶栏占 28pt；标签随文字紧凑布局、长名截断，可水平滚动。目标约定：标签最小点击宽 40pt、常态文字宽加左右各10pt、最大200pt；此宽度约定用于独立实现，不冒称 ACCM 固定常量。选中标签使用主题色 wash+边界，hover 中性；tooltip 显示完整名称。
+Tab 拖动按鼠标落点左右半边确定插入位置；显示插入线，立即更新本地顺序，串行发送服务端排序；跨设备/Space 拒绝。失败只回滚本次排序，不覆盖之后的选中项和后续成功操作。重命名、关闭和新建都可从菜单与快捷键执行。切回 Tab 恢复最后聚焦 Pane。
+Pane 使用 1pt 轮廓；标题嵌在顶部线条内，而不是独立大标题栏。标题 11pt 等宽，聚焦时 semibold+accent；副标题 11pt 显示 Space/必要设备信息。内容顶部 padding 10pt、边缘1pt、外padding3pt；标题左右 padding9pt。关闭按钮20×20pt，hover或VoiceOver时可用；缩放显示恢复标记。macOS 26 窗口外侧下角可随窗口圆角，内部拆分边保持方角；旧系统回退矩形。
+右键必须命中鼠标所在对象：Tab 菜单含重命名/关闭；Space 含重命名/关闭/复制目录；Pane 含复制/粘贴、可用链接、重命名、左右/上下分屏、缩放/恢复、移至新Tab、关闭。禁用项保留原因或上下文说明，无选区复制置灰。不能先选中A、右键B却关闭A。
+分屏查询目标设备当前 Pane cwd，再创建；查询失败展示错误，不用本机 cwd 兜底远端。拖动比例在本地反馈，落下后提交服务端。Pane/Tab关闭确认说明会终止哪些服务端进程；断开客户端/移除设备与关闭服务器 Pane 是不同动作。
+S04 新建与搜索
+快速新 Space：点击侧栏按钮或 ⌘⇧N，使用当前设备、当前 Pane/Space cwd，名称可空交给 Herdr；过程中禁重复；成功选中返回 Space/root Pane，不额外开 Agent 选择器、不多造 Tab。失败保留原选择并提示。另保留“新建 Space…”高级表单，允许明确名称/目录。
+新 Agent：设备、Space、目录上下文清晰；工具列表来自目标设备；加载/空/失败/未安装均有状态。参数按 argv 解析；切设备后旧请求结果不能覆盖新选项。启动成功定位新 Pane，失败保留表单输入。本机命令覆盖只影响本机，不能把本机二进制路径发送为远端可执行路径。
+搜索 ⌘K：ACCM 当前宽440pt，输入区44pt，结果最多320pt高，行36pt，底部键盘说明28pt；最多50项。覆盖 Space、Agent、Herdr普通终端、独立Shell及名称/设备/目录/分支，支持中文全拼和首字母。名称前缀→词首→名称子串→上下文排序，同级再考虑类型/注意力/近期活动。结果显示类型图标、标题及归属，↑↓/Return/Esc/hover共用一个选中索引。无结果有说明；目标被删时安全提示，不能落到同名其他机器。
+S05 设置与视觉主题
+保留原生设置窗口；通用设置页可按 ACCM 420pt 宽起步，高度随内容适配，复杂设备管理不强套此宽度。目标栏目：外观、终端、Agent、通知、Tailcat、关于；HerdrX 的 Devices、Plugins、Updates 可保留独立页并与底部入口连接。不要出现 ACC 页或灰色占位。
+外观分成四项：系统/浅色/深色；配色（默认、跟随Herdr、主题族）；强调色（跟随主题、石墨、绿、蓝、紫、琥珀、粉、红、橙）；语言（跟随系统、简体中文、English）。主题变化同时影响侧栏、Tab、Pane边框、选择、终端，不能只改外层背景。深色独有主题在浅色回退到明示的默认方案。
+当前默认语义色参考（浅/深）：
+Token
+Light
+Dark
+text
+#242424
+#E2E2E2
+secondary
+#666666
+#A3A3A3
+tertiary
+#858585
+#7D7D7D
+content
+#F6F6F6
+#181818
+terminal
+#FFFFFF
+#101012
+separator
+#D9D9D9
+#292929
+working
+#2563EB
+#3B82F6
+success
+#2FA35F
+#62C987
+warning
+#B8862E
+#E0B36A
+danger
+#C94F44
+#E2726A
+主题包可覆盖角色色，不要将上述默认色锁死为唯一皮肤。选中强调底浅色18% tint、深色20% tone，边22%；中性hover6%、普通中性selected11%。状态图形同时传达意义，不只依赖颜色。本次现场观察使用 Catppuccin；上表列的是默认语义色，两者并不矛盾。
+终端页：等宽字体、字号滑条+精确步进、字重（只在系统等宽支持时可用）、行距、细笔画、鼠标上报、选中复制、恢复默认、从 Ghostty 导入一次字体/字号、包含中文/ASCII/数字的预览。设置实时应用现有终端，保留surface与历史。导入读取失败保留旧值，并说明配置位置；不持续双向同步。
+Agent页：Claude、Codex、Cursor、Gemini、Grok、Kimi、OpenCode、Pi、Oh My Pi、Copilot 的本机命令/路径覆盖，Automatic占位；解释Finder启动的PATH来源。该目录不意味着机器上已安装所有工具，实际启动仍需能力查询。
+通知页：系统通知、声音、权限状态/系统设置入口；首次查询状态不代表自动请求权限。真正状态转换触发，首次快照不批量播报旧done；正在观看的Pane保持安静。点击通知跳到device+pane，已删除对象安全提示。
+S06 按需文件区
+入口为顶栏“分栏与文件”→“浏览文件”及⌘⇧E，默认完全收起；打开后终端旁出现可调宽文件区，关闭后归还空间，不换 terminal view 身份。
+根目录为当前Pane cwd，缺失回退目标设备home；独立Shell当前参考从home开始。目录懒加载、可折叠、隐藏文件开关、刷新、完整路径；只读文本/图片预览。文件区宽度≥520pt时树固定210pt并与预览并排；更窄时点文件进入预览，顶部返回箭头回目录。工具栏36pt。目标初始宽度320pt，最小240pt，最大可用详情宽度的60%，均属新实现约定；不强迫主终端低于可用宽度。
+文件预览最多2MiB（2×1024×1024字节），超限明确提示；目录、符号链接、非支持类型不当普通文本读取。UTF-8解码/图片解码失败展示不可预览原因。仅本机/SSH实现浏览和传输；Tailcat明确“不支持该连接方式的文件操作”。切根/切设备/关闭期间返回的过期请求丢弃；失败不渲染成成功空目录。
+S07 文件管理、设备管理和其他页
+文件管理 ⌘⇧F：本地与目标设备双端列表，设备选择、路径输入、返回/上级/刷新/隐藏文件、名称/大小/修改时间列；选单个普通文件后可上传/下载。进度、已传字节、取消、失败、完成明确；冲突有取消/替换/保留两份；传输目录不在本次范围。目标约定：取消不宣称完成，临时/部分文件按明确策略清理并测试，不静默覆盖已有目标。
+设备入口：底部当前设备/所有设备选择器显示连接点；可进入设备管理、添加/编辑/移除SSH、本机命名会话发现、导入Herdr已保存机器。展示名称、端点/会话、连接状态与错误；失败可重试；移除说明“只忘记连接，不删除远端会话”。IP或名称不作为唯一身份，socket必须对应正确命名会话。发现失败保留已有条目；手动设备不能被导入/刷新覆盖删除。
+Tailcat：设备连接方式与客户端公钥设置；令牌/密钥进入独立Keychain命名空间。重新生成密钥说明对已有host allowlist的影响并确认。源码可实现但未实测时写未验收，不展示虚假connected。
+插件页：继续沿用 HerdrX 的原生运行时插件清单/启停/动作/日志/Open in Tab；仅对真实可用上下文启用动作，不另建JSON表单SDK。模型/账号/额度等扩展行使用有界可选字段，不渲染任意富内容、不强行依赖某第三方插件。
+关于/更新：HerdrX名称、版本/build、项目与第三方声明；Brew安装保持Brew更新，直装仅在签名更新配置可用时启用Sparkle。不要复制ACCM品牌、内网URL或命名空间。
+5. 状态与终端行为合同
+5.1 身份与选择
+Device → Space → Tab → Pane 是导航层级；Terminal是执行实体，paneID不等于terminalID。所有引用均带deviceID。同一物理机器的不同命名会话可成为不同端点；两个设备均有p1不能串线。
+服务端拥有Space/Tab/Pane/Agent状态；客户端拥有选择、折叠、未读、主题、文件区和attach。保存配置不能把上次connected当成当前事实。控制RPC与终端字节流分开，PTY输出不进入整个Desk的可观察状态。
+5.2 未读与注意力的精确规则
+参考 AgentUnread：初次快照不创建未读；已有Agent从非done转done才置未读；离开done状态或对象删除即移除。当前正选中时发生done也先置未读，参考实现是在离开该行时清理已观看项。这与通知“正在看就不提醒”是两套状态，不能用通知开关控制未读。
+⌘⇧J只在当前设备范围的blocked和未读done中导航，blocked优先，按稳定Space/Tab次序；排除纯working和已读done，无候选禁用。重复选择不触发远端重启。
+5.3 连接与attach
+每设备独立idle→connecting→connected或failed；断线保留最后快照并标旧。普通重连退避1–30秒；认证失败进入凭据/重试流程，不循环弹窗。同设备仅一个有效连接代次，旧请求不能写新配置。
+RPC成功、attach成功、画面刷新、Agent工作分别表达。被另一个客户端接管后提供恢复入口，不能循环抢回。关闭客户端释放attach，不自动调用pane.close；独立Shell由本机客户端拥有，不能宣传和服务器Pane相同的持久性。
+5.4 输入与呈现
+	▪	Shell启动/退出Agent仍是同一个device+pane终端身份，保留历史和输入。
+	▪	隐藏Tab保留surface、session、输出和原网格，暂停绘制；可见未聚焦Pane收到输出也刷新。
+	▪	切到其他App不是断开attach。参考实现显式⌘H隐藏1.5秒后释放attach，恢复时重连；迁移时单独验证，不与切Tab混为一谈。
+	▪	PTY重启使用generation隔离旧read/write/exit回调与fd；不阻塞主线程等待旧IO退出。
+	▪	中文组字/候选框/提交、语音提交、粘贴与快捷键分流。鼠标捕获中单击交给TUI，拖选/多击/Shift仍可本地选字。
+	▪	边缘拖选进入上下12pt区域持续滚动延伸选区；松手、隐藏、窗口变化停止。使用终端选择滚动机制，不能向TUI伪造滚轮命令。
+	▪	⌘单击链接支持折行/OSC8/鼠标捕获；右键目标与复制状态准确；空选区不覆盖剪贴板。
+	▪	恢复输入需区分清终端键盘模式与向前台任务发送控制字符。HerdrX当前repair会写Ctrl-C和stty sane，不能把它描述为无副作用；实现等价修复时显式说明，优先恢复客户端模式，强制中断操作另有明确入口。
+	▪	文件/图片投递根据Agent能力决定粘贴、引用路径或远端暂存；未知能力不能报成功，失败不丢原数据。
+同版本libghostty不意味着相同宿主行为。HerdrX已有的IME范围、隐藏尺寸和PTY代次保护继续保留，针对上述事件测试后再补差异。
+5.5 快捷键合同
+快捷键
+行为
+⌘N / ⌘T
+新Agent / 新终端入口，明确独立Shell或当前设备终端
+⌘⇧N / ⌘⌥T
+快速新Space / 当前Space新Tab
+⌘K / ⌘B
+搜索 / 侧栏
+⌘D / ⌘⇧D
+右分屏 / 下分屏
+⌘⌥方向 / ⌘⌃方向
+Pane焦点 / 调比例
+⌘⇧Return
+缩放/恢复Pane
+⌘1…9 / ⌘⇧[、]
+第N个Tab / 前后Tab
+⌘⇧W / ⌘⌥W
+关闭Pane / 关闭Tab
+⌘W
+先处理当前Sheet/最局部对象，再Shell/Pane，最后窗口
+⌘⇧J / ⌘⇧R
+下一待关注Agent / 输入恢复
+⌘⇧E / ⌘⇧F
+文件辅助区 / 文件管理页
+⌘,
+设置
+菜单、快捷键、右键共用动作及启用状态；Sheet中⌘W不能关闭背景Pane。不存在目标时置灰，不将快捷键偷偷透传到错误终端。⌘⇧A的ACC入口不迁入。
+6. 实施顺序与代码落点
+保持 HerdrX 的 App/ 与 Core/ 分工，避免照搬ACCM目录。新增小文件是建议，开发者可用等价命名。
+任务
+修改起点
+工作
+出口
+T1 窗口与导航
+Workbench.swift、Main.swift；新增Sidebar/PaneChrome
+集成顶栏、固定头尾、分组、持久缩放、Pane标题
+C01–C05，可真实输入的工作台
+T2 对象交互与状态
+Desk.swift、Workbench.swift、Core Session；新增Attention/Commands
+未读/排序/选择、快速创建、菜单、拖动、搜索补齐
+C06–C15，不重建运行中终端
+T3 主题及设置
+Preferences.swift、Terminal.swift；新增Theme/本地化资源
+主题token、强调色、语言、Agent及终端设置
+C16–C19，浅深色与即时更新
+T4 文件
+新增Files UI与Core FileService
+懒加载/预览，再传输/冲突/取消
+C20–C23，临时本地与SSH fixture
+T5 设备
+Preferences/Desk、Core Device/RPC
+编辑/发现/导入/认证，Tailcat单独能力
+C24–C26，失败隔离与真实连通
+T6 终端可靠性
+Terminal.swift、PTY.swift
+IME/选择/链接/附件、隐藏/恢复、性能回归
+C27–C30，原生事件与运行证据
+T7 完整验收
+Main/Preferences、docs、scripts
+插件保持、关于、身份/升级、整体验收
+C31–C32，F矩阵逐项闭环
+依赖：T1→T2；T3依赖T1的组件边界；T4依赖T2的焦点/设备合同；T5复用现有连接基础并补T4远端路径；T6贯穿各期但最终集中验收；T7整合。每阶段先跑已有最窄测试与构建，增加本阶段关键回归，不要等页面全画完再接真实会话。
+HerdrX当前基础验证入口：swift test --package-path Core -c release；python3 -m unittest discover -s scripts -p 'test_*.py'；scripts/build.sh。UI行为需要新增原生测试/独立运行验证。先检查脚本和仓库指令；scripts/package.sh不是功能验收替代。本文没有执行这些测试或新版本发布。
+7. 验收清单
+使用第10节内嵌的匿名验收数据；开发者在独立Herdr实例生成服务端对象，并建立逻辑夹具ID到真实ID的映射。不能把fixtures直接发送为RPC。每条记录PASS/FAIL/NOT RUN及证据路径。
+编号
+操作与必须满足的断言
+证据
+C01
+980×620/1440×900下顶栏、侧栏、终端无重叠；28pt集成栏
+同尺寸截图+frame断言
+C02
+侧栏拖到边界、反向拖、双击复位；重启恢复宽度
+完整mouseDown/drag/up+偏好回读
+C03
+长列表滚动，头尾固定，分组吸顶折叠；隐藏再展开
+原生录屏/截图
+C04
+三Pane显示标题/副标题，只有焦点Pane强调；VoiceOver可关闭
+AX树+原生事件
+C05
+无Herdr首次启动，Shell仍可输入且有输出
+临时配置真实命令
+C06
+两设备均有p1，跨Space点Agent正确定位且列表未缩为当前Space
+device/space/tab/pane断言
+C07
+blocked/working/done/idle/unknown排序，Space聚合优先级各自正确
+纯状态测试
+C08
+初次done不未读；working→done置未读；选中时完成后离开清理
+事件序列测试
+C09
+⌘⇧J跳blocked、未读done，不跳已读done/working；通知点击同目标
+路由测试+系统通知实测
+C10
+快速新Space继承本机/远端cwd，仅新增预期Space/defaultPane
+独立Herdr前后快照
+C11
+新Agent快速切设备，旧目录返回不覆盖；失败保留参数；重复点击只一次
+可控延迟RPC
+C12
+Tab拖左右半边、连续拖、服务端失败；排序与选择不被旧回滚覆盖
+鼠标事件+RPC顺序
+C13
+右键B时选中A，所有动作仅针对B；关闭确认写正确设备
+命令目标断言
+C14
+Sheet中⌘W只关Sheet；其余Close按上下文、菜单启用随状态变化
+原生按键+命令投影
+C15
+拼音/首字母/分支/目录搜索，↑↓滚动、Enter、Esc；目标已删不误跳
+索引测试+UI
+C16
+系统/浅/深、默认/主题配色/强调色联动，终端surface不重建
+主题矩阵+identity断言
+C17
+字体字号字重行距/鼠标/选中复制生效；导入一次失败不覆旧值
+原生终端+临时配置
+C18
+中文英文切换，长文案不截关键动作；减少动态效果有效
+本地化截图矩阵
+C19
+本机CLI覆盖正确，远端不使用本机路径；通知权限拒绝可恢复
+参数/权限测试
+C20
+文件区默认无宽度占用；开关保持终端历史与surface；窄栏返回
+UI+identity断言
+C21
+目录懒加载/隐藏文件/2MiB边界/链接/二进制/解码失败
+临时目录字节级测试
+C22
+切设备/根/文件时旧慢请求返回不污染新预览
+generation故障注入
+C23
+单文件上传下载、重名三策略、取消/失败，原文件不误覆盖
+本地+隔离SSH回读
+C24
+SSH添加/编辑/移除/导入、命名socket不串；导入失败保留旧设备
+配置+连接测试
+C25
+SSH断线重连/认证取消只影响一设备，保持快照且不抢attach
+隔离SSH故障注入
+C26
+Tailcat真实终端可输入；凭据独立；文件入口明确不支持
+独立host；无环境NOT RUN
+C27
+中文组字/语音输入、TUI捕获下选字、⌘链接/OSC8、图片能力降级
+原生事件+真实TUI
+C28
+拖选到12pt边缘持续扩选，松手/隐藏/切窗口停止
+原生完整拖选
+C29
+Tab来回切、可见未聚焦输出、隐藏网格、旧PTY退出回调不杀新连接
+原生窗口+生命周期计数
+C30
+400Agent投影、12Tab/24surface暖切换、连续输出、缩放与重连
+同机前后p50/p95/CPU/RSS/resize计数
+C31
+Herdr插件动作/日志/Open in Tab仍可用；无上下文禁用，无ACC依赖
+独立测试插件+干净配置启动
+C32
+HerdrX身份/数据/Keychain/Brew保持，版本/关于/快捷键/辅助功能完整
+配置及安装回读
+性能目标是对改造前同机基线无实质回退，并单列观察到的改善；不伪造“零延迟”或把400条搜索当400个活跃终端。正式验收截图使用一致系统字号与字体，记录pt与scale，不能拿不同尺寸窗口比较密度。
+8. 精确源码定位与边界
+以下路径相对各仓库根；固定于第1节SHA。ACCM源码不是本文实施的前置依赖；有访问权时可用符号进一步核对。当前HerdrX clone未发现AGENTS.md，本文只做只读对比，未在其仓库实施代码修改。
+主题
+ACCM证据路径/符号
+HerdrX改造起点
+顶栏/根布局
+Sources/HerdrM/ContentView.swift：RootView、TitlebarMetrics、DetailView
+App/Workbench.swift：body；App/Main.swift
+侧栏/Space/Agent
+Sources/HerdrM/SidebarView.swift：SidebarMetrics、AgentRowView、SpaceRowView
+Workbench.sidebarView
+侧栏宽度
+Sources/HerdrM/SidebarResize.swift：SidebarWidth、SidebarSplit
+Workbench的sidebar/baseWidth
+跨Space排序
+Sources/HerdrM/AppModel.swift：visibleAgents、selectAgent、selectSpace
+App/Desk.swift：reindex、rank、jump
+状态/未读
+Packages/HerdrKit/Sources/HerdrKit/Attention.swift；Models.swift：sidebarPriority
+Desk.attention、notifyChanges
+Tab/菜单/焦点
+Sources/HerdrM/ACC/WorkspaceTabs.swift、WindowCommands.swift、ContextMenus.swift
+Workbench.Tabs/shortcuts；Desk.select
+Pane细边框
+Sources/HerdrM/ACC/PaneFrame.swift
+App/Terminal.swift：TerminalCanvas
+主题
+Theme.swift；ACC/ThemeTokens.swift、AccentPreset.swift、PaletteSettings.swift
+Preferences.Appearance；Terminal.controller
+搜索
+SearchView.swift；ACC/SearchIndex.swift；ACCKit/SearchText.swift
+Workbench.Jump；Desk.reindex；Core搜索
+文件
+ACC/WorkspaceFiles.swift；DeviceFilesView.swift；HerdrKit/DeviceFileService.swift
+新增文件UI/服务
+设置/快捷键
+HerdrMApp.swift：SettingsView、AgentsSettingsView、TerminalSettingsView
+App/Preferences.swift、Main.swift
+终端修复
+TerminalView.swift、TerminalProcess.swift、MouseGestureRouter.swift、TerminalColorFilter.swift、TerminalCaretGrid.swift
+App/Terminal.swift、PTY.swift
+设备/连接/能力
+AppModel.swift；HerdrKit/HerdrService.swift、Device.swift、SSHTunnel.swift、AttachmentDelivery.swift
+Desk.swift；Core/HerdCore各模型与RPC
+回归样例
+Tests/HerdrMTests：SidebarStickyHeadersUIUXTests、SpaceCreationTests、TabDragTests、SearchIndexTests、WorkspaceFilesTests、TerminalInputRecoveryTests、TerminalTextInputTests、TerminalLifecycleTests
+新增对应HerdrX回归
+8.1 去ACC时的保留/删除清单
+排除业务实现：ACCModel.swift、ACCSettingsView.swift、ACCCreateView.swift、ACCIntegration中ACC CLI/受管设备回执逻辑、ACCKit/ACC.swift及启动同步、ACC品牌菜单和内部发布接线。
+保留通用行为，独立实现到合适模块：WorkspaceTabs、PaneFrame、WorkspaceFiles、SearchIndex、WindowCommands、AttachPolicy、ThemeTokens、AccentPreset、PaletteSettings、SidebarScrollStyle、CopyToast、ContextMenus；MachineSidebar中的通用设备UI；ACCKit中的SearchText、Palette、HerdrTheme、HerdrConfig、AccentTones的通用算法/配置语义。
+ACCIntegration和MachineSidebar是混合文件，按职责识别，不能按文件名整段搬。ACCPalette是业务UI适配层，不必保留该类型名；通用主题角色仍需实现。
+8.2 交接与来源
+本文不附带参考源码副本；HerdrX沿用其独立实现方式。若开发者另行取得ACCM/HerdrM源码并选择复制，应依据所附许可证与第三方声明处理来源，不将这份行为规格当成许可证变更。两项目当前许可文件不同，复刻页面不意味着可直接改许可证头。
+本次未实施HerdrX改造、未进行性能对跑、未验证远端/Tailcat/Intel/旧macOS、未发布或安装新版本。本单文档包含完整规格、匿名文字布局、验收夹具和 Codex 启动任务；不需要另行取得原交接包的图片或文件。
+9. 给 Codex 的完整执行任务
+以下是执行任务本身；将本文整体交给 Codex 即可，无需拼接其他文档。
+请在现有 HerdrX 仓库中，依据本文第1–8节规格和第10节内嵌验收数据，实现 ACCM 通用功能与页面交互的复刻。目标基线是 ACCM 0.13.2/build 27；被改造基线是 HerdrX 0.1.3/build 4，commit 0fe3b8456a9c915b11ab3162ece00dc9445a87f7。
+先完整阅读本文，检查当前仓库指令、分支、工作区改动及版本差异；新版已有功能不要重复实现。参考源码不可访问时按本文的行为合同独立实现，不把内网路径当依赖。保留 HerdrX 名称、图标、bundle ID、数据目录、Brew 分发及现有 Herdr 插件接口。
+范围是报告中的 F01–F24，全部有交付归属。唯一业务排除是 ACC：不实现 ACC 账号、订阅、SIM、Code Studio、acc/acc-herdr 依赖、内网更新源或 ACC 菜单。也不额外建设新的桌面插件运行时。本次要求包含文件树、只读预览和文件传输，所以请明确更新当前 PRODUCT.md/Architecture.md 中“不做文件功能”的旧范围说明。不能沿用旧排除项后宣称完成全部复刻。
+按 T1–T7 顺序完成，每阶段交付可运行的纵向切片。先做主窗口和侧栏，再做注意力/上下文交互，再完成主题/设置、文件和设备补齐，最后验证终端边界。复用现有 SwiftUI/AppKit、Ghostty、Desk/HerdCore 架构；只在职责需要时增加小模块，不重写终端运行时或迁移技术栈。
+关键验收：28pt 集成标签顶栏；260pt 可持久化侧栏；固定新建/搜索和底部设备入口；可折叠吸顶分组；跨 Space Agent 列表；明确选中态与未读态；Pane 内嵌标题；快速创建 Space 不强制表单；主题色联动；安静的按需文件区；所有键盘、右键、拖动作用于正确设备与对象。不能仅完成相似配色或静态页面。
+优先按本文的 C01–C32 建立有意义的回归与真实交互证据。真实 Herdr 操作只用可丢弃的独立命名会话/socket和临时目录，不接管用户工作 Pane。没有远端、Tailcat 或低版本 macOS 环境时保留相应测试与明确的待验收项，不伪造通过，也不要以缺少环境为由停止可独立完成的实现。
+截图矩阵采用匿名夹具、相同 pt 窗口尺寸、固定主题与字号，覆盖浅/深色、980×620和1440×900、长中文名称、断线、空数据和多分屏。工作台的真实终端不能被 HTML、图片或假数据替代。UI 截图只证明呈现，协议回读才证明服务端行为。
+结束时逐条输出 F01–F24 完成情况、C01–C32 结果、实际截图、构建命令、commit 和未验证边界。发布与安装遵守本仓库及开发者授权，不复用 ACCM 的内部发布方式。
+10. 内嵌匿名验收数据
+下面 JSON 是测试夹具格式，不是 Herdr API 请求或响应格式。可用于模型、列表和 UI 测试；真实运行测试须在独立环境创建对象，将逻辑 ID 映射为运行时返回 ID。deviceFilter: null 表示全部设备；选中 local 的 Space 不等于过滤到 local。主题、错误及文件类型均为测试输入，不表示真实设备现状。
+{
+  "schema": "parity-fixture/1",
+  "note": "Anonymous test data, not Herdr RPC payloads. Map symbolic IDs to isolated runtime IDs.",
+  "windows": [
+    {
+      "widthPt": 980,
+      "heightPt": 620
+    },
+    {
+      "widthPt": 1440,
+      "heightPt": 900
+    }
+  ],
+  "themes": [
+    "default-light",
+    "default-dark",
+    "catppuccin-light",
+    "catppuccin-dark"
+  ],
+  "devices": [
+    {
+      "id": "local",
+      "name": "Local",
+      "kind": "local",
+      "connection": "connected"
+    },
+    {
+      "id": "remote",
+      "name": "SSH Demo",
+      "kind": "ssh",
+      "connection": "failed",
+      "error": "Connection timed out",
+      "stale": true
+    },
+    {
+      "id": "tailcat",
+      "name": "Tailcat Demo",
+      "kind": "tailcat",
+      "connection": "idle"
+    }
+  ],
+  "spaces": [
+    {
+      "device": "local",
+      "id": "w1",
+      "name": "长名称中文工作空间与英文 Project Atlas",
+      "branch": "feature/parity",
+      "cwd": "/tmp/herdrx-fixture/atlas"
+    },
+    {
+      "device": "local",
+      "id": "w2",
+      "name": "文档",
+      "branch": "",
+      "cwd": "/tmp/herdrx-fixture/docs"
+    },
+    {
+      "device": "remote",
+      "id": "w1",
+      "name": "Project Atlas",
+      "branch": null,
+      "cwd": "/tmp/herdrx-fixture/remote"
+    }
+  ],
+  "panes": [
+    {
+      "device": "local",
+      "space": "w1",
+      "tab": "t1",
+      "id": "p1",
+      "title": "处理失败重试",
+      "agent": "codex",
+      "status": "blocked",
+      "unread": false
+    },
+    {
+      "device": "local",
+      "space": "w2",
+      "tab": "t2",
+      "id": "p2",
+      "title": "生成开发文档",
+      "agent": "claude",
+      "status": "working",
+      "unread": false
+    },
+    {
+      "device": "local",
+      "space": "w1",
+      "tab": "t3",
+      "id": "p3",
+      "title": "完成待查看",
+      "agent": "pi",
+      "status": "done",
+      "unread": true
+    },
+    {
+      "device": "local",
+      "space": "w1",
+      "tab": "t4",
+      "id": "p4",
+      "title": "已读结果",
+      "agent": "codex",
+      "status": "done",
+      "unread": false
+    },
+    {
+      "device": "remote",
+      "space": "w1",
+      "tab": "t1",
+      "id": "p1",
+      "title": "同名不同设备",
+      "agent": "codex",
+      "status": "unknown",
+      "unread": false
+    },
+    {
+      "device": "local",
+      "space": "w1",
+      "tab": "t5",
+      "id": "p5",
+      "title": "Shell",
+      "agent": null,
+      "status": "idle",
+      "unread": false
+    }
+  ],
+  "selection": {
+    "device": "local",
+    "space": "w1",
+    "tab": "t1",
+    "pane": "p1"
+  },
+  "expectations": {
+    "agentOrder": [
+      "local:p1",
+      "local:p2",
+      "local:p3",
+      "local:p4",
+      "remote:p1"
+    ],
+    "attention": [
+      "local:p1",
+      "local:p3"
+    ],
+    "spaceAttention": {
+      "local:w1": "blocked",
+      "local:w2": "working",
+      "remote:w1": "none"
+    },
+    "agentListCountAfterSelectingLocalW2": 5,
+    "samePaneIDMustNotAlias": [
+      "local:p1",
+      "remote:p1"
+    ]
+  },
+  "sequences": [
+    {
+      "id": "unread",
+      "steps": [
+        "initial snapshot with done => no new unread",
+        "existing working changes to done => unread",
+        "selected pane changes to done => unread remains until user leaves row",
+        "done changes to working => unread cleared",
+        "pane removed => unread key removed"
+      ]
+    },
+    {
+      "id": "stale-file",
+      "steps": [
+        "open local atlas file with delayed response",
+        "switch root to docs and load README",
+        "atlas response arrives",
+        "preview still shows docs README"
+      ]
+    }
+  ],
+  "fileCases": [
+    {
+      "name": "empty.txt",
+      "bytes": 0
+    },
+    {
+      "name": "limit.txt",
+      "bytes": 2097152
+    },
+    {
+      "name": "over.txt",
+      "bytes": 2097153
+    },
+    {
+      "name": "中文文件.txt",
+      "kind": "utf8"
+    },
+    {
+      "name": "picture.png",
+      "kind": "image"
+    },
+    {
+      "name": "invalid.bin",
+      "kind": "invalid-utf8"
+    },
+    {
+      "name": "link",
+      "kind": "symlink"
+    },
+    {
+      "name": ".hidden",
+      "kind": "hidden"
+    }
+  ],
+  "deviceFilter": null
+}
+文件边界用例应在临时目录生成对应大小或类型的文件；图片应为实际可解码图片，不能仅按扩展名伪造。以上 /tmp/herdrx-fixture/ 是测试约定，不是用户实际工作路径。

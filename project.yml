@@ -25,12 +25,18 @@ targets:
       - path: Resources/Licenses
         type: folder
         buildPhase: resources
+    postBuildScripts:
+      - name: Build Tailcat Transport
+        script: '"${PROJECT_DIR}/scripts/tailcat.sh"'
+        basedOnDependencyAnalysis: false
     dependencies:
       - package: HerdCore
       - package: HerdCore
         product: PTY
       - package: Ghostty
         product: GhosttyTerminal
+      - package: Ghostty
+        product: GhosttyTheme
       - package: Sparkle
     info:
       path: App/Info.plist

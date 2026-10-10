@@ -1,0 +1,30 @@
+Window: "HerdrX", App: HerdrX.
+0 标准窗口 HerdrX, ID: desk, Secondary Actions: Raise
+	1 container
+		2 按钮 Description: 水平左侧拆分视图, Help: 切换侧栏 · ⌘B
+		3 滚动区
+			4 按钮 Shell 1 · ~, Description: Shell 1 · ~, selected tab
+		5 按钮 Description: 添加, Help: 新建 Tab · ⌘⌥T
+		6 菜单按钮 拆分为二乘一的矩形, ID: rectangle.split.2x1
+		7 菜单按钮 新建, ID: plus
+		8 按钮 Description: 升序叠放的正方形，带A标记, Help: 快速新建 Space · ⌘⇧N
+		9 按钮 Description: 搜索, Help: 搜索 · ⌘K
+		10 滚动区
+			11 列表 Secondary Actions: AXScrollToTop, AXScrollToBottom
+				12 按钮 (selected) Shell 1 · ~
+				13 按钮 On This Mac, expanded
+		14 弹出式按钮 Description: 设备, Help: 筛选设备；在设置中管理连接, Value: 所有设备
+		15 按钮 Description: 齿轮形状, Help: 设置 · ⌘,
+	16 关闭按钮
+	17 全屏幕按钮 Help: 此按钮也可以执行缩放窗口的操作, Secondary Actions: 缩放窗口
+	18 最小化按钮
+19 menu bar
+	20 HerdrX
+	21 文件
+	22 编辑
+	23 显示
+	24 工作区
+	25 窗口
+	26 帮助
+
+Native command visibly returned NO_HERDR_SHELL_OK. Empty device state directory; no Herdr connection. Herdr binary remains installed on host.

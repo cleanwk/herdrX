@@ -1,0 +1,212 @@
+{
+  "schema": "parity-fixture/1",
+  "note": "Anonymous test data, not Herdr RPC payloads. Map symbolic IDs to isolated runtime IDs.",
+  "windows": [
+    {
+      "widthPt": 980,
+      "heightPt": 620
+    },
+    {
+      "widthPt": 1440,
+      "heightPt": 900
+    }
+  ],
+  "themes": [
+    "default-light",
+    "default-dark",
+    "catppuccin-light",
+    "catppuccin-dark"
+  ],
+  "devices": [
+    {
+      "id": "local",
+      "name": "Local",
+      "kind": "local",
+      "connection": "connected"
+    },
+    {
+      "id": "remote",
+      "name": "SSH Demo",
+      "kind": "ssh",
+      "connection": "failed",
+      "error": "Connection timed out",
+      "stale": true
+    },
+    {
+      "id": "tailcat",
+      "name": "Tailcat Demo",
+      "kind": "tailcat",
+      "connection": "idle"
+    }
+  ],
+  "spaces": [
+    {
+      "device": "local",
+      "id": "w1",
+      "name": "长名称中文工作空间与英文 Project Atlas",
+      "branch": "feature/parity",
+      "cwd": "/tmp/herdrx-fixture/atlas"
+    },
+    {
+      "device": "local",
+      "id": "w2",
+      "name": "文档",
+      "branch": "",
+      "cwd": "/tmp/herdrx-fixture/docs"
+    },
+    {
+      "device": "remote",
+      "id": "w1",
+      "name": "Project Atlas",
+      "branch": null,
+      "cwd": "/tmp/herdrx-fixture/remote"
+    }
+  ],
+  "panes": [
+    {
+      "device": "local",
+      "space": "w1",
+      "tab": "t1",
+      "id": "p1",
+      "title": "处理失败重试",
+      "agent": "codex",
+      "status": "blocked",
+      "unread": false
+    },
+    {
+      "device": "local",
+      "space": "w2",
+      "tab": "t2",
+      "id": "p2",
+      "title": "生成开发文档",
+      "agent": "claude",
+      "status": "working",
+      "unread": false
+    },
+    {
+      "device": "local",
+      "space": "w1",
+      "tab": "t3",
+      "id": "p3",
+      "title": "完成待查看",
+      "agent": "pi",
+      "status": "done",
+      "unread": true
+    },
+    {
+      "device": "local",
+      "space": "w1",
+      "tab": "t4",
+      "id": "p4",
+      "title": "已读结果",
+      "agent": "codex",
+      "status": "done",
+      "unread": false
+    },
+    {
+      "device": "remote",
+      "space": "w1",
+      "tab": "t1",
+      "id": "p1",
+      "title": "同名不同设备",
+      "agent": "codex",
+      "status": "unknown",
+      "unread": false
+    },
+    {
+      "device": "local",
+      "space": "w1",
+      "tab": "t5",
+      "id": "p5",
+      "title": "Shell",
+      "agent": null,
+      "status": "idle",
+      "unread": false
+    }
+  ],
+  "selection": {
+    "device": "local",
+    "space": "w1",
+    "tab": "t1",
+    "pane": "p1"
+  },
+  "expectations": {
+    "agentOrder": [
+      "local:p1",
+      "local:p2",
+      "local:p3",
+      "local:p4",
+      "remote:p1"
+    ],
+    "attention": [
+      "local:p1",
+      "local:p3"
+    ],
+    "spaceAttention": {
+      "local:w1": "blocked",
+      "local:w2": "working",
+      "remote:w1": "none"
+    },
+    "agentListCountAfterSelectingLocalW2": 5,
+    "samePaneIDMustNotAlias": [
+      "local:p1",
+      "remote:p1"
+    ]
+  },
+  "sequences": [
+    {
+      "id": "unread",
+      "steps": [
+        "initial snapshot with done => no new unread",
+        "existing working changes to done => unread",
+        "selected pane changes to done => unread remains until user leaves row",
+        "done changes to working => unread cleared",
+        "pane removed => unread key removed"
+      ]
+    },
+    {
+      "id": "stale-file",
+      "steps": [
+        "open local atlas file with delayed response",
+        "switch root to docs and load README",
+        "atlas response arrives",
+        "preview still shows docs README"
+      ]
+    }
+  ],
+  "fileCases": [
+    {
+      "name": "empty.txt",
+      "bytes": 0
+    },
+    {
+      "name": "limit.txt",
+      "bytes": 2097152
+    },
+    {
+      "name": "over.txt",
+      "bytes": 2097153
+    },
+    {
+      "name": "中文文件.txt",
+      "kind": "utf8"
+    },
+    {
+      "name": "picture.png",
+      "kind": "image"
+    },
+    {
+      "name": "invalid.bin",
+      "kind": "invalid-utf8"
+    },
+    {
+      "name": "link",
+      "kind": "symlink"
+    },
+    {
+      "name": ".hidden",
+      "kind": "hidden"
+    }
+  ],
+  "deviceFilter": null
+}

@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-10",
+  "macOS": "27.0.1",
+  "machine": "arm64",
+  "scale": 2,
+  "workbenchSizesPt": [
+    [
+      980,
+      620
+    ],
+    [
+      1440,
+      900
+    ]
+  ],
+  "terminalFont": "SF Mono 13pt Regular; only weight comparison uses Bold",
+  "herdr": "herdr 0.9.3",
+  "swift": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx27.0.0",
+  "xcode": "Xcode 27.0\nBuild version 27A266a",
+  "fixtures": "Two independent herdrx-parity-* named sessions and loopback SSH. Agent status/metadata synthetic, terminals real."
+}
