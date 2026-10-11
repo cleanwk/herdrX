@@ -23,6 +23,29 @@ public enum DisplayTitle {
             ?? meaningful(pane.terminalTitle, tool: pane.agent)
             ?? pane.agent ?? fallback
     }
+    /// Shorten only a recognizable shell location, preserving authored labels and OSC tasks.
+    public static func terminal(_ pane: Item, fallback: String = "Terminal") -> String {
+        if let label = pane.customLabel { return label }
+        if let title = pane.terminalTitle {
+            if let cwd = pane.cwd {
+                if title == cwd { return directory(cwd) }
+                let parts = title.split(separator: ":", maxSplits: 1).map(String.init)
+                if parts.count == 2, parts[0].range(of: #"^[^\s@:]+@[^\s:]+$"#, options: .regularExpression) != nil {
+                    let path = parts[1]
+                    if path == cwd || (path.hasPrefix("~/") && cwd.hasSuffix(String(path.dropFirst()))) {
+                        return directory(path)
+                    }
+                    if path == "~", (cwd as NSString).lastPathComponent == parts[0].components(separatedBy: "@")[0] { return "~" }
+                }
+            }
+            return title
+        }
+        return pane.cwd.map(directory) ?? fallback
+    }
+    private static func directory(_ path: String) -> String {
+        let last = (path as NSString).lastPathComponent
+        return last.isEmpty ? path : last
+    }
     public static func detail(_ parts: [String?]) -> String { parts.compactMap(clean).joined(separator: " · ") }
 }
 

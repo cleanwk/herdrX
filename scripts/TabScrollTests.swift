@@ -83,6 +83,20 @@ final class ActionMenuItem: NSMenuItem {
         precondition(menu(at: 0).items.filter { !$0.isSeparatorItem }.map(\.title) == ["Rename Tab…", "Close Tab…"], "A single tab offers redundant moves")
         strip.entries = []; strip.syncButtons(); scroll.fitDocument(); centered("empty strip")
         precondition(scroll.contentView.bounds.origin == .zero, "Empty strip retained an offset")
+        strip.entries = [TabEntry(id: "long", title: "Very long release review · 很长的发布检查标签", count: 12), TabEntry(id: "number", title: "1", count: 2), TabEntry(id: "plain", title: "Terminal", count: 1)]
+        strip.selected = "long"; strip.syncButtons(); scroll.fitDocument()
+        let long = strip.buttons[0]
+        precondition(long.frame.width == 200 && long.labelRect.maxX < long.countRect.minX, "Long title overlaps the independent count")
+        precondition(long.bounds.contains(long.countRect) && long.countWidth > 0, "Pane count is clipped")
+        precondition(strip.buttons[2].countWidth == 0, "Single-pane tab reserves redundant count space")
+        let countFrames = strip.buttons.map(\.frame)
+        strip.selected = "number"; strip.syncButtons()
+        precondition(strip.buttons.map(\.frame) == countFrames, "Count-bearing tabs shift on selection")
+        // Offscreen AppKit rendering evidence, not a capture of the running application.
+        if let bitmap = strip.bitmapImageRepForCachingDisplay(in: strip.bounds) {
+            strip.cacheDisplay(in: strip.bounds, to: bitmap)
+            try! bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "build/tests/tab-chrome.png"))
+        }
         print("PASS: tab scroll containment, stable selection geometry, clicked context target, grouped/conditional/offline menus; 28pt bar / 22pt pills / 3pt insets")
     }
 }

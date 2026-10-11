@@ -920,11 +920,15 @@
       "date": "2026-10-11",
       "record": "docs/adversarial-ui-review/REVIEW.md",
       "validation": "docs/adversarial-ui-review/VALIDATION.md",
-      "tabWidths": "Measure all titles at semibold, retaining selected/unselected rendering without shifting neighbours.",
+      "tabWidths": "Semibold title measurement plus independent 10pt monospaced-digit count/8pt gap, with 18pt total side padding; clamp to 40–200pt. Native button focus and actions retained.",
       "contextMenus": "Title menus omit text/link operations; content menus validate text/selection; singleton ordering/zoom omitted; Close is a separate group.",
       "splitEligibility": "Captured clicked pane and unzoomed layout size; shared minimum geometry; retain user navigation/focus across RPC completion.",
       "settings": "Short Mode/System/Light labels; legacy saved weight remains selected; discovery buttons can stack; Add Device routes through one native Button action.",
-      "evidenceBoundary": "Linux source review and local contract checks; native controls covered by macOS CI. Fresh running-app visual, live IME and VoiceOver acceptance remains pending."
+      "evidenceBoundary": "Linux source review and local contract checks; native controls covered by macOS CI. Fresh running-app visual, live IME and VoiceOver acceptance remains pending.",
+      "paneTitles": "Compact only recognized shell cwd titles; preserve authored/task titles. Hide secondary context below 260pt available title width; retain full original identity in help, accessibility and search.",
+      "rename": "One 400pt sheet for Space/Tab/Pane; existing RPCs; captured endpoint/object/parent identity; serial execution; inline retry and marked-text guard.",
+      "connections": "Mutually exclusive discovery/import with inline progress/result/error. Tailcat Edit routes to captured device, with bounded names and stale-target protection.",
+      "commands": "Focus, resize and numbered-tab submenus; repair in Terminal; existing shortcuts retained. Close button names object and copy explains process termination."
     }
   },
   "components": [

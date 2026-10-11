@@ -25,5 +25,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: HerdrX-preview
-          path: build/dist/*
+          path: |
+            build/dist/*
+            build/tests/*.png
           retention-days: 14

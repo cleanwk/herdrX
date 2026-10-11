@@ -36,6 +36,18 @@ final class UXTests: XCTestCase {
         selection.reconcile(["c", "a"]); XCTAssertNil(selection.id)
         selection.move(1, in: ["c", "a"]); XCTAssertEqual(selection.id, "c")
     }
+    func testShellTitlesShortenOnlyRecognizableLocations() throws {
+        let fields: [String: JSON] = ["cwd": .string("/Users/dev/code/My App"), "terminal_title_stripped": .string("dev@host:~/code/My App")]
+        XCTAssertEqual(DisplayTitle.terminal(try item(fields)), "My App")
+        XCTAssertEqual(DisplayTitle.terminal(try item(fields.merging(["label": .string("Release #2")]) { _, b in b })), "Release #2")
+        for title in ["npm test (3/10)", "dev@host:~/another", "My authored title"] {
+            XCTAssertEqual(DisplayTitle.terminal(try item(fields.merging(["terminal_title_stripped": .string(title)]) { _, b in b })), title)
+        }
+        XCTAssertEqual(DisplayTitle.terminal(try item(["cwd": .string("/repo/herdrX"), "terminal_title_stripped": .string("/repo/herdrX")])), "herdrX")
+        XCTAssertEqual(DisplayTitle.terminal(try item(["cwd": .string("/Users/dev/项目/发布 检查"), "terminal_title_stripped": .string("dev@host:~/项目/发布 检查")])), "发布 检查")
+        XCTAssertEqual(DisplayTitle.terminal(try item(["cwd": .string("/")])), "/")
+        XCTAssertEqual(DisplayTitle.terminal(try item([:]), fallback: "终端"), "终端")
+    }
     func testConnectionDraftResetDoesNotCarrySSHOptions() throws {
         var draft = ConnectionDraft(Device(id: "ssh", displayName: "Build", endpoint: .init(kind: "ssh", target: "fixture", port: 2222, socketPath: "/tmp/session.sock", sshConfig: "/tmp/config")))
         XCTAssertEqual(try draft.device().id, "ssh")

@@ -87,7 +87,7 @@ struct Tabs: NSViewRepresentable {
         private var renaming = false
         var select: ((String) -> Void)?; var move: ((String, Int) -> Void)?; var rename: ((String) -> Void)?; var close: ((String) -> Void)?
         var source: String?; var origin: CGFloat = 0; var dragged = false; var insertion: Int?
-        var buttons: [NSButton] = []
+        var buttons: [TabButton] = []
         private var hover: Int?
         private var tracking: NSTrackingArea?
         override func updateTrackingAreas() {
@@ -104,20 +104,35 @@ struct Tabs: NSViewRepresentable {
         override func mouseExited(with event: NSEvent) { hover = nil; needsDisplay = true }
         func syncButtons() {
             while buttons.count > entries.count { buttons.removeLast().removeFromSuperview() }
-            while buttons.count < entries.count { let button = TabButton(); button.isBordered = false; button.bezelStyle = .regularSquare; button.target = self; button.action = #selector(pressed(_:)); button.lineBreakMode = .byTruncatingTail; addSubview(button); buttons.append(button) }
+            while buttons.count < entries.count { let button = TabButton(); button.title = ""; button.isBordered = false; button.focusRingType = .exterior; button.bezelStyle = .regularSquare; button.target = self; button.action = #selector(pressed(_:)); button.lineBreakMode = .byTruncatingTail; addSubview(button); buttons.append(button) }
             var x = TabMetrics.inset
             for (index, button) in buttons.enumerated() {
-                button.tag = index; button.title = entries[index].title + (entries[index].count > 1 ? "  \(entries[index].count)" : "")
+                button.tag = index; button.displayTitle = entries[index].title; button.paneCount = entries[index].count
                 button.font = .systemFont(ofSize: 12, weight: selected == entries[index].id ? .semibold : .regular)
                 button.contentTintColor = selected == entries[index].id ? Theme.foreground : Theme.secondary
                 // Reserve the selected weight so changing tabs does not move its neighbours.
-                let width = min(200, max(40, (button.title as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: .semibold)]).width + 18))
+                let width = min(200, max(40, (button.displayTitle as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: .semibold)]).width + 18 + button.countWidth + (button.paneCount > 1 ? 8 : 0)))
                 button.frame = NSRect(x: x, y: max(0, (bounds.height - TabMetrics.height) / 2), width: width, height: TabMetrics.height); x += width + TabMetrics.gap
-                button.setAccessibilityRole(.radioButton); button.setAccessibilityLabel(entries[index].title); button.setAccessibilityValue(selected == entries[index].id ? 1 : 0); button.setAccessibilityHelp(LF("%d panes", entries[index].count)); button.toolTip = entries[index].title
+                button.setAccessibilityRole(.radioButton); button.setAccessibilityLabel(entries[index].title); button.setAccessibilityValue(selected == entries[index].id ? 1 : 0); button.setAccessibilityHelp(LF("%d panes", entries[index].count)); button.toolTip = entries[index].title + "\n" + LF("%d panes", entries[index].count); button.needsDisplay = true
             }
         }
         @objc func pressed(_ sender: NSButton) { if entries.indices.contains(sender.tag) { select?(entries[sender.tag].id) } }
         final class TabButton: NSButton {
+            var displayTitle = ""
+            var paneCount = 1
+            private var countFont: NSFont { .monospacedDigitSystemFont(ofSize: 10, weight: .regular) }
+            var countWidth: CGFloat { paneCount > 1 ? ceil((String(paneCount) as NSString).size(withAttributes: [.font: countFont]).width) : 0 }
+            var countRect: NSRect { NSRect(x: bounds.maxX - 9 - countWidth, y: (bounds.height - 14) / 2, width: countWidth, height: 14) }
+            var labelRect: NSRect { NSRect(x: 9, y: (bounds.height - 16) / 2, width: max(0, bounds.width - 18 - countWidth - (paneCount > 1 ? 8 : 0)), height: 16) }
+            override var focusRingMaskBounds: NSRect { bounds.insetBy(dx: 0.5, dy: 0.5) }
+            override func drawFocusRingMask() { NSBezierPath(roundedRect: focusRingMaskBounds, xRadius: TabMetrics.radius, yRadius: TabMetrics.radius).fill() }
+            override func draw(_ dirtyRect: NSRect) {
+                // Let the native button draw focus/pressed treatment; text has separate slots.
+                super.draw(dirtyRect)
+                let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingTail
+                (displayTitle as NSString).draw(in: labelRect, withAttributes: [.font: font ?? NSFont.systemFont(ofSize: 12), .foregroundColor: contentTintColor ?? Theme.foreground, .paragraphStyle: style])
+                if paneCount > 1 { (String(paneCount) as NSString).draw(in: countRect, withAttributes: [.font: countFont, .foregroundColor: Theme.secondary]) }
+            }
             override func mouseDown(with event: NSEvent) { (superview as? Strip)?.mouseDown(with: event) }
             override func mouseDragged(with event: NSEvent) { (superview as? Strip)?.mouseDragged(with: event) }
             override func mouseUp(with event: NSEvent) { (superview as? Strip)?.mouseUp(with: event) }

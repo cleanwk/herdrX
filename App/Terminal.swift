@@ -222,12 +222,13 @@ struct TerminalCanvas: NSViewRepresentable {
                 let contextStyle = NSMutableParagraphStyle(); contextStyle.lineBreakMode = .byTruncatingMiddle
                 let secondary: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 10, weight: .regular), .foregroundColor: Theme.secondary, .paragraphStyle: contextStyle]
                 let available = max(0, frame.width - (zoomed ? 82 : 56))
-                let mainWidth = min(available * (title.context.isEmpty ? 1 : 0.64), (title.main as NSString).size(withAttributes: attributes).width)
-                let contextWidth = min(max(0, available - mainWidth - 10), (title.context as NSString).size(withAttributes: secondary).width)
+                let context = available >= 260 ? title.context : ""
+                let mainWidth = min(available * (context.isEmpty ? 1 : 0.64), (title.main as NSString).size(withAttributes: attributes).width)
+                let contextWidth = min(max(0, available - mainWidth - 10), (context as NSString).size(withAttributes: secondary).width)
                 let box = NSRect(x: frame.minX + 9, y: frame.maxY - 7, width: mainWidth + (contextWidth > 0 ? contextWidth + 10 : 0) + 8, height: 14)
                 Theme.content.setFill(); box.fill()
                 (title.main as NSString).draw(in: NSRect(x: box.minX + 4, y: box.minY, width: mainWidth, height: 14), withAttributes: attributes)
-                if contextWidth > 0 { (title.context as NSString).draw(in: NSRect(x: box.minX + mainWidth + 14, y: box.minY, width: contextWidth, height: 14), withAttributes: secondary) }
+                if contextWidth > 0 { (context as NSString).draw(in: NSRect(x: box.minX + mainWidth + 14, y: box.minY, width: contextWidth, height: 14), withAttributes: secondary) }
 
             }
             // Keep the backing opaque while the button glyph fades across the title outline.

@@ -68,4 +68,6 @@ Keep the existing 28/22/3pt tabs, 8pt gutters/perimeter and native window-corner
 
 Context menus distinguish title/content, group Close separately, omit single-object moves/zoom and omit Retry for healthy connections. Split eligibility uses the clicked pane's unzoomed layout size, with captured-target and focus checks at completion. Rename defers marked-text commands to the IME. Settings labels remain concise and Add Device routes identically from mouse/keyboard/accessibility.
 
-Review and remaining six design proposals: [REVIEW](../../docs/adversarial-ui-review/REVIEW.md). Local/CI/runtime evidence boundaries: [VALIDATION](../../docs/adversarial-ui-review/VALIDATION.md). Fresh macOS running-app acceptance remains pending; no release or shipping raster added.
+All 20 findings now have implementation changes: [REVIEW](../../docs/adversarial-ui-review/REVIEW.md). Local/CI/runtime evidence boundaries: [VALIDATION](../../docs/adversarial-ui-review/VALIDATION.md). Fresh macOS running-app acceptance remains pending; no release or shipping raster added.
+
+Follow-up: independent Tab count slot; conservative shell-title shortening and adaptive context; shared async rename sheet for Space/Tab/Pane; inline discovery/import state; direct Tailcat editing; grouped main-menu navigation/repair. See the same review/validation record for exact behavior and remaining macOS acceptance.

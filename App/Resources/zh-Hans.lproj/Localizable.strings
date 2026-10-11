@@ -50,7 +50,7 @@
 "Previous Tab" = "上一个 标签页";
 "Next Tab" = "下一个 标签页";
 "Restore Input Modes" = "恢复输入模式";
-"Interrupt Task and Repair TTY…" = "中断任务并修复 TTY…";
+"Interrupt Task and Repair TTY…" = "中断并修复…";
 "No active terminal" = "没有活动终端";
 "Choose a space or open a local shell." = "选择一个 空间 或打开本地 Shell。";
 "Open Shell" = "打开 Shell";
@@ -377,3 +377,55 @@
 "Could not import %@: %@" = "无法导入 %@：%@";
 
 "Mode" = "模式";
+
+"Rename Space" = "重命名空间";
+
+"This item is no longer available. Reconnect and try again." = "此项目已不可用，请重新连接后重试。";
+
+"Could not rename: %@" = "无法重命名：%@";
+
+"No new connections found." = "未发现新连接。";
+
+"Added 1 connection." = "已添加 1 个连接。";
+
+"Added %d connections." = "已添加 %d 个连接。";
+
+"Finding local sessions…" = "正在查找本机会话…";
+"Cancelling…" = "正在取消…";
+"Cancelled." = "已取消。";
+
+"Importing Herdr machines…" = "正在导入 Herdr 设备…";
+
+"Herdr returned an invalid session list." = "Herdr 返回的会话列表无效。";
+
+"A discovered session is missing its name or absolute socket path." = "发现的会话缺少名称或完整 socket 路径。";
+
+"Could not find sessions: %@" = "无法查找会话：%@";
+
+"Invalid Herdr machine list." = "Herdr 设备列表无效。";
+
+"A saved machine is missing its ID, target or named session." = "已保存的设备缺少标识、主机或会话名称。";
+
+"Cannot find session “%@” on %@." = "无法在 %2$@ 上找到会话“%1$@”。";
+
+"Could not import connections: %@" = "无法导入连接：%@";
+
+"This connection is no longer available." = "此连接已不可用。";
+
+"Repair Terminal" = "修复终端";
+
+"Focus Pane" = "切换面板焦点";
+
+"Resize Pane" = "调整面板大小";
+
+"Go to Tab" = "跳转到标签页";
+
+"Tab %d" = "标签页 %d";
+
+"Close Tab" = "关闭标签页";
+
+"Close Space" = "关闭空间";
+
+"This stops the pane and its running processes on %@." = "这将关闭 %@ 上的面板，并终止其中运行的进程。";
+
+"This stops %d panes and their running processes on %@." = "这将关闭 %2$@ 上的 %1$d 个面板，并终止其中运行的进程。";

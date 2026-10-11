@@ -77,8 +77,14 @@ final class Desk: ObservableObject {
     @Published var deviceFilter = ""
     @Published var creatingSpace = false
     @Published var spaceRequest: SpaceRequest?
-    @Published var tabRenameRequest: TabRenameRequest?
-    let tabRenameQueue = SerialOperationQueue()
+    @Published var renameRequest: RenameRequest?
+    let renameQueue = SerialOperationQueue()
+    @Published var tailcatEditRequest: String?
+    @Published var discoveringDevices = false
+    @Published var cancellingDiscovery = false
+    @Published var discoveryStatus: String?
+    @Published var discoveryError: String?
+    var discoveryTask: Task<Void, Never>?
     @Published var busy: Set<String> = []
     @Published var focusRevision = 0
     @Published var sidebarReveal: String?
@@ -118,7 +124,6 @@ final class Desk: ObservableObject {
     private var reorderTasks: [String: Task<Void, Never>] = [:]
     private var paneMemory: [String: PaneKey] = [:]
     private var searchActivity: [String: TimeInterval] = [:]
-    @Published var paneLabels: [PaneKey: String] = [:]
     @Published var ended: Set<PaneKey> = []
     @Published var message: String?
     @Published var showSearch = false
@@ -224,20 +229,6 @@ final class Desk: ObservableObject {
             for key in Array(terminals.keys) where key.device == device.id { terminals.removeValue(forKey: key)?.process.stop(); ended.remove(key) }
         }
         devices[index] = device; save(); connect(device); reindex()
-    }
-    func discoverSessions() {
-        Task {
-            do {
-                let bytes = try await CommandProcess.run("/bin/zsh", ["-lc", "exec herdr session list --json"], input: Data())
-                let value = try JSONDecoder().decode(JSON.self, from: bytes)
-                guard case .array(let rows) = value["sessions"] else { throw Failure("Herdr returned an invalid session list.") }
-                let discovered = try rows.map { row -> Device in
-                    guard let name = row["name"].string, let path = row["socket_path"].string, path.hasPrefix("/") else { throw Failure("A discovered session is missing its name or absolute socket path.") }
-                    return Device(displayName: name, endpoint: .init(kind: "local", socketPath: path))
-                }
-                for device in discovered where !devices.contains(where: { $0.endpoint.kind == "local" && $0.endpoint.socketPath == device.endpoint.socketPath }) { add(device) }
-            } catch { message = "Session discovery failed: " + error.localizedDescription }
-        }
     }
     func add(_ device: Device) { devices.append(device); save(); connect(device) }
     private func detach(_ id: String) {
@@ -514,9 +505,7 @@ final class Desk: ObservableObject {
         if origin == focusRevision, let id = result["workspace"]["workspace_id"].string { select(device: device, space: id) }
     }
     func renameSpace(device: String, space: Item) {
-        guard canAct(device: device, object: "space|" + space.id) else { return }
-        guard canWrite(device), let name = NamePrompt.ask("Rename Space", current: space.label) else { return }
-        objectAction(device: device, method: "workspace.rename", params: ["workspace_id": .string(space.id), "label": .string(name)])
+        requestRename(device: device, target: .space(id: space.id), current: space.label)
     }
     func perform(_ action: @escaping (RPC) async throws -> Void) {
         guard let id = selectedDevice else { return }
@@ -524,7 +513,7 @@ final class Desk: ObservableObject {
     }
     func closePane(_ target: PaneKey? = nil) {
         guard let key = target ?? focused, canAct(on: key) else { return }
-        guard confirmClose(LF("Pane “%@”", paneTitles[key]?.main ?? key.pane), device: key.device, count: 1) else { return }
+        guard confirmClose(LF("Pane “%@”", paneTitles[key]?.main ?? key.pane), device: key.device, count: 1, action: "Close Pane") else { return }
         objectAction(device: key.device, method: "pane.close", params: ["pane_id": .string(key.pane)])
     }
 
@@ -555,7 +544,7 @@ final class Desk: ObservableObject {
         for device in devices {
             guard let session = sessions[device.id] else { continue }
             rows += session.spaces.map { JumpRow(id: "space|" + device.id + "|" + $0.id, device: device.id, space: $0.id, tab: nil, pane: nil, label: $0.label, detail: DisplayTitle.detail([device.displayName, spacePath(device: device.id, space: $0.id), branches[device.id + "|" + $0.id]])) }
-            rows += session.panes.map { pane in JumpRow(id: "pane|" + device.id + "|" + pane.id, device: device.id, space: pane.workspace, tab: pane.tab, pane: pane.id, label: title(device: device.id, pane: pane), detail: DisplayTitle.detail([device.displayName, session.spaces.first { space in space.id == pane.workspace }?.label, pane.agent ?? L("Terminal"), pane.cwd])) }
+            rows += session.panes.map { pane in JumpRow(id: "pane|" + device.id + "|" + pane.id, device: device.id, space: pane.workspace, tab: pane.tab, pane: pane.id, label: title(device: device.id, pane: pane), detail: DisplayTitle.detail([device.displayName, session.spaces.first { space in space.id == pane.workspace }?.label, pane.agent ?? L("Terminal"), pane.cwd, pane.terminalTitle])) }
             for pane in session.panes { ranks["pane|" + device.id + "|" + pane.id] = rank(pane.status) }
         }
         rows.sort { left, right in
@@ -653,7 +642,7 @@ final class Desk: ObservableObject {
         hiddenTask?.cancel(); hiddenTask = nil
         objectWillChange.send()
     }
-    func shutdown() { hiddenTask?.cancel(); reorderTasks.values.forEach { $0.cancel() }; layoutTask?.cancel(); Array(polls.keys).forEach { detach($0) }; terminals.values.forEach { $0.process.stop() } }
+    func shutdown() { discoveryTask?.cancel(); hiddenTask?.cancel(); reorderTasks.values.forEach { $0.cancel() }; layoutTask?.cancel(); Array(polls.keys).forEach { detach($0) }; terminals.values.forEach { $0.process.stop() } }
 }
 
 

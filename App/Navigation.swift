@@ -1,11 +1,16 @@
 import AppKit
 import HerdCore
 
-struct PaneTitle: Equatable { let main: String; let context: String; var full: String { DisplayTitle.detail([main, context]) } }
+struct PaneTitle: Equatable {
+    let main: String
+    let context: String
+    var identity: String? = nil
+    var full: String { identity ?? DisplayTitle.detail([main, context]) }
+}
 
 extension Desk {
     func title(device: String, pane: Item) -> String {
-        if pane.agent == nil { return pane.customLabel ?? pane.terminalTitle ?? pane.cwd ?? L("Terminal") }
+        if pane.agent == nil { return DisplayTitle.terminal(pane, fallback: L("Terminal")) }
         return DisplayTitle.pane(pane, tab: sessions[device]?.tabs.first { $0.id == pane.tab }, fallback: L("Terminal"))
     }
     func spacePath(device: String, space: String) -> String? {
@@ -59,26 +64,5 @@ extension Desk {
             alert.addButton(withTitle: L("Reconnect")); alert.addButton(withTitle: L("Cancel")); guard alert.runModal() == .alertFirstButtonReturn else { return }
         }
         ended.remove(key); exitStatus[key] = nil; terminals[key]?.restart(); requestFocus()
-    }
-}
-
-/// Validation stays inside the native rename dialog; Enter cannot submit whitespace.
-@MainActor
-final class NamePrompt: NSObject, NSTextFieldDelegate {
-    let alert = NSAlert()
-    let field = NSTextField()
-    let error = NSTextField(labelWithString: L("Enter a name."))
-    func controlTextDidChange(_ notification: Notification) { validate() }
-    func validate() { let valid = DisplayTitle.clean(field.stringValue) != nil; alert.buttons.first?.isEnabled = valid; error.isHidden = valid }
-    static func ask(_ title: String, current: String) -> String? {
-        let prompt = NamePrompt(); prompt.alert.messageText = L(title)
-        prompt.alert.addButton(withTitle: L("Rename")); prompt.alert.addButton(withTitle: L("Cancel"))
-        prompt.field.stringValue = current; prompt.field.delegate = prompt; prompt.field.setAccessibilityLabel(L("Name"))
-        prompt.error.textColor = .secondaryLabelColor; prompt.error.font = .systemFont(ofSize: 11)
-        let stack = NSStackView(views: [prompt.field, prompt.error]); stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 6; stack.frame = NSRect(x: 0, y: 0, width: 320, height: 48)
-        prompt.field.widthAnchor.constraint(equalToConstant: 320).isActive = true
-        prompt.alert.accessoryView = stack; prompt.alert.window.initialFirstResponder = prompt.field; prompt.validate()
-        guard prompt.alert.runModal() == .alertFirstButtonReturn else { return nil }
-        return DisplayTitle.clean(prompt.field.stringValue)
     }
 }

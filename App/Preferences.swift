@@ -48,11 +48,29 @@ private struct Devices: View {
                     HStack { discoveryActions }
                     VStack(alignment: .leading) { discoveryActions }
                 }
+                if let status = desk.discoveryStatus {
+                    HStack(spacing: 6) {
+                        HStack(spacing: 6) {
+                            if desk.discoveringDevices { ProgressView().controlSize(.small) }
+                            Text(status).font(.caption).foregroundStyle(.secondary)
+                        }.accessibilityElement(children: .combine)
+                        if desk.discoveringDevices {
+                            Spacer()
+                            Button("Cancel") { desk.cancelDeviceDiscovery() }.disabled(desk.cancellingDiscovery).fixedSize()
+                        }
+                    }
+                }
+                if let error = desk.discoveryError { Text(error).font(.caption).foregroundStyle(.red).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
                 ForEach(desk.devices) { device in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text(device.displayName).fontWeight(.medium).lineLimit(1).truncationMode(.middle).help(device.displayName); Spacer()
-                            Button("Edit") { draft = ConnectionDraft(device); error = nil }.disabled(device.endpoint.kind == "tailcat")
+                            Button("Edit") {
+                                if device.endpoint.kind == "tailcat" {
+                                    desk.tailcatEditRequest = device.id
+                                    UserDefaults.standard.set("Tailcat", forKey: "settingsPage")
+                                } else { draft = ConnectionDraft(device); error = nil }
+                            }.fixedSize()
                             Button("Remove") {
                                 let alert = NSAlert(); alert.messageText = LF("Forget %@?", device.displayName); alert.informativeText = L("Only this connection is removed. Server sessions and processes continue."); alert.addButton(withTitle: L("Forget Connection")); alert.addButton(withTitle: L("Cancel"))
                                 if alert.runModal() == .alertFirstButtonReturn { desk.remove(device.id); if draft.id == device.id { reset() } }
@@ -82,8 +100,8 @@ private struct Devices: View {
         }.formStyle(.grouped)
     }
     @ViewBuilder private var discoveryActions: some View {
-        Button("Find Local Sessions") { desk.discoverSessions() }.help("Discover Local Herdr Sessions")
-        Button("Import Herdr Machines") { desk.importHerdrMachines() }.help("Import Enabled Herdr Machines")
+        Button("Find Local Sessions") { desk.discoverSessions() }.disabled(desk.discoveringDevices).help("Discover Local Herdr Sessions")
+        Button("Import Herdr Machines") { desk.importHerdrMachines() }.disabled(desk.discoveringDevices).help("Import Enabled Herdr Machines")
     }
     func reset() { draft = ConnectionDraft(); error = nil }
 }

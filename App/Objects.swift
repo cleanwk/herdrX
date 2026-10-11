@@ -10,30 +10,37 @@ extension Desk {
             guard let session = sessions[device.id] else { continue }
             for pane in session.panes {
                 let space = session.spaces.first { $0.id == pane.workspace }?.label ?? ""
-                result[PaneKey(device: device.id, pane: pane.id)] = PaneTitle(main: title(device: device.id, pane: pane), context: DisplayTitle.detail([space, device.displayName]))
+                let main = title(device: device.id, pane: pane)
+                let context = DisplayTitle.detail([space == main ? nil : space, devices.count > 1 ? device.displayName : nil])
+                var identity: [String] = []
+                for part in [main, pane.terminalTitle, pane.cwd, space, device.displayName].compactMap({ $0 }) where !part.isEmpty && !identity.contains(part) { identity.append(part) }
+                result[PaneKey(device: device.id, pane: pane.id)] = PaneTitle(main: main, context: context, identity: identity.joined(separator: "\n"))
             }
         }
         return result
     }
     func renameTab(_ id: String) {
-        guard tabRenameRequest == nil, let device = selectedDevice,
-              canAct(device: device, object: "tab|" + id),
-              let tab = sessions[device]?.tabs.first(where: { $0.id == id }),
+        guard let device = selectedDevice, let tab = sessions[device]?.tabs.first(where: { $0.id == id }) else { return }
+        requestRename(device: device, target: .tab(id: id, space: tab.workspace), current: tab.label)
+    }
+    func requestRename(device: String, target: RenameTarget, current: String) {
+        guard renameRequest == nil, target.exists(in: sessions[device]),
+              canAct(device: device, object: target.kind + "|" + target.id),
               let endpoint = devices.first(where: { $0.id == device })?.endpoint else { return }
         captureFocus()
-        tabRenameRequest = TabRenameRequest(device: device, tab: id, space: tab.workspace, endpoint: endpoint, current: tab.label)
+        renameRequest = RenameRequest(device: device, target: target, endpoint: endpoint, current: current)
     }
-    func submitTabRename(_ request: TabRenameRequest, name: String) async throws {
+    func submitRename(_ request: RenameRequest, name: String) async throws {
         guard let name = TabName.changed(name, from: request.current) else { return }
-        let operation = tabRenameQueue.enqueue { [self] in
+        let operation = renameQueue.enqueue { [self] in
+            let key = request.device + "|" + request.target.kind + "|" + request.target.id
             guard devices.first(where: { $0.id == request.device })?.endpoint == request.endpoint,
-                  sessions[request.device]?.tabs.contains(where: { $0.id == request.tab && $0.workspace == request.space }) == true,
-                  begin(request.device + "|tab|" + request.tab, device: request.device) else {
-                throw Failure(L("The tab is no longer available. Reconnect and try again."))
+                  request.target.exists(in: sessions[request.device]), begin(key, device: request.device) else {
+                throw Failure(L("This item is no longer available. Reconnect and try again."))
             }
-            defer { busy.remove(request.device + "|tab|" + request.tab) }
+            defer { busy.remove(key) }
             let client = try rpc(request.device)
-            _ = try await client.call("tab.rename", ["tab_id": .string(request.tab), "label": .string(name)])
+            _ = try await client.call(request.target.method, request.target.parameters(name: name))
             // Only a server snapshot changes the displayed name. A failed RPC leaves it intact.
             try await refresh(request.device, client: client)
         }
@@ -43,21 +50,22 @@ extension Desk {
         if let device = selectedDevice, let tab = sessions[device]?.tabs.first(where: { $0.id == id }) {
             guard canAct(device: device, object: "tab|" + id) else { return }
             let count = sessions[device]?.panes.filter { $0.tab == id }.count ?? 0
-            guard confirmClose(LF("Tab “%@”", tab.label), device: device, count: count) else { return }
+            guard confirmClose(LF("Tab “%@”", tab.label), device: device, count: count, action: "Close Tab") else { return }
             objectAction(device: device, method: "tab.close", params: ["tab_id": .string(id)])
         }
     }
 
     func closeSpace(device: String, space: Item) {
         guard canAct(device: device, object: "space|" + space.id) else { return }
-        guard confirmClose(LF("Space “%@”", space.label), device: device, count: sessions[device]?.panes.filter { $0.workspace == space.id }.count ?? 0) else { return }
+        guard confirmClose(LF("Space “%@”", space.label), device: device, count: sessions[device]?.panes.filter { $0.workspace == space.id }.count ?? 0, action: "Close Space") else { return }
         objectAction(device: device, method: "workspace.close", params: ["workspace_id": .string(space.id)])
     }
-    func confirmClose(_ object: String, device: String, count: Int) -> Bool {
+    func confirmClose(_ object: String, device: String, count: Int, action: String) -> Bool {
         guard canWrite(device) else { return false }
         let alert = NSAlert(); alert.messageText = LF("Close %@?", object)
-        alert.informativeText = LF("This terminates %d server pane(s) and their processes on %@. Disconnecting only releases the client attachment.", count, devices.first { $0.id == device }?.displayName ?? device)
-        alert.addButton(withTitle: L("Close")); alert.addButton(withTitle: L("Cancel"))
+        let name = devices.first { $0.id == device }?.displayName ?? device
+        alert.informativeText = count == 1 ? LF("This stops the pane and its running processes on %@.", name) : LF("This stops %d panes and their running processes on %@.", count, name)
+        alert.addButton(withTitle: L(action)); alert.addButton(withTitle: L("Cancel"))
         return alert.runModal() == .alertFirstButtonReturn
     }
     func objectAction(device: String, method: String, params: [String: JSON]) {
@@ -114,8 +122,8 @@ extension Desk {
         return menu
     }
     func renamePane(_ key: PaneKey) {
-        guard canAct(on: key), let text = NamePrompt.ask("Rename Pane", current: paneLabels[key] ?? paneTitles[key]?.main ?? "") else { return }
-        objectAction(device: key.device, method: "pane.rename", params: ["pane_id": .string(key.pane), "label": .string(text)])
+        guard let pane = sessions[key.device]?.panes.first(where: { $0.id == key.pane }) else { return }
+        requestRename(device: key.device, target: .pane(id: key.pane, tab: pane.tab, space: pane.workspace), current: title(device: key.device, pane: pane))
     }
     func movePaneToTab(_ key: PaneKey) {
         objectAction(device: key.device, method: "pane.move", params: ["pane_id": .string(key.pane), "destination": .object(["type": .string("new_tab")]), "focus": .bool(false)])

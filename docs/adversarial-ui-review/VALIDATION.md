@@ -17,8 +17,8 @@
 
 | 入口 | 覆盖范围 |
 | --- | --- |
-| `scripts/build.sh` | Core 测试、XcodeGen、arm64/x86_64 Release 编译和签名/架构校验。 |
-| `scripts/test-tabs.sh` | 直接编译生产 Tabs.swift；原有滚动、边界、resize、reveal；新增切换所有标签时 frame 不变、点击非选中标签的菜单目标、菜单分隔/单项/离线状态。 |
+| `scripts/build.sh` | Core 测试（含新增 shell 标题投影、重命名父级/目标和 RPC 契约、运行中 helper 取消）、XcodeGen、arm64/x86_64 Release 编译和签名/架构校验。 |
+| `scripts/test-tabs.sh` | 直接编译生产 Tabs.swift；原有滚动、边界、resize、reveal；新增切换所有标签时 frame 不变、点击非选中标签的菜单目标、菜单分隔/单项/离线状态、长标题与独立计数不重叠。输出的 `tab-chrome.png` 是离屏原生控件证据，不是运行中应用截图。 |
 | `scripts/test-panes.sh` | 原有边框、1×/2×、圆角、网格和 gutter 回归；新增窄 pane 与大画布的分屏容量差异、水平/垂直阈值和零尺寸。它检查几何，不模拟真实 Herdr RPC。 |
 | `scripts/test-inputs.sh` | 直接编译 RenameInput.swift / SearchInput.swift；组合输入时 Return/Escape/箭头不被拦截、普通输入时动作仍执行、提交文本同步。marked text 由 NSTextView 测试替身提供，不等同于真实输入法候选窗验收。 |
 | `scripts/test-pty.sh` | 现有终端进程和 attach 代次回归。 |
@@ -42,5 +42,7 @@
 | 工作台 → Settings / 另一应用 → 工作台 | 非活跃窗口不保留强面板焦点色，返回正确终端；Cmd-W 在 sheet/settings/workbench 各自只执行预期的关闭。后者是复验风险项，未据源码确认有故障。 |
 | Settings 字号 9/13.5/22pt、旧 Bold/Semibold、英文 | 控件与预览一致；当前保存的旧字重有选中项；操作按钮不横向溢出；导入错误可读且可滚动。 |
 | 1×/2×、全屏/退出全屏、Reduce Motion、VoiceOver | 保留历史 pane 几何契约；新焦点表现不引入闪动；图标光学大小/线条/可访问名称需人工确认。 |
+
+追加复验：在 Settings 内慢速发现/导入时连续点击，确认只启动一次、结果就地显示且可重试；取消慢导入后不添加设备，可再次发起；从 Connections 用键盘编辑 Tailcat 的指定设备，再移除目标，确认不会保存到失效对象；Space/Pane 改名失败后原输入保留，目标移到另一 Tab/Space 后提交被拒绝；数字 Tab 子菜单和分组后的导航快捷键保持可用。
 
 Live SSH/Tailcat、长时间运行、macOS 14–26、Intel 实机、通知权限/投递、签名更新端到端均未在此环境复验。没有合并、安装替换、tag、Release 或 Homebrew 发布。

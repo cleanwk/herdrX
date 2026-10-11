@@ -2,30 +2,32 @@ import AppKit
 import SwiftUI
 import HerdCore
 
-struct TabRenameRequest: Identifiable {
+struct RenameRequest: Identifiable {
     let id = UUID()
     let device: String
-    let tab: String
-    let space: String
+    let target: RenameTarget
     let endpoint: Device.Endpoint
     let current: String
+    var title: String {
+        switch target { case .space: "Rename Space"; case .tab: "Rename Tab"; case .pane: "Rename Pane" }
+    }
 }
 
-struct TabRenameSheet: View {
+struct RenameSheet: View {
     @EnvironmentObject private var desk: Desk
     @Environment(\.dismiss) private var dismiss
-    let request: TabRenameRequest
+    let request: RenameRequest
     @State private var name: String
     @State private var busy = false
     @State private var error: String?
 
-    init(request: TabRenameRequest) {
+    init(request: RenameRequest) {
         self.request = request
         _name = State(initialValue: request.current)
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Rename Tab").font(.headline)
+            Text(L(request.title)).font(.headline)
             RenameInput(text: $name, submit: submit, cancel: cancel).frame(height: 24).disabled(busy)
             if let error { Text(error).foregroundStyle(.red).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
             HStack {
@@ -41,8 +43,8 @@ struct TabRenameSheet: View {
         guard !busy, TabName.changed(name, from: request.current) != nil else { return }
         busy = true; error = nil
         Task {
-            do { try await desk.submitTabRename(request, name: name); dismiss() }
-            catch { self.error = LF("Could not rename the tab: %@", error.localizedDescription) }
+            do { try await desk.submitRename(request, name: name); dismiss() }
+            catch { self.error = LF("Could not rename: %@", error.localizedDescription) }
             busy = false
         }
     }
