@@ -86,7 +86,7 @@ final class Desk: ObservableObject {
     weak var focusReturn: NSResponder?
     private var focusReturnRevision = 0
     private var focusReturnWasTerminal = false
-    var canvasSize: CGSize = .zero
+    @Published var canvasSize: CGSize = .zero
     func requestFocus() { focusRevision += 1 }
     func captureFocus() {
         focusReturn = NSApp.keyWindow?.firstResponder; focusReturnRevision = focusRevision
@@ -184,10 +184,15 @@ final class Desk: ObservableObject {
     var currentDevice: Device? { devices.first { $0.id == selectedDevice } }
     var currentPane: Item? { guard let focused else { return nil }; return sessions[focused.device]?.panes.first { $0.id == focused.pane } }
     var activeRects: [(PaneKey, CGRect)] {
-        if let draggingLayout, !zoomed { return draggingLayout.rects() }
+        if zoomed, let focused, layoutRects.contains(where: { $0.0 == focused }) {
+            return [(focused, CGRect(x: 0, y: 0, width: 1, height: 1))]
+        }
+        return layoutRects
+    }
+    var layoutRects: [(PaneKey, CGRect)] {
+        if let draggingLayout { return draggingLayout.rects() }
         if let device = selectedDevice, let snapshot = sessions[device] {
             let panes = snapshot.panes.filter { $0.tab == selectedTab }
-            if zoomed, let focused { return [(focused, CGRect(x: 0, y: 0, width: 1, height: 1))] }
             if let layout = snapshot.layouts.array.first(where: { $0["tab_id"].string == selectedTab }),
                let width = layout["area"]["width"].int, let height = layout["area"]["height"].int, width > 0, height > 0 {
                 return layout["panes"].array.compactMap { leaf in
@@ -245,6 +250,7 @@ final class Desk: ObservableObject {
     func remove(_ id: String) {
         detach(id); TailcatSecrets.remove("token." + id); attentionState.remove(device: id); devices.removeAll { $0.id == id }; sessions[id] = nil; connections[id] = nil
         for key in Array(terminals.keys) where key.device == id { terminals.removeValue(forKey: key)?.process.stop(); ended.remove(key) }
+        if deviceFilter == id { deviceFilter = "" }
         if selectedDevice == id { select(device: nil) }; save(); reindex()
     }
     func connect(_ device: Device, preserving issue: ConnectionIssue? = nil) {
@@ -422,26 +428,27 @@ final class Desk: ObservableObject {
     }
     private func makeTerminal(_ key: PaneKey, command: String) {
         let terminal = Terminal(command: command)
-        terminal.view.objectMenu = { [weak self] in self?.paneMenu(key) }
+        terminal.view.objectMenu = { [weak self] source in self?.paneMenu(key, source: source) }
         terminal.focused = { [weak self] in if self?.focused != key { self?.focused = key } }
         terminal.onExit = { [weak self] status in self?.ended.insert(key); self?.exitStatus[key] = status }
         terminal.process.inputRejected = { [weak self] in self?.message = L("Terminal input is waiting for the process. Try a smaller paste when it responds.") }
         terminals[key] = terminal
     }
-    func split(horizontal: Bool) {
-        guard let key = focused, canSplit(horizontal: horizontal) else { return }
+    func split(horizontal: Bool, target: PaneKey? = nil) {
+        guard let key = target ?? focused, canSplit(horizontal: horizontal, target: key) else { return }
         if selectedDevice != nil {
             let tab = selectedTab, action = key.device + "|pane|" + key.pane
             guard begin(action, device: key.device) else { return }
-            let origin = focusRevision, endpoint = currentDevice?.endpoint
+            let origin = focusRevision, originalFocus = focused, endpoint = currentDevice?.endpoint
             Task { defer { busy.remove(action) }; do {
                 let rpc = try rpc(key.device)
                 let pane = try await rpc.call("pane.get", ["pane_id": .string(key.pane)])["pane"]
                 guard let cwd = pane["foreground_cwd"].string ?? pane["cwd"].string else { throw Failure("Cannot read current directory; split cancelled") }
-                guard canWrite(key.device), devices.first(where: { $0.id == key.device })?.endpoint == endpoint else { throw Failure(L("The creation target changed. Try again.")) }
+                guard canWrite(key.device), devices.first(where: { $0.id == key.device })?.endpoint == endpoint,
+                      sessions[key.device]?.panes.contains(where: { $0.id == key.pane && $0.tab == tab }) == true else { throw Failure(L("The creation target changed. Try again.")) }
                 let result = try await rpc.call("pane.split", ["target_pane_id": .string(key.pane), "direction": .string(horizontal ? "right" : "down"), "cwd": .string(cwd), "focus": .bool(false)])
                 try await refresh(key.device, client: rpc)
-                if origin == focusRevision, selectedDevice == key.device, selectedTab == tab, let id = result["pane"]["pane_id"].string { focused = PaneKey(device: key.device, pane: id); requestFocus() }
+                if origin == focusRevision, focused == originalFocus, selectedDevice == key.device, selectedTab == tab, let id = result["pane"]["pane_id"].string { zoomed = false; focused = PaneKey(device: key.device, pane: id); requestFocus() }
             } catch { message = error.localizedDescription } }
         }
     }

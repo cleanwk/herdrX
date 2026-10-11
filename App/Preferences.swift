@@ -44,7 +44,10 @@ private struct Devices: View {
     var body: some View {
         Form {
             Section("Saved devices") {
-                HStack { Button("Discover Local Herdr Sessions") { desk.discoverSessions() }; Button("Import Enabled Herdr Machines") { desk.importHerdrMachines() } }
+                ViewThatFits(in: .horizontal) {
+                    HStack { discoveryActions }
+                    VStack(alignment: .leading) { discoveryActions }
+                }
                 ForEach(desk.devices) { device in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
@@ -78,6 +81,10 @@ private struct Devices: View {
             }
         }.formStyle(.grouped)
     }
+    @ViewBuilder private var discoveryActions: some View {
+        Button("Find Local Sessions") { desk.discoverSessions() }.help("Discover Local Herdr Sessions")
+        Button("Import Herdr Machines") { desk.importHerdrMachines() }.help("Import Enabled Herdr Machines")
+    }
     func reset() { draft = ConnectionDraft(); error = nil }
 }
 private struct TerminalSettings: View {
@@ -108,7 +115,10 @@ private struct TerminalSettings: View {
                 }
                 GridRow {
                     Text("Weight")
-                    Picker("Weight", selection: $weight) { Text("Light weight").tag("Light"); Text("Regular").tag("Regular"); Text("Medium").tag("Medium") }.labelsHidden().pickerStyle(.segmented).frame(minWidth: 150, alignment: .leading).fixedSize().disabled(family != "SF Mono").help("Font weight is available for SF Mono.")
+                    Picker("Weight", selection: $weight) {
+                        Text("Light weight").tag("Light"); Text("Regular").tag("Regular"); Text("Medium").tag("Medium")
+                        if ["Semibold", "Bold"].contains(weight) { Text(LocalizedStringKey(weight)).tag(weight) }
+                    }.labelsHidden().pickerStyle(.segmented).frame(minWidth: 150, alignment: .leading).fixedSize().disabled(family != "SF Mono").help("Font weight is available for SF Mono.")
                 }
                 GridRow {
                     Text("Line spacing")
@@ -161,11 +171,11 @@ private struct TerminalSettings: View {
                 let parts = line.split(separator: "=", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
                 guard parts.count == 2 else { continue }
                 if parts[0] == "font-family", !parts[1].isEmpty { nextFamily = parts[1].trimmingCharacters(in: CharacterSet(charactersIn: "\"")); found = true }
-                if parts[0] == "font-size" { guard let value = Double(parts[1]), (9...22).contains(value) else { throw Failure("Font size must be between 9 and 22 pt.") }; nextSize = value; found = true }
+                if parts[0] == "font-size" { guard let value = Double(parts[1]), (9...22).contains(value) else { throw Failure(L("Font size must be between 9 and 22 pt.")) }; nextSize = value; found = true }
             }
-            guard found else { throw Failure("No font-family or font-size found.") }
+            guard found else { throw Failure(L("No font-family or font-size found.")) }
             families = Array(Set(families + [nextFamily])).sorted(); family = nextFamily; size = nextSize; importError = nil
-        } catch { importError = "Could not import \(url.path): " + error.localizedDescription }
+        } catch { importError = LF("Could not import %@: %@", url.lastPathComponent, error.localizedDescription) }
     }
 
 }
@@ -218,7 +228,7 @@ private struct Appearance: View {
     var body: some View {
         ScrollView {
         VStack(alignment: .leading, spacing: 7) {
-            row("Color mode") {
+            row("Mode") {
                 VStack(alignment: .leading, spacing: 4) {
                     Picker("Color mode", selection: $appearance) { Text("System mode").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark") }.labelsHidden().pickerStyle(.segmented).frame(minWidth: 150, alignment: .leading).fixedSize()
                     Text("Session appearance follows the app theme.").font(.system(size: 11)).foregroundStyle(.secondary)

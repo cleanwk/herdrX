@@ -35,11 +35,16 @@ extension Desk {
     }
     func canAct(device: String, object: String) -> Bool { canWrite(device) && !busy.contains(device + "|" + object) }
     func canAct(on key: PaneKey) -> Bool { canAct(device: key.device, object: "pane|" + key.pane) }
-    func canSplit(horizontal: Bool) -> Bool {
-        guard let key = focused, canAct(on: key), let rect = activeRects.first(where: { $0.0 == key })?.1 else { return false }
-        let size = terminals[key]?.view.frame.size ?? .zero
-        let minimum = minimumPaneSize
-        return horizontal ? size.width >= minimum.width * 2 - PaneMetrics.horizontalOverhead - PaneMetrics.splitGap && rect.width > 0 : size.height >= minimum.height * 2 - PaneMetrics.verticalOverhead - PaneMetrics.splitGap && rect.height > 0
+    func canSplit(horizontal: Bool, target: PaneKey? = nil) -> Bool {
+        guard let key = target ?? focused, canAct(on: key),
+              let rect = layoutRects.first(where: { $0.0 == key })?.1 else { return false }
+        // Use the pane's actual layout slot, even while it is displayed zoomed.
+        let scale = terminals[key]?.view.window?.backingScaleFactor ?? 2
+        let frame = PaneMetrics.frame(rect, in: canvasSize, scale: scale)
+        return PaneMetrics.canSplit(frame.size, horizontal: horizontal, minimum: minimumPaneSize)
+    }
+    func canZoom(_ key: PaneKey) -> Bool {
+        layoutRects.contains(where: { $0.0 == key }) && (zoomed || layoutRects.count > 1)
     }
     var minimumPaneSize: CGSize {
         let font = max(9, UserDefaults.standard.double(forKey: "fontSize") == 0 ? 13.5 : UserDefaults.standard.double(forKey: "fontSize"))

@@ -1,6 +1,8 @@
 import AppKit
 import HerdCore
 
+enum PaneMenuSource { case terminal, title }
+
 extension Desk {
     var paneTitles: [PaneKey: PaneTitle] {
         var result: [PaneKey: PaneTitle] = [:]
@@ -81,23 +83,32 @@ extension Desk {
         jump(key.device + "|" + key.pane)
     }
 
-    func paneMenu(_ key: PaneKey) -> NSMenu {
+    func paneMenu(_ key: PaneKey, source: PaneMenuSource) -> NSMenu {
         let menu = NSMenu(); menu.autoenablesItems = false
-        menu.addItem(ActionMenuItem("Copy", enabled: terminals[key]?.surface?.hasSelection() == true) { [weak self] in _ = self?.terminals[key]?.view.copySelectedTextToPasteboard() })
-        menu.addItem(ActionMenuItem("Paste", enabled: NSPasteboard.general.types?.isEmpty == false) { [weak self] in
-            guard let self else { return }
-            if let text = NSPasteboard.general.string(forType: .string) { _ = terminals[key]?.view.paste(text: text) }
-        })
-        if let url = terminals[key]?.hoverURL {
-            menu.addItem(ActionMenuItem("Open Link") { NSWorkspace.shared.open(url) })
-            menu.addItem(ActionMenuItem("Copy Link") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(url.absoluteString, forType: .string) })
+        if source == .terminal {
+            menu.addItem(ActionMenuItem("Copy", enabled: terminals[key]?.surface?.hasSelection() == true) { [weak self] in _ = self?.terminals[key]?.view.copySelectedTextToPasteboard() })
+            menu.addItem(ActionMenuItem("Paste", enabled: !ended.contains(key) && NSPasteboard.general.string(forType: .string)?.isEmpty == false) { [weak self] in
+                guard let self, !ended.contains(key), let text = NSPasteboard.general.string(forType: .string), !text.isEmpty else { return }
+                _ = terminals[key]?.view.paste(text: text)
+            })
+            if let url = terminals[key]?.hoverURL {
+                menu.addItem(ActionMenuItem("Open Link") { NSWorkspace.shared.open(url) })
+                menu.addItem(ActionMenuItem("Copy Link") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(url.absoluteString, forType: .string) })
+            }
+            menu.addItem(.separator())
         }
-        menu.addItem(.separator())
         menu.addItem(ActionMenuItem("Rename Pane…", enabled: canAct(on: key)) { [weak self] in self?.renamePane(key) })
-        menu.addItem(ActionMenuItem("Split Right") { [weak self] in self?.activate(key); self?.split(horizontal: true) })
-        menu.addItem(ActionMenuItem("Split Down") { [weak self] in self?.activate(key); self?.split(horizontal: false) })
-        menu.addItem(ActionMenuItem(zoomed && focused == key ? "Restore Pane" : "Zoom Pane") { [weak self] in guard let self else { return }; let restore = zoomed && focused == key; activate(key); zoomed = !restore })
-        menu.addItem(ActionMenuItem("Move to New Tab", enabled: canAct(on: key)) { [weak self] in self?.movePaneToTab(key) })
+        menu.addItem(ActionMenuItem("Split Right", enabled: canSplit(horizontal: true, target: key)) { [weak self] in self?.split(horizontal: true, target: key) })
+        menu.addItem(ActionMenuItem("Split Down", enabled: canSplit(horizontal: false, target: key)) { [weak self] in self?.split(horizontal: false, target: key) })
+        if canZoom(key) {
+            menu.addItem(ActionMenuItem(zoomed && focused == key ? "Restore Pane" : "Zoom Pane") { [weak self] in
+                guard let self, canZoom(key) else { return }; let restore = zoomed && focused == key; activate(key); zoomed = !restore
+            })
+        }
+        if let pane = sessions[key.device]?.panes.first(where: { $0.id == key.pane }),
+           sessions[key.device]?.panes.filter({ $0.tab == pane.tab }).count ?? 0 > 1 {
+            menu.addItem(ActionMenuItem("Move to New Tab", enabled: canAct(on: key)) { [weak self] in self?.movePaneToTab(key) })
+        }
         menu.addItem(.separator())
         menu.addItem(ActionMenuItem("Close Pane…", enabled: canAct(on: key)) { [weak self] in self?.closePane(key) })
         return menu

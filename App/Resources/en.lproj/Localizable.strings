@@ -296,10 +296,10 @@
 "Session appearance follows the app theme." = "Session appearance follows the app theme.";
 "Pane focus, active tabs and selection." = "Pane focus, active tabs and selection.";
 "Weight" = "Weight";
-"Light weight" = "Light weight";
+"Light weight" = "Light";
 "Font size" = "Font size";
 "Font weight is available for SF Mono." = "Font weight is available for SF Mono.";
-"Use finer font strokes for clear, balanced Agent output." = "Use finer font strokes for clear, balanced Agent output.";
+"Use finer font strokes for clear, balanced Agent output." = "Use finer text strokes.";
 "Mouse reporting" = "Mouse reporting";
 "Forward clicks to terminal apps. Hold Shift to select text locally." = "Forward clicks to terminal apps. Hold Shift to select text locally.";
 "Copy on select" = "Copy on select";
@@ -307,7 +307,7 @@
 "Import from Ghostty…" = "Import from Ghostty…";
 "Cyan" = "Cyan";
 
-"System mode" = "System mode";
+"System mode" = "System";
 "Generate Client Identity" = "Generate Client Identity";
 "Connection token" = "Connection token";
 
@@ -363,3 +363,17 @@
 "Herdr is not running" = "Herdr is not running";
 "Session unavailable" = "Session unavailable";
 "Unable to connect" = "Unable to connect";
+
+"Unread" = "Unread";
+
+"Find Local Sessions" = "Find Local Sessions";
+
+"Import Herdr Machines" = "Import Herdr Machines";
+
+"Font size must be between 9 and 22 pt." = "Font size must be between 9 and 22 pt.";
+
+"No font-family or font-size found." = "No font-family or font-size found.";
+
+"Could not import %@: %@" = "Could not import %@: %@";
+
+"Mode" = "Mode";

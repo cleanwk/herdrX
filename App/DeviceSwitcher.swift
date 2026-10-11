@@ -3,18 +3,19 @@ import HerdCore
 
 struct DeviceSwitcher: View {
     @EnvironmentObject var desk: Desk
+    @Environment(\.openSettings) private var openSettings
     @State private var showing = false
     private var selected: Device? { desk.devices.first { $0.id == desk.deviceFilter } }
     var body: some View {
         Button { showing.toggle() } label: {
             HStack(spacing: 6) {
                 Image(systemName: selected.map(symbol) ?? "square.stack.3d.up").font(.system(size: 11))
-                Text(selected?.displayName ?? L("All Devices")).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                Text(selected?.displayName ?? L("All Devices")).font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.middle)
                 if let selected { connectionDot(selected) }
                 Image(systemName: "chevron.up.chevron.down").font(.system(size: 9)).foregroundStyle(Color(nsColor: Theme.secondary))
             }.padding(.horizontal, 8).frame(height: 28)
                 .background(Color(nsColor: Theme.selection).opacity(showing ? 0.18 : 0.055), in: RoundedRectangle(cornerRadius: 6))
-        }.buttonStyle(.plain).accessibilityLabel("Device Filter").accessibilityValue(selected?.displayName ?? L("All Devices"))
+        }.buttonStyle(.plain).help(selected?.displayName ?? L("All Devices")).accessibilityLabel("Device Filter").accessibilityValue(selected?.displayName ?? L("All Devices"))
             .popover(isPresented: $showing, arrowEdge: .top) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Devices").font(.system(size: 11, weight: .semibold)).foregroundStyle(Color(nsColor: Theme.secondary)).padding(.horizontal, 10).padding(.top, 4)
@@ -27,9 +28,13 @@ struct DeviceSwitcher: View {
                         }
                     }.frame(maxHeight: min(360, CGFloat(desk.devices.count) * 46))
                     Divider().padding(.horizontal, 8).padding(.vertical, 4)
-                    SettingsLink {
+                    Button {
+                        UserDefaults.standard.set("Connections", forKey: "settingsPage")
+                        showing = false
+                        openSettings()
+                    } label: {
                         Label("Add Device…", systemImage: "plus").font(.system(size: 13)).frame(maxWidth: .infinity, alignment: .leading).padding(10).contentShape(Rectangle())
-                    }.buttonStyle(.plain).simultaneousGesture(TapGesture().onEnded { UserDefaults.standard.set("Connections", forKey: "settingsPage"); showing = false })
+                    }.buttonStyle(.plain)
                 }.padding(6).frame(width: 270).foregroundStyle(Color(nsColor: Theme.foreground))
             }
     }

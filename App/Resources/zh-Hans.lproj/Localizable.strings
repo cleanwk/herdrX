@@ -32,7 +32,7 @@
 "Automatic" = "自动";
 "Split Right" = "向右分屏";
 "Split Down" = "向下分屏";
-"Zoom / Restore Pane" = "缩放 / 恢复 面板";
+"Zoom / Restore Pane" = "放大 / 还原面板";
 "Close" = "关闭";
 "Close Pane…" = "关闭面板…";
 "Close Tab…" = "关闭标签页…";
@@ -60,7 +60,7 @@
 "Create Space…" = "创建空间…";
 "Rename…" = "重命名…";
 "Copy Directory" = "复制目录";
-"Close Space…" = "关闭 空间…";
+"Close Space…" = "关闭空间…";
 "Device" = "设备";
 "Space" = "空间";
 "Agent" = "Agent";
@@ -116,7 +116,7 @@
 "Install and upgrade from your existing cleanwk tap." = "通过现有的 cleanwk tap 安装和升级。";
 "Local clipboard images via Ctrl-V" = "本机剪贴板图片（Ctrl-V）";
 "Modified" = "修改时间";
-"Move to New Tab" = "移至新 标签页";
+"Move to New Tab" = "移至新标签页";
 "New Tab · ⌘⌥T" = "新建标签页 · ⌘⌥T";
 "OK" = "好";
 "Open Link" = "打开链接";
@@ -130,7 +130,7 @@
 "Quick New Space · ⌘⇧N" = "快速新建 空间 · ⌘⇧N";
 "Recent execution" = "最近执行";
 "Refresh" = "刷新";
-"Rename Pane…" = "重命名 面板…";
+"Rename Pane…" = "重命名面板…";
 "Report mouse input to terminal apps" = "向终端应用上报鼠标输入";
 "SSH config file (optional)" = "SSH 配置文件（可选）";
 "Search · ⌘K" = "搜索 · ⌘K";
@@ -144,8 +144,8 @@
 "Weight (system mono only)" = "字重（仅限系统等宽字体）";
 "On This Mac" = "本机 Shell";
 "Terminals" = "终端";
-"Zoom Pane" = "缩放 面板";
-"Restore Pane" = "恢复 面板";
+"Zoom Pane" = "放大面板";
+"Restore Pane" = "还原面板";
 "Creating…" = "正在创建…";
 "Theme" = "跟随主题";
 "Graphite" = "石墨";
@@ -176,8 +176,8 @@
 "macOS notifications are allowed." = "macOS 通知权限已允许。";
 "Workspace" = "工作区";
 "Rename" = "重命名";
-"Rename Tab" = "重命名 标签页";
-"Rename Pane" = "重命名 面板";
+"Rename Tab" = "重命名标签页";
+"Rename Pane" = "重命名面板";
 "Close Pane" = "关闭面板";
 "Forget Connection" = "忘记连接";
 "Only this connection is removed. Server sessions and processes continue." = "仅移除此连接；服务端会话和进程继续运行。";
@@ -299,11 +299,11 @@
 "Light weight" = "细";
 "Font size" = "字号";
 "Font weight is available for SF Mono." = "SF Mono 支持调整字重。";
-"Use finer font strokes for clear, balanced Agent output." = "使用较细的笔画显示文字，避免 Agent 输出中的粗体显得过重。";
+"Use finer font strokes for clear, balanced Agent output." = "使用较细的文字笔画。";
 "Mouse reporting" = "鼠标上报";
-"Forward clicks to terminal apps. Hold Shift to select text locally." = "向终端应用转发点击；拖动仍然选择文字。按住 Shift 也可以选择文字。";
+"Forward clicks to terminal apps. Hold Shift to select text locally." = "将点击传给终端应用；按住 Shift 可选择文字。";
 "Copy on select" = "选中即复制";
-"Copy text to the clipboard when you finish selecting it." = "用鼠标选中文字后立即复制到剪贴板，与 Herdr 的 copy_on_select 一致。";
+"Copy text to the clipboard when you finish selecting it." = "选中文字后自动复制到剪贴板。";
 "Import from Ghostty…" = "从 Ghostty 导入…";
 "Cyan" = "青蓝";
 
@@ -363,3 +363,17 @@
 "Herdr is not running" = "Herdr 未启动";
 "Session unavailable" = "会话不可用";
 "Unable to connect" = "暂未连接";
+
+"Unread" = "未读";
+
+"Find Local Sessions" = "查找本机会话";
+
+"Import Herdr Machines" = "导入 Herdr 设备";
+
+"Font size must be between 9 and 22 pt." = "字号需在 9–22 pt 之间。";
+
+"No font-family or font-size found." = "未找到字体或字号设置。";
+
+"Could not import %@: %@" = "无法导入 %@：%@";
+
+"Mode" = "模式";

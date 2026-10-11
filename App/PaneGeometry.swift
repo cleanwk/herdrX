@@ -11,6 +11,12 @@ enum PaneMetrics {
     static let horizontalOverhead = contentInset * 2
     static let verticalOverhead = headerHeight + contentInset
 
+    static func canSplit(_ size: CGSize, horizontal: Bool, minimum: CGSize) -> Bool {
+        let dimension = horizontal ? size.width : size.height
+        let required = horizontal ? minimum.width : minimum.height
+        return dimension > 0 && dimension >= required * 2 - splitGap
+    }
+
     static func frame(_ rect: CGRect, in size: CGSize, scale: CGFloat) -> CGRect {
         func snap(_ value: CGFloat) -> CGFloat { (value * scale).rounded() / scale }
         let left = snap(size.width * rect.minX), right = snap(size.width * rect.maxX)

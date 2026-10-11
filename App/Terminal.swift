@@ -44,7 +44,7 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
 
 final class TerminalView: AppTerminalView {
     weak var hostSurface: TerminalSurface?
-    var objectMenu: (() -> NSMenu?)?
+    var objectMenu: ((PaneMenuSource) -> NSMenu?)?
     var commands: WorkbenchActions?
     private var mouseOrigin: NSEvent?
     private var localSelection = false
@@ -82,9 +82,9 @@ final class TerminalView: AppTerminalView {
     }
     override func mouseUp(with event: NSEvent) { super.mouseUp(with: localSelection ? selecting(event) : event); stopSelection(); localSelection = false }
     override func viewWillMove(toWindow newWindow: NSWindow?) { stopSelection(); super.viewWillMove(toWindow: newWindow) }
-    override func rightMouseDown(with event: NSEvent) { stopSelection(); if let menu = objectMenu?() { NSMenu.popUpContextMenu(menu, with: event, for: self) } else { super.rightMouseDown(with: event) } }
+    override func rightMouseDown(with event: NSEvent) { stopSelection(); if let menu = objectMenu?(.terminal) { NSMenu.popUpContextMenu(menu, with: event, for: self) } else { super.rightMouseDown(with: event) } }
     override func rightMouseUp(with event: NSEvent) { if objectMenu == nil { super.rightMouseUp(with: event) } }
-    override func menu(for event: NSEvent) -> NSMenu? { objectMenu?() ?? super.menu(for: event) }
+    override func menu(for event: NSEvent) -> NSMenu? { objectMenu?(.terminal) ?? super.menu(for: event) }
     var onFocus: (() -> Void)?
     var visible = true {
         didSet { guard oldValue != visible else { return }; isHidden = !visible; if !visible { stopSelection(); layer?.contents = nil }; setSurfaceVisible(visible) }
@@ -116,6 +116,7 @@ struct TerminalCanvas: NSViewRepresentable {
     let previewRatio: (Layout.Divider, Double) -> Void
     let titles: [PaneKey: PaneTitle]
     let close: (PaneKey) -> Void
+    let canClose: (PaneKey) -> Bool
     let zoomed: Bool
     let restore: () -> Void
     let focusRevision: Int
@@ -125,7 +126,7 @@ struct TerminalCanvas: NSViewRepresentable {
     func makeNSView(context: Context) -> Canvas { Canvas() }
     func updateNSView(_ canvas: Canvas, context: Context) {
         canvas.corners = corners; canvas.actions = actions; canvas.focusRevision = focusRevision; canvas.minimumPaneSize = minimumPaneSize
-        canvas.titles = titles; canvas.close = close; canvas.entries = terminals; canvas.focused = focused; canvas.dividers = dividers; canvas.setRatio = setRatio; canvas.previewRatio = previewRatio; canvas.zoomed = zoomed; canvas.restore = restore; canvas.needsLayout = true; canvas.needsDisplay = true
+        canvas.titles = titles; canvas.close = close; canvas.canClose = canClose; canvas.entries = terminals; canvas.focused = focused; canvas.dividers = dividers; canvas.setRatio = setRatio; canvas.previewRatio = previewRatio; canvas.zoomed = zoomed; canvas.restore = restore; canvas.needsLayout = true; canvas.needsDisplay = true
     }
     final class Canvas: NSView {
         var actions: WorkbenchActions?
@@ -135,7 +136,7 @@ struct TerminalCanvas: NSViewRepresentable {
         var focusRevision = 0
         private var appliedFocusRevision = -1
         var minimumPaneSize: CGSize = .zero
-        private var activation: NSObjectProtocol?
+        private var activationObservers: [NSObjectProtocol] = []
         private var accessibilityObserver: NSObjectProtocol?
         override init(frame: NSRect) {
             super.init(frame: frame)
@@ -150,14 +151,16 @@ struct TerminalCanvas: NSViewRepresentable {
                     }
                 })
             }
-            activation = NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { [weak self] note in
-                MainActor.assumeIsolated { if let self, (note.object as? NSWindow) === self.window { self.needsDisplay = true; self.needsLayout = true } }
+            for name in [NSWindow.didBecomeKeyNotification, NSWindow.didResignKeyNotification] {
+                activationObservers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
+                    MainActor.assumeIsolated { if let self, (note.object as? NSWindow) === self.window { self.needsDisplay = true; self.needsLayout = true } }
+                })
             }
         }
         required init?(coder: NSCoder) { fatalError() }
         deinit {
             for observer in fullScreenObservers { NotificationCenter.default.removeObserver(observer) }
-            if let activation { NotificationCenter.default.removeObserver(activation) }
+            for observer in activationObservers { NotificationCenter.default.removeObserver(observer) }
             if let accessibilityObserver { NSWorkspace.shared.notificationCenter.removeObserver(accessibilityObserver) }
         }
         var focused: PaneKey?
@@ -165,6 +168,7 @@ struct TerminalCanvas: NSViewRepresentable {
         var setRatio: ((Layout.Divider, Double) -> Void)?
         var titles: [PaneKey: PaneTitle] = [:]
         var close: ((PaneKey) -> Void)?
+        var canClose: ((PaneKey) -> Bool)?
         var previewRatio: ((Layout.Divider, Double) -> Void)?
         var zoomed = false
         var restore: (() -> Void)?
@@ -197,13 +201,13 @@ struct TerminalCanvas: NSViewRepresentable {
         }
         override func menu(for event: NSEvent) -> NSMenu? {
             let point = convert(event.locationInWindow, from: nil)
-            return entries.first { $0.2.width > 0 && paneFrame($0.2).contains(point) }?.1.view.objectMenu?()
+            return entries.first { $0.2.width > 0 && paneFrame($0.2).contains(point) }?.1.view.objectMenu?(.title)
         }
         override func draw(_ dirtyRect: NSRect) {
             Theme.content.setFill(); bounds.fill()
             for (key, _, rect) in entries where rect.width > 0 && rect.height > 0 {
                 let frame = borderFrame(rect)
-                let active = focused == key
+                let active = focused == key && window?.isKeyWindow == true
                 if let context = NSGraphicsContext.current?.cgContext {
                     context.saveGState()
                     context.setStrokeColor((active ? Theme.accent : Theme.foreground.withAlphaComponent(0.28)).cgColor)
@@ -316,6 +320,7 @@ struct TerminalCanvas: NSViewRepresentable {
                 let button = closeButtons[key] ?? CloseButton(); closeButtons[key] = button
                 if button.superview !== self { addSubview(button) }
                 button.invoke = { [weak self] in self?.close?(key) }
+                button.isEnabled = canClose?(key) == true
                 button.hoverChanged = { [weak self] in self?.updateCloseButtons() }
                 if visible {
                     let frame = paneFrame(rect)

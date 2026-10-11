@@ -110,7 +110,8 @@ struct Tabs: NSViewRepresentable {
                 button.tag = index; button.title = entries[index].title + (entries[index].count > 1 ? "  \(entries[index].count)" : "")
                 button.font = .systemFont(ofSize: 12, weight: selected == entries[index].id ? .semibold : .regular)
                 button.contentTintColor = selected == entries[index].id ? Theme.foreground : Theme.secondary
-                let width = min(200, max(40, (button.title as NSString).size(withAttributes: [.font: button.font!]).width + 18))
+                // Reserve the selected weight so changing tabs does not move its neighbours.
+                let width = min(200, max(40, (button.title as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: .semibold)]).width + 18))
                 button.frame = NSRect(x: x, y: max(0, (bounds.height - TabMetrics.height) / 2), width: width, height: TabMetrics.height); x += width + TabMetrics.gap
                 button.setAccessibilityRole(.radioButton); button.setAccessibilityLabel(entries[index].title); button.setAccessibilityValue(selected == entries[index].id ? 1 : 0); button.setAccessibilityHelp(LF("%d panes", entries[index].count)); button.toolTip = entries[index].title
             }
@@ -128,8 +129,12 @@ struct Tabs: NSViewRepresentable {
             let menu = NSMenu(); menu.autoenablesItems = false
             let id = entries[index].id, rename = rename, close = close, move = move
             menu.addItem(ActionMenuItem("Rename Tab…", enabled: writable) { rename?(id) })
-            menu.addItem(ActionMenuItem("Move Left", enabled: writable && index > 0) { move?(id, index - 1) })
-            menu.addItem(ActionMenuItem("Move Right", enabled: writable && index + 1 < entries.count) { move?(id, index + 2) })
+            if entries.count > 1 {
+                menu.addItem(.separator())
+                menu.addItem(ActionMenuItem("Move Left", enabled: writable && index > 0) { move?(id, index - 1) })
+                menu.addItem(ActionMenuItem("Move Right", enabled: writable && index + 1 < entries.count) { move?(id, index + 2) })
+            }
+            menu.addItem(.separator())
             menu.addItem(ActionMenuItem("Close Tab…", enabled: writable) { close?(id) })
             return menu
         }
