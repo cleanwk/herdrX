@@ -15,7 +15,7 @@ struct Workbench: View {
                         .buttonStyle(.borderless).padding(.leading, 78).padding(.trailing, 12).frame(height: TabMetrics.barHeight)
                     HStack(spacing: 5) {
                         Button { desk.quickSpace() } label: { Label("New", systemImage: "plus") }.disabled(desk.creatingSpace).help(desk.creationHelp)
-                        Menu { Button("New Space with Name and Directory…") { desk.showSpaceForm() } } label: { Image(systemName: "chevron.down") }.menuIndicator(.hidden).fixedSize().accessibilityLabel("Space Options")
+                        Menu { Button("New Space…") { desk.showSpaceForm() } } label: { Image(systemName: "chevron.down") }.menuIndicator(.hidden).fixedSize().accessibilityLabel("Space Options")
                         Spacer(minLength: 0)
                         Button { desk.openSearch() } label: { Image(systemName: "magnifyingglass") }.help("Search · ⌘K").accessibilityLabel("Search")
                     }.font(.system(size: 12, weight: .medium)).buttonStyle(.borderless).padding(.horizontal, 16).frame(height: 40)
@@ -36,14 +36,14 @@ struct Workbench: View {
                     Menu {
                         Button("Split Right") { desk.split(horizontal: true) }.disabled(!desk.canSplit(horizontal: true))
                         Button("Split Down") { desk.split(horizontal: false) }.disabled(!desk.canSplit(horizontal: false))
-                        Button(LocalizedStringKey(desk.zoomed ? "Restore Pane" : "Zoom Pane")) { desk.zoomed.toggle() }.disabled(desk.focused == nil)
+                        Button(LocalizedStringKey(desk.zoomed ? "Restore Pane" : "Zoom Pane")) { desk.zoomed.toggle() }.disabled(desk.focused.map(desk.canZoom) != true)
                     } label: { Image(systemName: "rectangle.split.2x1") }.menuIndicator(.hidden).frame(width: 22).accessibilityLabel("Pane Layout").help("Splits require room for at least 24 columns and 6 rows per pane.")
                 }.font(.system(size: 12)).buttonStyle(.borderless).padding(.trailing, 8).frame(height: TabMetrics.barHeight).background(Color(nsColor: Theme.chrome)).zIndex(1)
                 Divider()
                 // Pane titles supply the top clearance; the other three sides use one shared inset.
                 ZStack(alignment: .bottom) {
                     GeometryReader { geo in
-                        TerminalCanvas(terminals: desk.canvas, focused: desk.focused, dividers: desk.dividers, setRatio: desk.setRatio, previewRatio: desk.previewRatio, titles: desk.paneTitles, close: { desk.closePane($0) }, zoomed: desk.zoomed, restore: { desk.zoomed = false }, focusRevision: desk.focusRevision, minimumPaneSize: desk.minimumPaneSize, actions: WorkbenchActions(perform: command, enabled: enabled), corners: paneCorners(geo))
+                        TerminalCanvas(terminals: desk.canvas, focused: desk.focused, dividers: desk.dividers, setRatio: desk.setRatio, previewRatio: desk.previewRatio, titles: desk.paneTitles, close: { desk.closePane($0) }, canClose: { desk.canAct(on: $0) }, zoomed: desk.zoomed, restore: { desk.zoomed = false }, focusRevision: desk.focusRevision, minimumPaneSize: desk.minimumPaneSize, actions: WorkbenchActions(perform: command, enabled: enabled), corners: paneCorners(geo))
                     }
                     if let key = desk.focused, desk.ended.contains(key) {
                         HStack { Text(desk.recoveryLabel(key)); Button("Reconnect") { desk.reconnect(key) }.disabled(!desk.canWrite(key.device)) }.padding(12).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 8)).padding(20)
@@ -68,7 +68,7 @@ struct Workbench: View {
         .overlay(alignment: .leading) { if showSidebar { ResizeStrip(width: $sidebar, limits: 200...480, reset: 260).frame(width: 7).offset(x: sidebar - 3) } }
         .background(Color(nsColor: Theme.content)).background(WindowBehavior()).ignoresSafeArea(.container, edges: .top)
         .sheet(isPresented: $desk.showSearch, onDismiss: desk.restoreFocus) { Jump().environmentObject(desk).environment(\.locale, locale).background(SheetCloseHandler { desk.showSearch = false }) }
-        .sheet(item: $desk.tabRenameRequest, onDismiss: desk.restoreFocus) { request in TabRenameSheet(request: request).environmentObject(desk).environment(\.locale, locale) }
+        .sheet(item: $desk.renameRequest, onDismiss: desk.restoreFocus) { request in RenameSheet(request: request).environmentObject(desk).environment(\.locale, locale) }
         .sheet(item: $desk.spaceRequest, onDismiss: desk.restoreFocus) { request in SpaceCreate(initialDevice: request.device ?? "").environmentObject(desk).environment(\.locale, locale) }
         .alert("HerdrX", isPresented: Binding(get: { desk.message != nil }, set: { if !$0 { desk.message = nil } })) { Button("OK") { desk.message = nil } } message: { Text(desk.message ?? "") }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in Theme.apply(); desk.objectWillChange.send() }
@@ -140,8 +140,12 @@ struct Workbench: View {
                     Button("Rename…") { desk.renameSpace(device: device.id, space: space) }.disabled(!desk.canAct(device: device.id, object: "space|" + space.id))
                     Button("Copy Directory") { if let path = desk.spacePath(device: device.id, space: space.id) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(path, forType: .string) } }.disabled(desk.spacePath(device: device.id, space: space.id) == nil)
                     let index = spaces.firstIndex { $0.id == space.id } ?? 0
-                    Button("Move Up") { moveSpace(device.id, space.id, index - 1) }.disabled(index == 0 || !desk.canAct(device: device.id, object: "space|" + space.id))
-                    Button("Move Down") { moveSpace(device.id, space.id, index + 1) }.disabled(index + 1 >= spaces.count || !desk.canAct(device: device.id, object: "space|" + space.id))
+                    if spaces.count > 1 {
+                        Divider()
+                        Button("Move Up") { moveSpace(device.id, space.id, index - 1) }.disabled(index == 0 || !desk.canAct(device: device.id, object: "space|" + space.id))
+                        Button("Move Down") { moveSpace(device.id, space.id, index + 1) }.disabled(index + 1 >= spaces.count || !desk.canAct(device: device.id, object: "space|" + space.id))
+                    }
+                    Divider()
                     Button("Close Space…") { desk.closeSpace(device: device.id, space: space) }.disabled(!desk.canAct(device: device.id, object: "space|" + space.id))
                 }
             }
@@ -151,30 +155,34 @@ struct Workbench: View {
             if desk.connections[device.id]?.issue?.canStart == true, LocalHerdrTarget(endpoint: device.endpoint) != nil {
                 Button("Start Herdr") { desk.startLocalHerdr(device) }
             }
-            Button("Retry Connection") { desk.connect(device) }.disabled(desk.connections[device.id]?.isBusy == true)
+            if !desk.canWrite(device.id) {
+                Button("Retry Connection") { desk.connect(device) }.disabled(desk.connections[device.id]?.isBusy == true)
+            }
         }
     }
     func moveSpace(_ device: String, _ space: String, _ index: Int) { desk.objectAction(device: device, method: "workspace.move", params: ["workspace_id": .string(space), "insert_index": .number(Double(index))]) }
     func agentRow(_ row: AgentRow) -> some View {
         let unread = desk.attentionState.unread.contains(row.id)
+        let status = L(unread ? "Completed, unread" : row.pane.stateLabel)
         let context = DisplayTitle.detail([row.pane.agent, desk.sessions[row.device]?.spaces.first { $0.id == row.pane.workspace }?.label, desk.deviceFilter.isEmpty && desk.devices.count > 1 ? desk.devices.first { $0.id == row.device }?.displayName : nil])
         return SidebarRow(selected: desk.focused == row.id, action: { desk.jump(row.device + "|" + row.pane.id) }, verticalPadding: 9.5, radius: 7, filledSelection: true) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) { Text(desk.title(device: row.device, pane: row.pane)).font(.system(size: 13)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading); AgentStatus(status: row.pane.status, unread: unread).accessibilityHidden(true) }
                 HStack(spacing: 5) {
                     HStack(spacing: 4) { AgentIcon(tool: row.pane.agent); Text(context).lineLimit(1) }.frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(Color(nsColor: Theme.secondary))
-                    Text(L(unread ? "Completed, unread" : row.pane.stateLabel)).lineLimit(1).foregroundStyle(AgentStatus.color(row.pane.status, unread: unread)).fixedSize(horizontal: true, vertical: false)
+                    Text(unread ? L("Unread") : status).lineLimit(1).truncationMode(.tail).foregroundStyle(AgentStatus.color(row.pane.status, unread: unread)).frame(width: 64, alignment: .trailing).help(status)
                 }.font(.system(size: 11))
             }.padding(.leading, 18)
-        }.help(desk.paneHelp(row)).contextMenu { paneActions(row) }
+        }.help(desk.paneHelp(row) + "\n" + status).accessibilityValue(status).contextMenu { paneActions(row) }
     }
     @ViewBuilder func paneActions(_ row: AgentRow) -> some View {
         Button("Rename Pane…") { desk.renamePane(row.id) }.disabled(!desk.canAct(on: row.id))
         Button("Copy Directory") { desk.copyDirectory(row.id) }.disabled(row.pane.cwd == nil).help(row.pane.cwd == nil ? L("Directory is unavailable.") : row.pane.cwd ?? "")
+        Divider()
         Button("Close Pane…") { desk.closePane(row.id) }.disabled(!desk.canAct(on: row.id))
     }
     func enabled(_ action: String) -> Bool {
-        if desk.spaceRequest != nil || desk.tabRenameRequest != nil || desk.showSearch { return false }
+        if desk.spaceRequest != nil || desk.renameRequest != nil || desk.showSearch { return false }
         if action == "attention" { return !desk.attentionCandidates.isEmpty }
         if action == "space" { return !desk.creatingSpace }
         if action == "terminal" || action == "tab" { return desk.canCreate }
@@ -182,7 +190,8 @@ struct Workbench: View {
         if action == "splitDown" { return desk.canSplit(horizontal: false) }
         if action.hasPrefix("tab"), let number = Int(action.dropFirst(3)) { return number <= tabs.count }
         if ["close", "closePane"].contains(action) { return desk.focused.map(desk.canAct) ?? false }
-        if ["zoom", "repair", "interrupt", "left", "right", "up", "down", "resizeLeft", "resizeRight", "resizeUp", "resizeDown"].contains(action) { return desk.focused != nil }
+        if action == "zoom" { return desk.focused.map(desk.canZoom) == true }
+        if ["repair", "interrupt", "left", "right", "up", "down", "resizeLeft", "resizeRight", "resizeUp", "resizeDown"].contains(action) { return desk.focused != nil }
         if action == "renameTab" { return desk.selectedDevice.map { desk.canAct(device: $0, object: "tab|" + desk.selectedTab) } == true && !tabs.isEmpty }
         if action == "closeTab" { return !tabs.isEmpty && (desk.selectedDevice.map(desk.canWrite) ?? false) }
         if ["previous", "next"].contains(action) { return !tabs.isEmpty }

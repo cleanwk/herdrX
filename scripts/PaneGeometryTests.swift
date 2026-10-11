@@ -64,6 +64,20 @@ import CoreGraphics
         precondition(PaneShape.path(in: shape, corners: PaneCorners()).contains(CGPoint(x: 0.1, y: 0.1)), "Full-screen or internal corner is not square")
         let tiny = PaneMetrics.frame(CGRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5), in: CGSize(width: 2, height: 2), scale: 2)
         precondition(tiny.width >= 0 && tiny.height >= 0, "Tiny layout produced a negative frame")
+        let minimum = CGSize(width: 226.6, height: 157.5)
+        let canvas = CGSize(width: 703, height: 583)
+        let smallPane = PaneMetrics.frame(CGRect(x: 0, y: 0, width: 0.3, height: 1), in: canvas, scale: 2)
+        precondition(!PaneMetrics.canSplit(smallPane.size, horizontal: true, minimum: minimum), "A narrow pane permits an undersized horizontal split")
+        precondition(PaneMetrics.canSplit(smallPane.size, horizontal: false, minimum: minimum), "A tall pane cannot split down")
+        precondition(PaneMetrics.canSplit(canvas, horizontal: true, minimum: minimum), "A full-size pane cannot split right")
+        precondition(!PaneMetrics.canSplit(.zero, horizontal: false, minimum: minimum), "An unlaid-out pane can split")
+        for horizontal in [false, true] {
+            let threshold = (horizontal ? minimum.width : minimum.height) * 2 - PaneMetrics.splitGap
+            let fits = horizontal ? CGSize(width: threshold, height: 583) : CGSize(width: 703, height: threshold)
+            let short = horizontal ? CGSize(width: threshold - 0.5, height: 583) : CGSize(width: 703, height: threshold - 0.5)
+            precondition(PaneMetrics.canSplit(fits, horizontal: horizontal, minimum: minimum))
+            precondition(!PaneMetrics.canSplit(short, horizontal: horizontal, minimum: minimum))
+        }
         print("PASS: independent pane borders, 8pt gutters, nested/stacked/grid layouts, resize, 1×/2× pixel alignment, outer canvas edges, selective continuous corners and concentric terminal masks")
     }
 }

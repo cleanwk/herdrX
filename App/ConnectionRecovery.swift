@@ -44,7 +44,7 @@ struct ConnectionRecovery: View {
                     }.frame(maxHeight: 180)
                     Button("Copy Details") {
                         NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(device.endpoint.socketPath + "\n" + (state.issue?.detail ?? ""), forType: .string)
+                        NSPasteboard.general.setString(DisplayTitle.detail([device.displayName, device.endpoint.target, device.endpoint.socketPath]) + "\n" + (state.issue?.detail ?? ""), forType: .string)
                     }
                 }.padding(16).frame(width: 320)
             }

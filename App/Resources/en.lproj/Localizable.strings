@@ -50,7 +50,7 @@
 "Previous Tab" = "Previous Tab";
 "Next Tab" = "Next Tab";
 "Restore Input Modes" = "Restore Input Modes";
-"Interrupt Task and Repair TTY…" = "Interrupt Task and Repair TTY…";
+"Interrupt Task and Repair TTY…" = "Interrupt and Repair…";
 "No active terminal" = "No active terminal";
 "Choose a space or open a local shell." = "Choose a space or open a local shell.";
 "Open Shell" = "Open Shell";
@@ -296,10 +296,10 @@
 "Session appearance follows the app theme." = "Session appearance follows the app theme.";
 "Pane focus, active tabs and selection." = "Pane focus, active tabs and selection.";
 "Weight" = "Weight";
-"Light weight" = "Light weight";
+"Light weight" = "Light";
 "Font size" = "Font size";
 "Font weight is available for SF Mono." = "Font weight is available for SF Mono.";
-"Use finer font strokes for clear, balanced Agent output." = "Use finer font strokes for clear, balanced Agent output.";
+"Use finer font strokes for clear, balanced Agent output." = "Use finer text strokes.";
 "Mouse reporting" = "Mouse reporting";
 "Forward clicks to terminal apps. Hold Shift to select text locally." = "Forward clicks to terminal apps. Hold Shift to select text locally.";
 "Copy on select" = "Copy on select";
@@ -307,7 +307,7 @@
 "Import from Ghostty…" = "Import from Ghostty…";
 "Cyan" = "Cyan";
 
-"System mode" = "System mode";
+"System mode" = "System";
 "Generate Client Identity" = "Generate Client Identity";
 "Connection token" = "Connection token";
 
@@ -363,3 +363,69 @@
 "Herdr is not running" = "Herdr is not running";
 "Session unavailable" = "Session unavailable";
 "Unable to connect" = "Unable to connect";
+
+"Unread" = "Unread";
+
+"Find Local Sessions" = "Find Local Sessions";
+
+"Import Herdr Machines" = "Import Herdr Machines";
+
+"Font size must be between 9 and 22 pt." = "Font size must be between 9 and 22 pt.";
+
+"No font-family or font-size found." = "No font-family or font-size found.";
+
+"Could not import %@: %@" = "Could not import %@: %@";
+
+"Mode" = "Mode";
+
+"Rename Space" = "Rename Space";
+
+"This item is no longer available. Reconnect and try again." = "This item is no longer available. Reconnect and try again.";
+
+"Could not rename: %@" = "Could not rename: %@";
+
+"No new connections found." = "No new connections found.";
+
+"Added 1 connection." = "Added 1 connection.";
+
+"Added %d connections." = "Added %d connections.";
+
+"Finding local sessions…" = "Finding local sessions…";
+"Cancelling…" = "Cancelling…";
+"Cancelled." = "Cancelled.";
+
+"Importing Herdr machines…" = "Importing Herdr machines…";
+
+"Herdr returned an invalid session list." = "Herdr returned an invalid session list.";
+
+"A discovered session is missing its name or absolute socket path." = "A discovered session is missing its name or absolute socket path.";
+
+"Could not find sessions: %@" = "Could not find sessions: %@";
+
+"Invalid Herdr machine list." = "Invalid Herdr machine list.";
+
+"A saved machine is missing its ID, target or named session." = "A saved machine is missing its ID, target or named session.";
+
+"Cannot find session “%@” on %@." = "Cannot find session “%@” on %@.";
+
+"Could not import connections: %@" = "Could not import connections: %@";
+
+"This connection is no longer available." = "This connection is no longer available.";
+
+"Repair Terminal" = "Repair Terminal";
+
+"Focus Pane" = "Focus Pane";
+
+"Resize Pane" = "Resize Pane";
+
+"Go to Tab" = "Go to Tab";
+
+"Tab %d" = "Tab %d";
+
+"Close Tab" = "Close Tab";
+
+"Close Space" = "Close Space";
+
+"This stops the pane and its running processes on %@." = "This stops the pane and its running processes on %@.";
+
+"This stops %d panes and their running processes on %@." = "This stops %d panes and their running processes on %@.";

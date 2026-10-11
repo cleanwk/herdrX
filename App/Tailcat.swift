@@ -68,10 +68,13 @@ struct TailcatSettings: View {
                 Section("Saved devices") {
                     ForEach(desk.devices.filter { $0.endpoint.kind == "tailcat" }) { device in
                         HStack {
-                            VStack(alignment: .leading) { Text(device.displayName); Text(L((desk.connections[device.id] ?? .connecting).title)).font(.caption).foregroundStyle(.secondary) }
+                            VStack(alignment: .leading) {
+                                Text(device.displayName).lineLimit(1).truncationMode(.middle).help(device.displayName)
+                                Text(L((desk.connections[device.id] ?? .connecting).title)).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            }
                             Spacer()
-                            Button("Edit") { editing = device.id; name = device.displayName; token = "" }
-                            Button("Retry") { desk.connect(device) }
+                            Button("Edit") { edit(device) }.fixedSize()
+                            if !desk.canWrite(device.id) { Button("Retry") { desk.connect(device) }.disabled(desk.connections[device.id]?.isBusy == true).fixedSize() }
                         }
                     }
                 }
@@ -91,17 +94,31 @@ struct TailcatSettings: View {
                 SecureField("Connection token", text: $token, prompt: Text(editing == nil ? "" : "Leave blank to keep the saved token"))
                 Text("Use a herdr.tailcat host exposing control port 6464 and terminal port 6465. Tokens and the client key are kept in HerdrX’s Keychain namespace.").font(.caption).foregroundStyle(.secondary)
                 Button(LocalizedStringKey(editing == nil ? "Add Device" : "Save Changes")) {
-                    let device = Device(id: editing ?? UUID().uuidString, displayName: name, endpoint: .init(kind: "tailcat", socketPath: "/herdr.sock"))
+                    guard let cleanName = DisplayTitle.clean(name) else { return }
+                    guard editing == nil || desk.devices.contains(where: { $0.id == editing && $0.endpoint.kind == "tailcat" }) else { error = L("This connection is no longer available."); return }
+                    let device = Device(id: editing ?? UUID().uuidString, displayName: cleanName, endpoint: .init(kind: "tailcat", socketPath: "/herdr.sock"))
                     do {
                         if !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { try TailcatSecrets.save(token.trimmingCharacters(in: .whitespacesAndNewlines), account: "token." + device.id) }
                         publicKey = try TailcatSecrets.identity().publicKey
                         if editing != nil { desk.update(device) } else { desk.add(device) }
-                        editing = nil; name = ""; token = ""
+                        reset()
                     } catch { self.error = error.localizedDescription }
-                }.disabled(name.isEmpty || (editing == nil && token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
-                if editing != nil { Button("Cancel Editing") { editing = nil; name = ""; token = "" } }
+                }.disabled(DisplayTitle.clean(name) == nil || (editing == nil && token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
+                if editing != nil { Button("Cancel Editing") { reset() } }
             }
-            if let error { Text(error).foregroundStyle(.secondary).textSelection(.enabled) }
+            if let error { Text(error).foregroundStyle(.red).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
         }.formStyle(.grouped).task { if (try? TailcatSecrets.read("client")) != nil { publicKey = (try? TailcatSecrets.identity().publicKey) ?? "" } }
+            .onAppear { receiveEditRequest() }.onChange(of: desk.tailcatEditRequest) { receiveEditRequest() }
+            .onChange(of: desk.devices) {
+                if let editing, !desk.devices.contains(where: { $0.id == editing && $0.endpoint.kind == "tailcat" }) { reset(); error = L("This connection is no longer available.") }
+            }
+    }
+    private func edit(_ device: Device) { editing = device.id; name = device.displayName; token = ""; error = nil }
+    private func reset() { editing = nil; name = ""; token = ""; error = nil }
+    private func receiveEditRequest() {
+        guard let id = desk.tailcatEditRequest else { return }
+        desk.tailcatEditRequest = nil
+        guard let device = desk.devices.first(where: { $0.id == id && $0.endpoint.kind == "tailcat" }) else { error = L("This connection is no longer available."); return }
+        edit(device)
     }
 }

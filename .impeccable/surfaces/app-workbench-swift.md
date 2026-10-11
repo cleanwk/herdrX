@@ -60,3 +60,14 @@ The latest explicit native-Herdr direction supersedes the earlier shared-edge/wi
 ## 2026-10-11 window corner correction
 
 Supersedes the all-square outer corners above. Preserve the 8pt outer inset and internal gutters, four-side breathing room and pixel-aligned 1.5pt Retina border. Only window-adjacent bottom corners use continuous curves derived from public SwiftUI window geometry. Beside the visible sidebar the left corner remains square; all internal/top/full-screen corners remain square. The outline and terminal mask share one contour, inset by half the stroke and by 4pt respectively. Current native checks, screenshots and bounded inline finish verdict: [validation](../../docs/pane-corners/VALIDATION.md). No new domain capability or shipping raster asset.
+
+
+## 2026-10-11 adversarial interaction review
+
+Keep the existing 28/22/3pt tabs, 8pt gutters/perimeter and native window-corner geometry. Tab widths reserve semibold text in every selection state. Agent state uses a 64pt trailing column with short Unread copy and complete help/accessibility status. Pane focus tint follows key-window activation; close buttons reflect pane availability.
+
+Context menus distinguish title/content, group Close separately, omit single-object moves/zoom and omit Retry for healthy connections. Split eligibility uses the clicked pane's unzoomed layout size, with captured-target and focus checks at completion. Rename defers marked-text commands to the IME. Settings labels remain concise and Add Device routes identically from mouse/keyboard/accessibility.
+
+All 20 findings now have implementation changes: [REVIEW](../../docs/adversarial-ui-review/REVIEW.md). Local/CI/runtime evidence boundaries: [VALIDATION](../../docs/adversarial-ui-review/VALIDATION.md). Fresh macOS running-app acceptance remains pending; no release or shipping raster added.
+
+Follow-up: independent Tab count slot; conservative shell-title shortening and adaptive context; shared async rename sheet for Space/Tab/Pane; inline discovery/import state and cancellation; Add Device resets the Connections form only on explicit request; direct Tailcat editing; grouped main-menu navigation/repair. See the same review/validation record for exact behavior and remaining macOS acceptance.
