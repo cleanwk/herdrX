@@ -29,6 +29,7 @@ struct DeviceSwitcher: View {
                     }.frame(maxHeight: min(360, CGFloat(desk.devices.count) * 46))
                     Divider().padding(.horizontal, 8).padding(.vertical, 4)
                     Button {
+                        desk.connectionFormRevision += 1
                         UserDefaults.standard.set("Connections", forKey: "settingsPage")
                         showing = false
                         openSettings()

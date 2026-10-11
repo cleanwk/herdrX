@@ -12,6 +12,9 @@ final class ActionMenuItem: NSMenuItem {
     init(_ title: String, enabled: Bool, action: @escaping () -> Void) { invoke = action; super.init(title: title, action: nil, keyEquivalent: ""); isEnabled = enabled }
     required init(coder: NSCoder) { fatalError() }
 }
+final class TabSnapshotBackground: NSView {
+    override func draw(_ dirtyRect: NSRect) { NSColor.windowBackgroundColor.setFill(); dirtyRect.fill() }
+}
 
 @main struct TabScrollTests {
     @MainActor static func main() {
@@ -92,10 +95,18 @@ final class ActionMenuItem: NSMenuItem {
         let countFrames = strip.buttons.map(\.frame)
         strip.selected = "number"; strip.syncButtons()
         precondition(strip.buttons.map(\.frame) == countFrames, "Count-bearing tabs shift on selection")
-        // Offscreen AppKit rendering evidence, not a capture of the running application.
-        if let bitmap = strip.bitmapImageRepForCachingDisplay(in: strip.bounds) {
-            strip.cacheDisplay(in: strip.bounds, to: bitmap)
-            try! bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "build/tests/tab-chrome.png"))
+        // Opaque native backgrounds make both appearances readable in artifact viewers.
+        // This is the production control in isolation, not the running application.
+        let host = TabSnapshotBackground(frame: NSRect(x: 0, y: 0, width: strip.frame.width, height: TabMetrics.barHeight))
+        window.setContentSize(host.frame.size); window.contentView = host
+        scroll.frame = host.bounds; host.addSubview(scroll); scroll.layout()
+        for (name, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+            host.appearance = NSAppearance(named: appearance)
+            host.effectiveAppearance.performAsCurrentDrawingAppearance {
+                guard let bitmap = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { preconditionFailure("Cannot render native tab evidence") }
+                host.cacheDisplay(in: host.bounds, to: bitmap)
+                try! bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "build/tests/tab-chrome-\(name).png"))
+            }
         }
         print("PASS: tab scroll containment, stable selection geometry, clicked context target, grouped/conditional/offline menus; 28pt bar / 22pt pills / 3pt insets")
     }

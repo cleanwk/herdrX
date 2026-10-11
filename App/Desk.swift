@@ -80,6 +80,7 @@ final class Desk: ObservableObject {
     @Published var renameRequest: RenameRequest?
     let renameQueue = SerialOperationQueue()
     @Published var tailcatEditRequest: String?
+    @Published var connectionFormRevision = 0
     @Published var discoveringDevices = false
     @Published var cancellingDiscovery = false
     @Published var discoveryStatus: String?

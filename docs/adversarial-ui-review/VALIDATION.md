@@ -13,12 +13,20 @@
 
 ## 原生自动检查
 
-当前 Linux 环境不能执行下面的 macOS 命令；它们通过本分支的 `Build and test` CI 运行。以 PR **当前 head** 的 checks 和日志为准，基线的成功 CI 不接受本分支。此文件不把尚未观察到的 CI 结果记作通过。
+当前 Linux 环境不能执行下面的 macOS 命令；它们通过本分支的 `Build and test` CI 运行。[PR #18 当前 checks](https://github.com/cleanwk/herdrX/pull/18/checks) 对应最终提交，基线的成功 CI 不接受本分支。
+
+已实际确认的检查点：
+
+- `dd50f670`：[首批修正 CI](https://github.com/cleanwk/herdrX/actions/runs/38124371870) 全部通过。
+- `e46fa63f`：[全部 20 项主要实现 CI](https://github.com/cleanwk/herdrX/actions/runs/38125193913) 全部通过：32 项 Core 测试、6 项 Python 契约测试、universal Release 构建、PTY、Tabs、Inputs、Pane geometry、预览打包。取消正在运行的 helper、重命名父级校验和 shell 标题回归均通过。
+- 收尾补充了 Add Device 从 Plugins/旧编辑表单重置的路由、Tailcat 错误排版，以及浅/深色原生控件截图背景；最终状态以以上 PR 当前 checks 为准，不把已通过的旧提交代替当前 head。
+
+构建日志仅有工具链的 AppIntents metadata 提示（项目未依赖该框架），没有观察到新增源码编译警告。日志和 ZIP 下载保留在本地忽略目录 `build/adversarial-ui-review/`，没有发布 Release。
 
 | 入口 | 覆盖范围 |
 | --- | --- |
 | `scripts/build.sh` | Core 测试（含新增 shell 标题投影、重命名父级/目标和 RPC 契约、运行中 helper 取消）、XcodeGen、arm64/x86_64 Release 编译和签名/架构校验。 |
-| `scripts/test-tabs.sh` | 直接编译生产 Tabs.swift；原有滚动、边界、resize、reveal；新增切换所有标签时 frame 不变、点击非选中标签的菜单目标、菜单分隔/单项/离线状态、长标题与独立计数不重叠。输出的 `tab-chrome.png` 是离屏原生控件证据，不是运行中应用截图。 |
+| `scripts/test-tabs.sh` | 直接编译生产 Tabs.swift；原有滚动、边界、resize、reveal；新增切换所有标签时 frame 不变、点击非选中标签的菜单目标、菜单分隔/单项/离线状态、长标题与独立计数不重叠。输出 `tab-chrome-light.png` / `tab-chrome-dark.png`：生产控件配测试用系统语义色和不透明原生窗口背景的离屏证据，不是整窗应用或全部主题验收。 |
 | `scripts/test-panes.sh` | 原有边框、1×/2×、圆角、网格和 gutter 回归；新增窄 pane 与大画布的分屏容量差异、水平/垂直阈值和零尺寸。它检查几何，不模拟真实 Herdr RPC。 |
 | `scripts/test-inputs.sh` | 直接编译 RenameInput.swift / SearchInput.swift；组合输入时 Return/Escape/箭头不被拦截、普通输入时动作仍执行、提交文本同步。marked text 由 NSTextView 测试替身提供，不等同于真实输入法候选窗验收。 |
 | `scripts/test-pty.sh` | 现有终端进程和 attach 代次回归。 |
@@ -37,7 +45,7 @@
 | 窄 Pane 放大后尝试分屏；离线；已有请求未完成 | 不按放大后的大 frame 放行小 pane 的无效分屏；不可用项禁用；直接关闭按钮同样禁用。 |
 | 延迟 pane.get / pane.split 后切换焦点、Tab 或设备 | 只对捕获的目标操作；不把新 pane 焦点抢到用户已离开的上下文。目标移走/消失有明确反馈。 |
 | 系统拼音输入法重命名 | 第一次 Return 选词，后续 Return 才提交；组合输入中 Escape 先取消候选，普通 Escape 关闭 sheet。双击、菜单、快捷键三个入口一致。 |
-| 键盘/VoiceOver 打开 Add Device… | 从任意设置页进入时均落在 Connections，popover 关闭；焦点可继续进入表单。 |
+| 键盘/VoiceOver 打开 Add Device… | 包括之前位于 Plugins 子页或旧连接编辑表单，均落在 Connections → Devices 的新建表单，popover 关闭；焦点可继续进入表单。普通打开设置保留现有状态。 |
 | 删除正在筛选的设备 | 筛选回到 All Devices，其他设备与空态一致，没有“全部设备”标题却空列表。 |
 | 工作台 → Settings / 另一应用 → 工作台 | 非活跃窗口不保留强面板焦点色，返回正确终端；Cmd-W 在 sheet/settings/workbench 各自只执行预期的关闭。后者是复验风险项，未据源码确认有故障。 |
 | Settings 字号 9/13.5/22pt、旧 Bold/Semibold、英文 | 控件与预览一致；当前保存的旧字重有选中项；操作按钮不横向溢出；导入错误可读且可滚动。 |

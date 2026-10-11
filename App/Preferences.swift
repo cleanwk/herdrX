@@ -11,7 +11,7 @@ struct Preferences: View {
         TabView(selection: $selected) {
             Appearance().tabItem { Label("Appearance", systemImage: "paintbrush.pointed") }.tag("Appearance")
             TerminalSettings().tabItem { Label("Terminal", systemImage: "terminal") }.tag("Terminal")
-            ConnectionsSettings().tabItem { Label("Connections", systemImage: "server.rack") }.tag("Connections")
+            ConnectionsSettings().id(desk.connectionFormRevision).tabItem { Label("Connections", systemImage: "server.rack") }.tag("Connections")
             Notifications().tabItem { Label("Notifications", systemImage: "bell") }.tag("Notifications")
             TailcatSettings().tabItem { Label("Tailcat", systemImage: "key") }.tag("Tailcat")
             Updates().tabItem { Label("About", systemImage: "info.circle") }.tag("About")

@@ -70,4 +70,4 @@ Context menus distinguish title/content, group Close separately, omit single-obj
 
 All 20 findings now have implementation changes: [REVIEW](../../docs/adversarial-ui-review/REVIEW.md). Local/CI/runtime evidence boundaries: [VALIDATION](../../docs/adversarial-ui-review/VALIDATION.md). Fresh macOS running-app acceptance remains pending; no release or shipping raster added.
 
-Follow-up: independent Tab count slot; conservative shell-title shortening and adaptive context; shared async rename sheet for Space/Tab/Pane; inline discovery/import state; direct Tailcat editing; grouped main-menu navigation/repair. See the same review/validation record for exact behavior and remaining macOS acceptance.
+Follow-up: independent Tab count slot; conservative shell-title shortening and adaptive context; shared async rename sheet for Space/Tab/Pane; inline discovery/import state and cancellation; Add Device resets the Connections form only on explicit request; direct Tailcat editing; grouped main-menu navigation/repair. See the same review/validation record for exact behavior and remaining macOS acceptance.

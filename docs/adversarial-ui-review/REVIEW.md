@@ -26,7 +26,7 @@
 | U08 / P2 | Tab 宽度使用当前字体测量，选中改为 semibold 后宽度随之变化，相邻标签/插入点可移动。[Tabs.Strip.syncButtons](../../App/Tabs.swift)。 | 所有状态按 semibold 预留同一宽度，实际字重仍区分选中状态。保留 28/22/3pt 几何及水平滚动。 |
 | U09 / P2 | Agent 状态 `.fixedSize(horizontal: true)` 无上限；200pt 侧栏下，英文 Completed, unread 或服务端长状态挤占工具/空间上下文。[Workbench.agentRow](../../App/Workbench.swift)。 | 可视未读状态缩为 Unread / 未读，状态列固定 64pt 并截断超长值；完整状态保留在 help 和无障碍值中。状态与上下文各自有稳定区域。需要原生英文复验。 |
 | U10 / P2 | 文档规定失焦窗口收敛面板焦点色，绘制却只判断 `focused == key`，也没有监听 resign-key。[Terminal.Canvas](../../App/Terminal.swift)。 | 同时观察窗口获得/失去键盘焦点；窗口不活跃时使用中性边框和标题。 |
-| U11 / P2 | “Add Device…”通过 `SettingsLink` 加 `TapGesture` 才设置目标页，鼠标、键盘和无障碍激活不是同一个动作。[DeviceSwitcher](../../App/DeviceSwitcher.swift)。 | 一个原生按钮动作依次设定 Connections、关闭弹层、打开设置。长设备名中间截断，并补全悬停名称。 |
+| U11 / P2 | “Add Device…”通过 `SettingsLink` 加 `TapGesture` 才设置目标页，鼠标、键盘和无障碍激活不是同一个动作。[DeviceSwitcher](../../App/DeviceSwitcher.swift)。复查还发现设置可能保留 Plugins 子页或旧的编辑表单。 | 一个原生按钮动作依次重置为 Devices 新建表单、设定 Connections、关闭弹层、打开设置。只有明确 Add Device 时重建表单，普通打开设置保留原状态。长设备名中间截断，并补全悬停名称。 |
 | U12 / P2 | “New Space with Name and Directory…”、设置导入按钮过长；Rename Sheet 重复解释普通文本框支持的字符；英文 Color mode 被限制在 48pt 标签列；中文含“重命名 面板”和 `copy_on_select` 实现术语；字体导入失败拼完整路径且不本地化。 | 新建菜单缩为 New Space…；设置发现/导入按钮缩短并可垂直回退；移除重命名冗余说明；Mode / System / Light 使用短标签。清理中文空格和实现说明；导入错误双语化，以文件名定位。 |
 | U13 / P2 | 旧设置允许 Semibold / Bold，当前字体预览仍使用它们，分段控件却只列 Light / Regular / Medium，出现实际字重与选中状态不对应。[Preferences.TerminalSettings](../../App/Preferences.swift)。 | 若当前保存的是旧字重，临时显示对应选中段；不覆盖用户偏好。选择当前常用字重后回到三段。 |
 | U14 / P2 | Connection Details 展示 SSH target，但 Copy Details 丢掉 target 和设备名，多设备同路径时复制结果难以定位。[ConnectionRecovery](../../App/ConnectionRecovery.swift)。 | 复制内容包含设备名、主机、socket 和原始错误。 |

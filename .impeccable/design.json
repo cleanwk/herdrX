@@ -907,8 +907,8 @@
         "Terminal menu / ⌘⌥R"
       ],
       "sheetWidth": "400pt",
-      "authority": "Existing Herdr tab.rename and refreshed snapshot; serial UI queue, no optimistic label or separate persistence",
-      "validation": "Reject blank and unchanged names; inline failure with retry"
+      "authority": "Shared Space/Tab/Pane sheet uses existing Herdr workspace.rename/tab.rename/pane.rename and refreshed snapshot; serial UI queue, no optimistic label or separate persistence",
+      "validation": "Reject blank, unchanged and invalid multiline names; capture endpoint/object/parent; inline failure with retry; IME marked-text guard"
     },
     "connectionRecovery": {
       "nativeSource": "App/ConnectionRecovery.swift; Core/Sources/HerdCore/ConnectionState.swift",
@@ -923,11 +923,11 @@
       "tabWidths": "Semibold title measurement plus independent 10pt monospaced-digit count/8pt gap, with 18pt total side padding; clamp to 40–200pt. Native button focus and actions retained.",
       "contextMenus": "Title menus omit text/link operations; content menus validate text/selection; singleton ordering/zoom omitted; Close is a separate group.",
       "splitEligibility": "Captured clicked pane and unzoomed layout size; shared minimum geometry; retain user navigation/focus across RPC completion.",
-      "settings": "Short Mode/System/Light labels; legacy saved weight remains selected; discovery buttons can stack; Add Device routes through one native Button action.",
+      "settings": "Short Mode/System/Light labels; legacy saved weight remains selected; discovery buttons can stack; Add Device routes through one native Button action to a fresh Devices form, resetting only on that explicit action.",
       "evidenceBoundary": "Linux source review and local contract checks; native controls covered by macOS CI. Fresh running-app visual, live IME and VoiceOver acceptance remains pending.",
       "paneTitles": "Compact only recognized shell cwd titles; preserve authored/task titles. Hide secondary context below 260pt available title width; retain full original identity in help, accessibility and search.",
       "rename": "One 400pt sheet for Space/Tab/Pane; existing RPCs; captured endpoint/object/parent identity; serial execution; inline retry and marked-text guard.",
-      "connections": "Mutually exclusive discovery/import with inline progress/result/error. Tailcat Edit routes to captured device, with bounded names and stale-target protection.",
+      "connections": "Mutually exclusive discovery/import with inline progress/result/error and cancellation; no late import after cancellation. Tailcat Edit routes to captured device, with bounded names and stale-target protection.",
       "commands": "Focus, resize and numbered-tab submenus; repair in Terminal; existing shortcuts retained. Close button names object and copy explains process termination."
     }
   },

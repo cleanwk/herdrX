@@ -106,7 +106,7 @@ struct TailcatSettings: View {
                 }.disabled(DisplayTitle.clean(name) == nil || (editing == nil && token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
                 if editing != nil { Button("Cancel Editing") { reset() } }
             }
-            if let error { Text(error).foregroundStyle(.secondary).textSelection(.enabled) }
+            if let error { Text(error).foregroundStyle(.red).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
         }.formStyle(.grouped).task { if (try? TailcatSecrets.read("client")) != nil { publicKey = (try? TailcatSecrets.identity().publicKey) ?? "" } }
             .onAppear { receiveEditRequest() }.onChange(of: desk.tailcatEditRequest) { receiveEditRequest() }
             .onChange(of: desk.devices) {
