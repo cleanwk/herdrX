@@ -23,6 +23,7 @@ import HerdCore
             #expect(h.view.performKeyEquivalent(with: down))
             // A second press must not disappear while asynchronous repair waits.
             h.view.keyDown(with: down)
+            h.view.flagsChanged(with: h.key(.flagsChanged, characters: "", ignoring: "", code: 0x3b))
             h.view.keyUp(with: h.key(.keyUp, characters: "c", ignoring: "c", code: 8))
             try await Task.sleep(for: .milliseconds(80))
             #expect(h.output.data == Data([3, 3]), "Ctrl-C or its release leaked CSI u input")
