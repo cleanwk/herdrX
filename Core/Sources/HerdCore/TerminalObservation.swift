@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 /// A read-only Herdr observer uses pipes, never a second interactive terminal.
 @MainActor public final class TerminalObservation {
@@ -31,15 +32,27 @@ import Foundation
         run = context
         // Drain diagnostics separately so a full stderr pipe cannot stop the stream.
         DispatchQueue.global(qos: .utility).async {
-            while let data = try? context.error.fileHandleForReading.read(upToCount: 8192), !data.isEmpty {}
+            var bytes = [UInt8](repeating: 0, count: 8192)
+            while true {
+                let count = Darwin.read(context.error.fileHandleForReading.fileDescriptor, &bytes, bytes.count)
+                if count < 0 && errno == EINTR { continue }
+                if count <= 0 { break }
+            }
             try? context.error.fileHandleForReading.close()
         }
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             var decoder = TerminalFrameDecoder()
             var reason = "Terminal observation ended"
+            var bytes = [UInt8](repeating: 0, count: 65536)
             do {
-                while let data = try context.output.fileHandleForReading.read(upToCount: 65536), !data.isEmpty {
-                    let frames = try decoder.append(data)
+                while true {
+                    // FileHandle.read(upToCount:) can wait to fill a pipe read
+                    // on Darwin. One POSIX read delivers the available frame.
+                    let count = Darwin.read(context.output.fileHandleForReading.fileDescriptor, &bytes, bytes.count)
+                    if count < 0 && errno == EINTR { continue }
+                    guard count >= 0 else { throw Failure("Terminal observation read failed: " + String(cString: strerror(errno))) }
+                    if count == 0 { break }
+                    let frames = try decoder.append(Data(bytes.prefix(count)))
                     DispatchQueue.main.async { [weak self] in
                         guard let self, self.run === context else { return }
                         for frame in frames { self.output?(frame) }

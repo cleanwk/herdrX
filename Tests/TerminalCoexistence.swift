@@ -5,6 +5,7 @@ private final class ByteCapture: @unchecked Sendable {
     private var bytes = Data()
     func append(_ data: Data) { lock.lock(); bytes.append(data); lock.unlock() }
     func contains(_ text: String) -> Bool { lock.lock(); defer { lock.unlock() }; return String(decoding: bytes, as: UTF8.self).contains(text) }
+    func diagnostic() -> String { lock.lock(); defer { lock.unlock() }; return String(decoding: bytes.prefix(2000), as: UTF8.self).debugDescription }
 }
 
 @main @MainActor struct TerminalCoexistence {
@@ -25,11 +26,11 @@ private final class ByteCapture: @unchecked Sendable {
         let first = ByteProcess(), second = ByteProcess(), third = ByteProcess(), observer = TerminalObservation()
         defer { first.stop(); second.stop(); third.stop(); observer.stop() }
         let output = ByteCapture(), secondOutput = ByteCapture(), observed = ByteCapture()
-        var firstExited = false, secondExited = false, observerEnded = false
+        var firstExited = false, secondExited = false, observerEnded = false, observerReason = ""
         first.output = { output.append($0) }; second.output = { secondOutput.append($0) }
         first.exited = { _ in firstExited = true }
         second.exited = { _ in secondExited = true }
-        observer.output = { observed.append($0) }; observer.ended = { _ in observerEnded = true }
+        observer.output = { observed.append($0) }; observer.ended = { observerEnded = true; observerReason = $0 }
         let before = try await client.call("pane.process_info", ["pane_id": .string(pane)])["process_info"]
         first.start(command(.control))
         try await Task.sleep(for: .milliseconds(700)); first.resize(97, 31)
@@ -41,7 +42,8 @@ private final class ByteCapture: @unchecked Sendable {
         second.stop()
         let observe: (UInt16, UInt16) -> String = { cols, rows in TerminalAttachment.command(endpoint: endpoint, socket: socket, terminal: target, mode: .observe, columns: cols, rows: rows) }
         observer.start(observe)
-        try await wait("observer initial frame") { observed.contains("READY_OWNER") }
+        do { try await wait("observer initial frame") { observed.contains("READY_OWNER") } }
+        catch { throw Failure("Observer initial frame: ended=\(observerEnded) reason=\(observerReason) bytes=\(observed.diagnostic())") }
         observer.resize(120, 40)
         try await Task.sleep(for: .milliseconds(400))
         let sizeFile = directory + "/pty-size"
