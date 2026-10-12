@@ -13,5 +13,10 @@ cat > build/coexistence-tests/module.modulemap <<MODULE
 module PTY { header "${PWD}/Core/Sources/PTY/include/PTY.h" export * }
 MODULE
 xcrun clang -I Core/Sources/PTY/include -c Core/Sources/PTY/PTY.c -o build/coexistence-tests/PTY.o
-xcrun swiftc -parse-as-library -I build/coexistence-tests Core/Sources/HerdCore/*.swift App/PTY.swift Tests/TerminalCoexistence.swift build/coexistence-tests/PTY.o -o build/coexistence-tests/check
+# This standalone PTY fixture does not use the TOML parser (covered by swift test).
+core_sources=()
+for source in Core/Sources/HerdCore/*.swift; do
+  [[ "$source" == */HerdrConfig.swift ]] || core_sources+=("$source")
+done
+xcrun swiftc -parse-as-library -I build/coexistence-tests "${core_sources[@]}" App/PTY.swift Tests/TerminalCoexistence.swift build/coexistence-tests/PTY.o -o build/coexistence-tests/check
 python3 scripts/coexistence-fixture.py build/coexistence-tests/herdr build/coexistence-tests/check

@@ -17,6 +17,7 @@ jobs:
       - run: brew install xcodegen
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - run: scripts/test-coexistence.sh
+      - run: python3 scripts/herdr-integration-fixture.py build/coexistence-tests/herdr
       - run: scripts/test-panes.sh
       - run: scripts/test-selection.sh
       - run: scripts/build.sh

@@ -14,7 +14,7 @@ struct HerdApp: App {
             .windowStyle(.hiddenTitleBar)
             .defaultSize(width: 1200, height: 760)
             .commands {
-                WorkbenchCommands()
+                WorkbenchCommands(desk: desk)
                 CommandGroup(after: .appInfo) {
                     Button("Check for Updates…") { updater.check() }.disabled(!updater.ready || !updater.canCheck)
                 }

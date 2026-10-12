@@ -24,6 +24,7 @@ extension Desk {
         return ([title(device: row.device, pane: row.pane)] + [row.pane.agent].compactMap { $0 } + context.compactMap { $0 } + metadata).joined(separator: "\n")
     }
     func valid(_ row: JumpRow) -> Bool {
+        if isCommand(row.id) { return commandAvailable(row.id) }
         guard let device = row.device else { return false }
         guard let session = sessions[device], devices.contains(where: { $0.id == device }) else { return false }
         if let pane = row.pane { return session.panes.contains { $0.id == pane && $0.workspace == row.space && $0.tab == row.tab } }

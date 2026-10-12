@@ -445,3 +445,24 @@
 "Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved." = "发送 Ctrl-C，确认前台返回 Shell 后才恢复输入模式，并保留终端历史。";
 
 "Viewing only — reconnect to scroll." = "只读观察，请重新连接后滚动。";
+
+"Herdr machines" = "Herdr 机器";
+"Follow Herdr machine directory" = "持续跟随 Herdr 机器目录";
+"Sync at startup, on activation and every 60 seconds. Only Herdr-managed devices are updated or removed." = "在启动、应用激活时及每 60 秒同步一次。只更新或移除 Herdr 受管设备。";
+"Managed by Herdr" = "由 Herdr 管理";
+"Named session (optional)" = "命名会话（可选）";
+"Enter a named session to resolve and start Herdr when connecting, or an absolute socket path. SSH uses your existing keys and configuration." = "填写命名会话，连接时自动解析并启动 Herdr；也可以填写 socket 绝对路径。SSH 使用现有的密钥和配置。";
+"Enter a valid name, host, port and named session or absolute socket path." = "请输入有效的名称、主机、端口，以及命名会话或 socket 绝对路径。";
+"Invalid machine entries kept unchanged: %@" = "以下机器条目无效，已保留原设备：%@";
+"Could not sync Herdr machines. Existing devices were kept: %@" = "无法同步 Herdr 机器，已保留现有设备：%@";
+"Could not read Herdr config: %@" = "无法读取 Herdr 配置：%@";
+"Herdr config unavailable" = "Herdr 配置不可用";
+"Herdr command" = "Herdr 命令";
+"No plugin actions available" = "没有可用的插件操作";
+"Refresh Plugins" = "刷新插件";
+"Plugin API unavailable" = "插件 API 不可用";
+"Herdr Commands" = "Herdr 命令";
+"No popup commands configured" = "尚未配置弹出命令";
+"No matching spaces, terminals, agents or commands" = "没有匹配的空间、终端、智能体或命令";
+
+"Plugin terminal disconnected. Its Herdr tab is available to reconnect." = "插件终端已断开，可在对应的 Herdr 标签页中重新连接。";

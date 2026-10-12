@@ -34,32 +34,53 @@ extension Desk {
             catch { discoveryStatus = nil; discoveryError = LF("Could not find sessions: %@", error.localizedDescription) }
         }
     }
-    func importHerdrMachines() {
-        guard beginDiscovery("Importing Herdr machines…") else { return }
-        discoveryTask = Task {
-            defer { discoveringDevices = false; cancellingDiscovery = false; discoveryTask = nil }
+    func importHerdrMachines() { syncHerdrMachines(manual: true) }
+    func syncHerdrMachines(manual: Bool = false) {
+        guard machineSyncTask == nil, manual || followHerdrMachines else { return }
+        if manual, !beginDiscovery("Importing Herdr machines…") { return }
+        machineSyncTask = Task {
+            defer {
+                machineSyncTask = nil
+                if manual { discoveringDevices = false; cancellingDiscovery = false; discoveryTask = nil }
+            }
             do {
-                let bytes = try await CommandProcess.run("/bin/zsh", ["-lc", "exec herdr machine list --json"], input: Data())
-                let value = try JSONDecoder().decode(JSON.self, from: bytes)
-                guard case .array(let rows) = value else { throw Failure(L("Invalid Herdr machine list.")) }
-                var imported: [Device] = []
-                for row in rows where row["enabled"] != .bool(false) {
-                    try Task.checkCancellation()
-                    guard let id = row["id"].string, let label = row["label"].string, let host = row["target"].string,
-                          !host.isEmpty, !host.hasPrefix("-"), !host.contains(where: \.isWhitespace), let name = row["session"].string else { throw Failure(L("A saved machine is missing its ID, target or named session.")) }
-                    if devices.contains(where: { $0.id == "herdr-machine." + id }) { continue }
-                    let command = "export PATH=\"$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"; exec herdr session list --json"
-                    let data = try await CommandProcess.run("/usr/bin/ssh", ["-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", host, "/bin/sh -lc " + quote(command)], input: Data())
-                    let sessions = try JSONDecoder().decode(JSON.self, from: data)
-                    guard let session = sessions["sessions"].array.first(where: { $0["name"].string == name }), let path = session["socket_path"].string, path.hasPrefix("/") else { throw Failure(LF("Cannot find session “%@” on %@.", name, label)) }
-                    imported.append(Device(id: "herdr-machine." + id, displayName: label, endpoint: .init(kind: "ssh", target: host, socketPath: path)))
-                }
+                let bytes = try await CommandProcess.run("/bin/zsh", ["-lc", "exec herdr machine list --json"], input: Data(), timeout: 15)
+                let catalog = try HerdrMachines(data: bytes)
                 try Task.checkCancellation()
-                var count = 0
-                for device in imported where !devices.contains(where: { $0.id == device.id || $0.endpoint == device.endpoint }) { add(device); count += 1 }
-                finishDiscovery(count)
-            } catch is CancellationError { discoveryStatus = L("Cancelled.") }
-            catch { discoveryStatus = nil; discoveryError = LF("Could not import connections: %@", error.localizedDescription) }
+                let changes = catalog.changes(to: devices, removeMissing: followHerdrMachines)
+                for id in changes.removed { remove(id) }
+                for device in changes.updated { update(device) }
+                for device in changes.added { add(device) }
+                machineSyncError = catalog.warnings.isEmpty ? nil : LF("Invalid machine entries kept unchanged: %@", catalog.warnings.joined(separator: ", "))
+                if manual { finishDiscovery(changes.added.count); discoveryError = machineSyncError }
+            } catch is CancellationError {
+                if manual { discoveryStatus = L("Cancelled.") }
+            } catch {
+                // No mutations until the entire local read and decode succeed.
+                machineSyncError = LF("Could not sync Herdr machines. Existing devices were kept: %@", error.localizedDescription)
+                if manual { discoveryStatus = nil; discoveryError = machineSyncError }
+            }
         }
+        if manual { discoveryTask = machineSyncTask }
+    }
+    func setFollowHerdrMachines(_ enabled: Bool) {
+        followHerdrMachines = enabled
+        UserDefaults.standard.set(enabled, forKey: "followHerdrMachines")
+        if enabled { syncHerdrMachines() }
+        else { machineSyncTask?.cancel(); machineSyncError = nil }
+    }
+    func startHerdrIntegration() {
+        applicationActivated()
+        integrationTask = Task { [weak self] in
+            while !Task.isCancelled {
+                do { try await Task.sleep(for: .seconds(60)) } catch { return }
+                self?.applicationActivated()
+            }
+        }
+    }
+    func applicationActivated() {
+        syncHerdrMachines()
+        reloadHerdrConfig()
+        refreshPluginCatalogs()
     }
 }

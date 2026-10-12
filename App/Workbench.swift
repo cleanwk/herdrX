@@ -20,6 +20,10 @@ struct Workbench: View {
                         Button { desk.openSearch() } label: { Image(systemName: "magnifyingglass") }.help("Search · ⌘K").accessibilityLabel("Search")
                     }.font(.system(size: 12, weight: .medium)).buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.horizontal, 16).frame(height: 40)
                     sidebarView
+                    if !desk.statusText.isEmpty {
+                        Text(desk.statusText).font(.system(size: 11, design: .monospaced)).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14).padding(.vertical, 6).help(desk.statusText).accessibilityLabel(desk.statusText)
+                    }
+                    if let error = desk.configError { Label("Herdr config unavailable", systemImage: "exclamationmark.triangle").font(.caption).padding(8).help(error) }
                     HStack {
                         DeviceSwitcher()
                         Spacer(minLength: 0)
@@ -77,7 +81,7 @@ struct Workbench: View {
         .sheet(item: $desk.renameRequest, onDismiss: desk.restoreFocus) { request in RenameSheet(request: request).environmentObject(desk).environment(\.locale, locale) }
         .sheet(item: $desk.spaceRequest, onDismiss: desk.restoreFocus) { request in SpaceCreate(initialDevice: request.device ?? "").environmentObject(desk).environment(\.locale, locale) }
         .alert("HerdrX", isPresented: Binding(get: { desk.message != nil }, set: { if !$0 { desk.message = nil } })) { Button("OK") { desk.message = nil } } message: { Text(desk.message ?? "") }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in Theme.apply(); desk.objectWillChange.send() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in Theme.apply(); desk.applicationActivated(); desk.objectWillChange.send() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didHideNotification)) { _ in desk.applicationHidden() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didUnhideNotification)) { _ in desk.applicationShown() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in desk.shutdown() }
@@ -261,15 +265,15 @@ struct Jump: View {
                             HStack(spacing: 8) {
                                 Group {
                                     if let agent = pane?.agent { AgentIcon(tool: agent, size: 14) }
-                                    else { Image(systemName: row.pane != nil || row.tab != nil ? "terminal" : "square.stack.3d.up").foregroundStyle(.secondary) }
+                                    else { Image(systemName: desk.isCommand(id) ? "command" : row.pane != nil || row.tab != nil ? "terminal" : "square.stack.3d.up").foregroundStyle(.secondary) }
                                 }.frame(width: 20).accessibilityHidden(true)
                                 VStack(alignment: .leading, spacing: 1) { Text(row.label).foregroundStyle(Color(nsColor: selection.id == id ? Theme.selectedText : Theme.foreground)).lineLimit(1); Text(row.detail).font(.system(size: 10.5)).foregroundStyle(Color(nsColor: selection.id == id ? Theme.selectedSecondary : Theme.secondary)).lineLimit(1) }
                                 Spacer(minLength: 0)
                                 if let pane, let device = row.device, pane.agent != nil { AgentStatus(status: pane.status, unread: desk.attentionState.unread.contains(PaneKey(device: device, pane: pane.id))) }
                             }.padding(.horizontal, 10).frame(height: 36).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).background(selection.id == id ? Color(nsColor: Theme.accentWash) : .clear, in: RoundedRectangle(cornerRadius: 6))
-                        }.buttonStyle(.plain).onHover { if $0 { selection.choose(id) } }.id(id).help(row.label + "\n" + row.detail).accessibilityAddTraits(selection.id == id ? .isSelected : [])
+                        }.buttonStyle(.plain).disabled(!desk.valid(row)).onHover { if $0 { selection.choose(id) } }.id(id).help(row.label + "\n" + row.detail).accessibilityAddTraits(selection.id == id ? .isSelected : [])
                     } }
-                    if results.isEmpty { Text("No matching spaces, terminals or agents").foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading).padding(12) }
+                    if results.isEmpty { Text("No matching spaces, terminals, agents or commands").foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading).padding(12) }
                 }.padding(.horizontal, 4) }.frame(height: min(320, max(44, CGFloat(results.count) * 36)))
                     .onChange(of: keyboardTarget) { _, id in if let id { reader.scrollTo(id) } }
             }

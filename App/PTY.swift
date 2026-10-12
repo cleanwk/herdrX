@@ -36,9 +36,9 @@ final class ByteProcess: @unchecked Sendable {
     var output: (@Sendable (Data) -> Void)?
     var exited: ((Int32) -> Void)?
     var inputRejected: (() -> Void)?
-    func start(_ command: String) {
+    func start(_ command: String, environment supplied: [String: String]? = nil) {
         stop()
-        var environment = ProcessInfo.processInfo.environment
+        var environment = supplied ?? ProcessInfo.processInfo.environment
         environment["TERM"] = "xterm-256color"; environment["COLORTERM"] = "truecolor"
         environment["PATH"] = [environment["PATH"] ?? "", "/opt/homebrew/bin", "/usr/local/bin", NSHomeDirectory() + "/.local/bin", "/usr/bin", "/bin"].joined(separator: ":")
         var argv = ["/bin/zsh", "-l", "-c", command].map { strdup($0) } + [nil]

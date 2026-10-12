@@ -85,6 +85,21 @@ final class Desk: ObservableObject {
     @Published var cancellingDiscovery = false
     @Published var discoveryStatus: String?
     @Published var discoveryError: String?
+    @Published var followHerdrMachines = ProcessInfo.processInfo.environment["HERDRX_STATE_DIR"] == nil && (UserDefaults.standard.object(forKey: "followHerdrMachines") as? Bool ?? true)
+    @Published var machineSyncError: String?
+    var machineSyncTask: Task<Void, Never>?
+    var integrationTask: Task<Void, Never>?
+    var herdrConfig = HerdrConfig()
+    var configContents: String?
+    var statusTasks: [String: Task<Void, Never>] = [:]
+    @Published var statusOutputs: [String: String] = [:]
+    @Published var configError: String?
+    @Published var pluginCatalogs: [String: [ExtensionInfo]] = [:]
+    @Published var pluginErrors: [String: String] = [:]
+    var pluginTasks: [String: Task<Void, Never>] = [:]
+    var pluginRequests: [String: UUID] = [:]
+    var floatingTerminals: [UUID: FloatingTerminal] = [:]
+    var floatingPanes: [PaneKey: UUID] = [:]
     var discoveryTask: Task<Void, Never>?
     @Published var busy: Set<String> = []
     @Published var focusRevision = 0
@@ -105,7 +120,7 @@ final class Desk: ObservableObject {
         else if focusReturnWasTerminal { requestFocus() }
         focusReturn = nil
     }
-    func openSearch() { captureFocus(); reindex(); showSearch = true }
+    func openSearch() { captureFocus(); reloadHerdrConfig(); refreshPluginCatalogs(); reindex(); showSearch = true }
     func canWrite(_ device: String) -> Bool { connections[device] == .connected }
     func begin(_ key: String, device: String) -> Bool { guard canWrite(device), !busy.contains(key) else { return false }; busy.insert(key); return true }
     func creationID(_ device: String, _ space: String) -> String { device + "|createTab|" + space }
@@ -138,7 +153,10 @@ final class Desk: ObservableObject {
     private var notificationRouter: NotificationRouter?
     private var tailcats: [String: TailcatConnection] = [:]
     private var tunnels: [String: Process] = [:]
+    var resolvedSockets: [String: String] = [:]
     private var paths: [String: String] = [:]
+    private var transportIDs: [String: UUID] = [:]
+    func transportIdentity(_ id: String) -> UUID? { transportIDs[id] }
     private var connectionIDs: [String: UUID] = [:]
     private var polls: [String: Task<Void, Never>] = [:]
     private var remoteLayouts: [String: Layout] = [:]
@@ -212,7 +230,7 @@ final class Desk: ObservableObject {
     }
     var canvas: [(PaneKey, Terminal, CGRect)] {
         let rects = Dictionary(uniqueKeysWithValues: activeRects)
-        return terminals.map { ($0.key, $0.value, rects[$0.key] ?? .zero) }
+        return terminals.filter { floatingPanes[$0.key] == nil }.map { ($0.key, $0.value, rects[$0.key] ?? .zero) }
     }
     init() {
         try? FileManager.default.createDirectory(at: Self.support, withIntermediateDirectories: true)
@@ -221,18 +239,22 @@ final class Desk: ObservableObject {
         notificationRouter = NotificationRouter(desk: self)
         UNUserNotificationCenter.current().delegate = notificationRouter
         Theme.apply()
+        startHerdrIntegration()
     }
     func save() { do { try JSONEncoder().encode(devices).write(to: saveURL, options: .atomic) } catch { message = error.localizedDescription } }
     func update(_ device: Device) {
         guard let index = devices.firstIndex(where: { $0.id == device.id }) else { return }
-        if devices[index].endpoint != device.endpoint {
+        let changedEndpoint = devices[index].endpoint != device.endpoint
+        if changedEndpoint {
             detach(device.id); sessions[device.id] = nil; attentionState.remove(device: device.id)
             for key in Array(terminals.keys) where key.device == device.id { terminals.removeValue(forKey: key)?.stop(); ended.remove(key) }
         }
-        devices[index] = device; save(); connect(device); reindex()
+        devices[index] = device; save(); if changedEndpoint { connect(device) }; reindex()
     }
     func add(_ device: Device) { devices.append(device); save(); connect(device) }
     private func detach(_ id: String) {
+        resolvedSockets[id] = nil; transportIDs[id] = nil
+        invalidatePlugins(id)
         localStarts.removeValue(forKey: id)?.cancel()
         connectionIDs[id] = nil; refreshIDs[id] = nil
         polls.removeValue(forKey: id)?.cancel(); tailcats.removeValue(forKey: id)?.stop()
@@ -247,11 +269,7 @@ final class Desk: ObservableObject {
     }
     func connect(_ device: Device, preserving issue: ConnectionIssue? = nil) {
         detach(device.id); connections[device.id] = issue.map(ConnectionState.failed) ?? .connecting
-        guard device.endpoint.socketPath.hasPrefix("/"), !device.endpoint.socketPath.contains(where: { $0.isNewline || $0 == "\0" || $0 == ":" }),
-              ["local", "ssh", "tailcat"].contains(device.endpoint.kind) else { connections[device.id] = .failed(.init(.configuration, detail: "Enter an absolute Herdr socket path without colons or control characters.")); return }
-        if device.endpoint.kind == "ssh" {
-            guard let target = device.endpoint.target, !target.isEmpty, !target.hasPrefix("-"), !target.contains(where: \.isWhitespace) else { connections[device.id] = .failed(.init(.configuration, detail: "Enter a valid SSH host or config alias.")); return }
-        }
+        guard device.endpoint.valid else { connections[device.id] = .failed(.init(.configuration, detail: "Enter a valid host and named session or absolute socket path.")); return }
         let generation = UUID(); connectionIDs[device.id] = generation
         polls[device.id] = Task { [weak self] in
             guard let self else { return }
@@ -267,7 +285,7 @@ final class Desk: ObservableObject {
                         tailcat?.stop()
                         if self.connectionIDs[device.id] == generation { self.tailcats[device.id] = nil }
                         if let tunnel, tunnel.isRunning { tunnel.terminate() }
-                        if self.connectionIDs[device.id] == generation, self.paths[device.id] == path { self.paths[device.id] = nil; self.tunnels[device.id] = nil }
+                        if self.connectionIDs[device.id] == generation, self.paths[device.id] == path { self.paths[device.id] = nil; self.tunnels[device.id] = nil; self.transportIDs[device.id] = nil }
                         if remote { try? FileManager.default.removeItem(atPath: path); try? FileManager.default.removeItem(at: diagnostic) }
                     }
                     if device.endpoint.kind == "tailcat" {
@@ -280,10 +298,14 @@ final class Desk: ObservableObject {
                         }
                     }
                     if remote {
+                        let remoteSocket = try await RemoteHerdr.resolve(device.endpoint)
+                        try Task.checkCancellation()
+                        guard self.connectionIDs[device.id] == generation else { return }
+                        self.resolvedSockets[device.id] = remoteSocket
                         FileManager.default.createFile(atPath: diagnostic.path, contents: nil, attributes: [.posixPermissions: 0o600])
                         let output = try FileHandle(forWritingTo: diagnostic); defer { try? output.close() }
                         let process = Process(); process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
-                        process.arguments = (device.endpoint.sshConfig.map { ["-F", $0] } ?? []) + ["-N", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=10", "-o", "ServerAliveCountMax=2", "-o", "ExitOnForwardFailure=yes", "-o", "StreamLocalBindUnlink=yes", "-L", path + ":" + device.endpoint.socketPath] + (device.endpoint.port.map { ["-p", String($0)] } ?? []) + [device.endpoint.target!]
+                        process.arguments = (device.endpoint.sshConfig.map { ["-F", $0] } ?? []) + ["-N", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=10", "-o", "ServerAliveCountMax=2", "-o", "ExitOnForwardFailure=yes", "-o", "StreamLocalBindUnlink=yes", "-L", path + ":" + remoteSocket] + (device.endpoint.port.map { ["-p", String($0)] } ?? []) + [device.endpoint.target!]
                         process.standardError = output; process.standardOutput = FileHandle.nullDevice
                         try process.run(); tunnel = process; self.tunnels[device.id] = process
                         for _ in 0..<100 {
@@ -296,7 +318,7 @@ final class Desk: ObservableObject {
                             try await Task.sleep(for: .milliseconds(100))
                         }
                     }
-                    try Task.checkCancellation(); self.paths[device.id] = path
+                    try Task.checkCancellation(); self.paths[device.id] = path; self.transportIDs[device.id] = UUID()
                     while !Task.isCancelled {
                         if let tunnel, !tunnel.isRunning { throw Failure("SSH connection closed") }
                         try await self.refresh(device.id, client: RPC(path: path)); delay = 1
@@ -312,6 +334,8 @@ final class Desk: ObservableObject {
                 catch {
                     guard !Task.isCancelled else { return }
                     guard self.connectionIDs[device.id] == generation else { return }
+                    self.resolvedSockets[device.id] = nil
+                    self.invalidatePlugins(device.id)
                     let failure = ConnectionIssue(error: error, endpoint: device.endpoint)
                     self.connections[device.id] = .failed(failure.kind == .localStopped ? issue ?? failure : failure)
                     if !failure.automaticallyRetries { return }
@@ -416,8 +440,12 @@ final class Desk: ObservableObject {
         let snapshot = try await Session.load(client)
         try Task.checkCancellation()
         guard connectionIDs[id] == connection, paths[id] == client.path, refreshIDs[id] == token, devices.contains(where: { $0.id == id }) else { return }
-        if connections[id] != .connected { connections[id] = .connected }
+        let reconnected = connections[id] != .connected
+        if reconnected { connections[id] = .connected; refreshPluginCatalog(id) }
         if sessions[id] != snapshot { let old = sessions[id]; attentionState.update(device: id, old: old, new: snapshot); notifyChanges(device: id, old: old, new: snapshot); sessions[id] = snapshot; reconcile(id, previous: old); reindex() }
+        // A restored server can retain topology/IDs but move its socket. Refresh
+        // the existing terminal commands even when the snapshot is unchanged.
+        else if reconnected, selectedDevice == id { ensureAttachments() }
         if selectedDevice == nil, let space = snapshot.spaces.first { select(device: id, space: space.id) }
         if let device = devices.first(where: { $0.id == id }) { refreshBranches(device, snapshot: snapshot) }
     }
@@ -432,6 +460,7 @@ final class Desk: ObservableObject {
             let candidate = pane ?? savedMemory[device + "|" + selectedTab]
             focused = candidate.flatMap { key in panes.contains(where: { $0.id == key.pane }) ? key : nil } ?? panes.first.map { PaneKey(device: device, pane: $0.id) }
             ensureAttachments()
+            if let pane = panes.first, let id = floatingPanes[PaneKey(device: device, pane: pane.id)] { floatingTerminals[id]?.window?.makeKeyAndOrderFront(nil) }
         } else {
             selectedTab = ""; focused = nil
         }
@@ -447,9 +476,10 @@ final class Desk: ObservableObject {
         }
         for pane in session.panes where pane.tab == selectedTab {
             let key = PaneKey(device: device.id, pane: pane.id)
+            guard floatingPanes[key] == nil else { continue }
 
             guard let target = pane.terminal else { continue }
-            let socket = device.endpoint.kind == "tailcat" ? paths[device.id] ?? device.endpoint.socketPath : device.endpoint.socketPath
+            let socket = attachmentSocket(device)
             let command = TerminalAttachment.command(endpoint: device.endpoint, socket: socket, terminal: target, mode: .control)
             let takeover = TerminalAttachment.command(endpoint: device.endpoint, socket: socket, terminal: target, mode: .takeover)
             let observe: (UInt16, UInt16) -> String = { columns, rows in
@@ -603,6 +633,7 @@ final class Desk: ObservableObject {
             rows += session.panes.map { pane in JumpRow(id: "pane|" + device.id + "|" + pane.id, device: device.id, space: pane.workspace, tab: pane.tab, pane: pane.id, label: title(device: device.id, pane: pane), detail: DisplayTitle.detail([device.displayName, session.spaces.first { space in space.id == pane.workspace }?.label, pane.agent ?? L("Terminal"), pane.cwd, pane.terminalTitle])) }
             for pane in session.panes { ranks["pane|" + device.id + "|" + pane.id] = rank(pane.status) }
         }
+        rows += commandRows
         rows.sort { left, right in
             let a = ranks[left.id] ?? 3, b = ranks[right.id] ?? 3
             let leftType = left.id.hasPrefix("space|") ? 0 : left.pane == nil ? 2 : 1
@@ -619,6 +650,7 @@ final class Desk: ObservableObject {
         }
     }
     func jump(_ value: String) {
+        if isCommand(value) { showSearch = false; runCommand(value); return }
         if let row = jumpRows[value] {
             guard valid(row) else { message = L("This terminal is no longer available."); return }
             reveal(device: row.device, space: row.space)
@@ -698,7 +730,7 @@ final class Desk: ObservableObject {
         hiddenTask?.cancel(); hiddenTask = nil
         objectWillChange.send()
     }
-    func shutdown() { discoveryTask?.cancel(); hiddenTask?.cancel(); reorderTasks.values.forEach { $0.cancel() }; layoutTask?.cancel(); Array(polls.keys).forEach { detach($0) }; terminals.values.forEach { $0.stop() } }
+    func shutdown() { integrationTask?.cancel(); machineSyncTask?.cancel(); stopHerdrCommands(); discoveryTask?.cancel(); hiddenTask?.cancel(); reorderTasks.values.forEach { $0.cancel() }; layoutTask?.cancel(); Array(polls.keys).forEach { detach($0) }; terminals.values.forEach { $0.stop() } }
 }
 
 

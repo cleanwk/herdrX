@@ -86,7 +86,7 @@ struct ExtensionSettings: View {
         do {
             let values = try await Extensions.list(desk.rpc(id))
             guard deviceID == id, !Task.isCancelled else { return }
-            installed = values; error = nil; await refreshLogs()
+            installed = values; desk.refreshPluginCatalog(id); error = nil; await refreshLogs()
         } catch { if deviceID == id, !Task.isCancelled { self.error = L("Plugin API unavailable on this device:") + " " + error.localizedDescription } }
         if deviceID == id { busy = false }
     }

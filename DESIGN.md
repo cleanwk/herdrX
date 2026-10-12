@@ -452,3 +452,12 @@ Terminal ANSI slots keep authored palette values (including the existing named l
 ### Pane wheel routing (0.1.15)
 
 Wheel input reaches the attached Herdr session independently of the click-reporting preference. The host temporarily enables reporting for the wheel only, refreshes its position without emitting hover reports, and preserves native precision, direction and momentum. Ghostty encodes the protocol and accumulates small deltas; Herdr chooses server history, TUI mouse input or alternate-screen scrolling. Local text drags retain their existing selection behavior. Read-only observation accepts no wheel input: Herdr 0.9.3 exposes live frames without a private observer history viewport. Its recovery banner states this limit and offers the existing Reconnect / confirmed Take Control actions. See [scroll validation](docs/terminal-scrolling/VALIDATION.md).
+
+
+## Herdr integration additions (2026-10-12)
+
+Connections exposes “Follow Herdr machine directory” and marks managed devices. The enabled toggle makes Herdr the authority for their label/target/session and removal; turn it off to edit a saved managed connection manually. Import is local and immediate, with connection retries shown per device. Named SSH sessions may omit a socket path.
+
+The sidebar footer displays configured Herdr status-command text in a compact monospaced label. Search includes configured popup commands and enabled plugin actions/panes with their device/plugin context; unavailable scoped actions are disabled. Plugins and Herdr Commands also have native menu-bar entries. Config parse errors are visible beside the footer. Plugin discovery errors are visible in the Plugins menu.
+
+Transient command windows use native floating windows and real Ghostty terminals with resize, selection, paste and physical Ctrl-C. Process exit closes the window; user close stops only that transient process. Herdr plugin panes are opened through RPC into a server-owned tab and attached in a floating window; reopening that tab raises the existing window. Disconnects preserve server processes. See [contract and validation details](docs/herdr-integration/VALIDATION.md).
