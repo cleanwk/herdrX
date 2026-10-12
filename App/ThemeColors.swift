@@ -1,26 +1,44 @@
 import AppKit
 
-/// UI text roles are independent of terminal ANSI colors. All authored text is
-/// checked against the surface, tab chrome, hover, and strongest selection fill.
+/// Text is checked against its actual surfaces; an accent cannot recolor metadata.
 struct ThemeColors {
     let background: NSColor
     let chrome: NSColor
-    let selection: NSColor
+    let hover: NSColor
     let foreground: NSColor
     let secondary: NSColor
-    let accent: NSColor
+    let decoration: NSColor
+    let selectedText: NSColor
+    let selectedSecondary: NSColor
+    let accentStroke: NSColor
+    let accentText: NSColor
+    let accentWash: NSColor
+    let accentStrongWash: NSColor
+    let tabWash: NSColor
+    let accentWashBorder: NSColor
+    let onAccent: NSColor
     let surfaces: [NSColor]
+    let selectedSurfaces: [NSColor]
 
-    init(background: NSColor, foreground: NSColor, accent: NSColor, dark: Bool) {
+    init(background: NSColor, foreground: NSColor, accent: NSColor, dark: Bool,
+         chrome: NSColor? = nil, secondary: NSColor? = nil, decoration: NSColor? = nil) {
         self.background = background
-        chrome = Self.mix(background, foreground, dark ? 0.06 : 0.025)
-        selection = accent
-        surfaces = [background, chrome, Self.mix(background, foreground, 0.05),
-                    Self.mix(background, accent, dark ? 0.30 : 0.25),
-                    Self.mix(chrome, accent, dark ? 0.20 : 0.18)]
+        self.chrome = chrome ?? Self.mix(background, foreground, dark ? 0.06 : 0.045)
+        hover = Self.mix(background, foreground, 0.04)
+        surfaces = [background, self.chrome, hover]
         self.foreground = Self.readable(foreground, on: surfaces)
-        secondary = Self.readable(Self.mix(foreground, background, 0.20), on: surfaces)
-        self.accent = Self.readable(accent, on: surfaces)
+        self.secondary = Self.readable(secondary ?? Self.mix(foreground, background, 0.28), on: surfaces)
+        self.decoration = decoration ?? Self.mix(foreground, background, 0.50)
+        accentStroke = accent
+        accentWash = Self.mix(background, accent, dark ? 0.14 : 0.10)
+        accentStrongWash = Self.mix(background, accent, dark ? 0.19 : 0.14)
+        tabWash = Self.mix(self.chrome, accent, dark ? 0.14 : 0.10)
+        accentWashBorder = accent.withAlphaComponent(0.24)
+        selectedSurfaces = [accentWash, accentStrongWash, tabWash]
+        selectedText = Self.readable(self.foreground, on: selectedSurfaces)
+        selectedSecondary = Self.readable(self.secondary, on: selectedSurfaces)
+        accentText = Self.readable(accent, on: surfaces)
+        onAccent = Self.contrast(.white, accent) >= Self.contrast(.black, accent) ? .white : .black
     }
     static func mix(_ a: NSColor, _ b: NSColor, _ fraction: CGFloat) -> NSColor {
         let a = a.usingColorSpace(.sRGB)!, b = b.usingColorSpace(.sRGB)!

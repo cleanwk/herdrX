@@ -429,3 +429,7 @@
 "This stops the pane and its running processes on %@." = "This stops the pane and its running processes on %@.";
 
 "This stops %d panes and their running processes on %@." = "This stops %d panes and their running processes on %@.";
+
+"Local Herdr theme" = "Local Herdr theme";
+
+"Reads the local Herdr theme family. Custom colors and remote themes are not synced." = "Reads the local Herdr theme family. Custom colors and remote themes are not synced.";

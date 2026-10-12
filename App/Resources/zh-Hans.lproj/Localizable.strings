@@ -429,3 +429,7 @@
 "This stops the pane and its running processes on %@." = "这将关闭 %@ 上的面板，并终止其中运行的进程。";
 
 "This stops %d panes and their running processes on %@." = "这将关闭 %2$@ 上的 %1$d 个面板，并终止其中运行的进程。";
+
+"Local Herdr theme" = "本机 Herdr 主题";
+
+"Reads the local Herdr theme family. Custom colors and remote themes are not synced." = "读取本机 Herdr 的主题系列，不同步自定义颜色或远端主题。";

@@ -21,6 +21,7 @@ jobs:
       - run: scripts/test-tabs.sh
       - run: scripts/test-inputs.sh
       - run: scripts/test-panes.sh
+      - run: scripts/test-selection.sh
       - run: scripts/package.sh
       - uses: actions/upload-artifact@v4
         with:

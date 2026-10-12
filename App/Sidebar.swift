@@ -36,13 +36,13 @@ struct SidebarRow<Content: View>: View {
     var radius: CGFloat = 8
     var filledSelection = false
     @ViewBuilder let content: () -> Content
-    @Environment(\.colorScheme) private var appearance
     @State private var hovered = false
     var body: some View {
         Button(action: action) { content().padding(.horizontal, 8).padding(.vertical, verticalPadding).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()) }
             .buttonStyle(.plain)
-            .background(selected ? Color(nsColor: Theme.selection).opacity(filledSelection ? (appearance == .dark ? 0.30 : 0.25) : (appearance == .dark ? 0.20 : 0.13)) : hovered ? Color(nsColor: Theme.foreground).opacity(0.05) : .clear, in: RoundedRectangle(cornerRadius: radius))
-            .overlay(RoundedRectangle(cornerRadius: radius).stroke(selected ? Color(nsColor: Theme.selection).opacity(filledSelection ? 0 : 0.24) : .clear, lineWidth: 1))
+            .foregroundStyle(Color(nsColor: selected ? Theme.selectedText : Theme.foreground))
+            .background(selected ? Color(nsColor: filledSelection ? Theme.accentStrongWash : Theme.accentWash) : hovered ? Color(nsColor: Theme.hover) : .clear, in: RoundedRectangle(cornerRadius: radius))
+            .overlay(RoundedRectangle(cornerRadius: radius).stroke(selected ? Color(nsColor: Theme.accentWashBorder).opacity(filledSelection ? 0 : 1) : .clear, lineWidth: 1))
             .onHover { hovered = $0 }.accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
@@ -78,10 +78,14 @@ struct SidebarGroup<Content: View>: View {
 struct AgentStatus: View {
     let status: String
     let unread: Bool
-    static func color(_ status: String, unread: Bool) -> Color { status == "blocked" ? Color(nsColor: Theme.warning) : status == "working" || unread ? Color(nsColor: Theme.accent) : status == "done" || status == "idle" ? Color(nsColor: Theme.success) : Color(nsColor: Theme.secondary) }
+    var selected = false
+    static func color(_ status: String, unread: Bool, selected: Bool = false) -> Color {
+        let color = status == "blocked" ? Theme.warning : status == "working" || unread ? Theme.working : status == "done" ? Theme.success : Theme.secondary
+        return Color(nsColor: selected ? Theme.selectedState(color) : color)
+    }
     var body: some View {
         Image(systemName: status == "working" ? "circle.lefthalf.filled" : status == "blocked" || unread ? "circle.fill" : "circle")
-            .font(.system(size: 8)).foregroundStyle(status == "done" || status == "idle" ? Color(nsColor: Theme.secondary).opacity(0.6) : Self.color(status, unread: unread))
+            .font(.system(size: 8)).foregroundStyle(Self.color(status, unread: unread, selected: selected))
             .accessibilityLabel(L(status == "unknown" ? "Unknown" : unread ? "Completed, unread" : status))
     }
 }

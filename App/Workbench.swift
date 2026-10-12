@@ -131,9 +131,9 @@ struct Workbench: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(space.label).font(.system(size: 13, weight: desk.selectedDevice == device.id && desk.selectedSpace == space.id ? .medium : .regular)).lineLimit(1)
                             let branch = desk.branchStates[device.id + "|" + space.id]
-                            Label(branch?.text ?? L("Directory"), systemImage: branch?.symbol ?? "folder").font(.system(size: 11)).foregroundStyle(Color(nsColor: Theme.secondary)).lineLimit(1).frame(height: 13)
+                            Label(branch?.text ?? L("Directory"), systemImage: branch?.symbol ?? "folder").font(.system(size: 11)).foregroundStyle(Color(nsColor: desk.selectedDevice == device.id && desk.selectedSpace == space.id ? Theme.selectedSecondary : Theme.secondary)).lineLimit(1).frame(height: 13)
                         }.frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 18)
-                        if let status = desk.attentionState.summary(device: device.id, panes: (desk.sessions[device.id]?.panes ?? []).filter { $0.workspace == space.id }) { AgentStatus(status: status, unread: status == "unread") }
+                        if let status = desk.attentionState.summary(device: device.id, panes: (desk.sessions[device.id]?.panes ?? []).filter { $0.workspace == space.id }) { AgentStatus(status: status, unread: status == "unread", selected: desk.selectedDevice == device.id && desk.selectedSpace == space.id) }
                     }
                 }.id(device.id + "|" + space.id).help(DisplayTitle.detail([space.label, desk.spacePath(device: device.id, space: space.id), desk.branchStates[device.id + "|" + space.id]?.detail]))
                 .contextMenu {
@@ -162,15 +162,16 @@ struct Workbench: View {
     }
     func moveSpace(_ device: String, _ space: String, _ index: Int) { desk.objectAction(device: device, method: "workspace.move", params: ["workspace_id": .string(space), "insert_index": .number(Double(index))]) }
     func agentRow(_ row: AgentRow) -> some View {
+        let selected = desk.focused == row.id
         let unread = desk.attentionState.unread.contains(row.id)
         let status = L(unread ? "Completed, unread" : row.pane.stateLabel)
         let context = DisplayTitle.detail([row.pane.agent, desk.sessions[row.device]?.spaces.first { $0.id == row.pane.workspace }?.label, desk.deviceFilter.isEmpty && desk.devices.count > 1 ? desk.devices.first { $0.id == row.device }?.displayName : nil])
         return SidebarRow(selected: desk.focused == row.id, action: { desk.jump(row.device + "|" + row.pane.id) }, verticalPadding: 9.5, radius: 7, filledSelection: true) {
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) { Text(desk.title(device: row.device, pane: row.pane)).font(.system(size: 13)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading); AgentStatus(status: row.pane.status, unread: unread).accessibilityHidden(true) }
+                HStack(spacing: 6) { Text(desk.title(device: row.device, pane: row.pane)).font(.system(size: 13)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading); AgentStatus(status: row.pane.status, unread: unread, selected: selected).accessibilityHidden(true) }
                 HStack(spacing: 5) {
-                    HStack(spacing: 4) { AgentIcon(tool: row.pane.agent); Text(context).lineLimit(1) }.frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(Color(nsColor: Theme.secondary))
-                    Text(unread ? L("Unread") : status).lineLimit(1).truncationMode(.tail).foregroundStyle(AgentStatus.color(row.pane.status, unread: unread)).frame(width: 64, alignment: .trailing).help(status)
+                    HStack(spacing: 4) { AgentIcon(tool: row.pane.agent); Text(context).lineLimit(1) }.frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(Color(nsColor: selected ? Theme.selectedSecondary : Theme.secondary))
+                    Text(unread ? L("Unread") : status).lineLimit(1).truncationMode(.tail).foregroundStyle(AgentStatus.color(row.pane.status, unread: unread, selected: selected)).frame(width: 64, alignment: .trailing).help(status)
                 }.font(.system(size: 11))
             }.padding(.leading, 18)
         }.help(desk.paneHelp(row) + "\n" + status).accessibilityValue(status).contextMenu { paneActions(row) }
@@ -254,7 +255,7 @@ struct Jump: View {
                                 VStack(alignment: .leading, spacing: 1) { Text(row.label).lineLimit(1); Text(row.detail).font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1) }
                                 Spacer(minLength: 0)
                                 if let pane, let device = row.device, pane.agent != nil { AgentStatus(status: pane.status, unread: desk.attentionState.unread.contains(PaneKey(device: device, pane: pane.id))) }
-                            }.padding(.horizontal, 10).frame(height: 36).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).background(selection.id == id ? Color(nsColor: Theme.selection).opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 6))
+                            }.padding(.horizontal, 10).frame(height: 36).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).background(selection.id == id ? Color(nsColor: Theme.accentWash) : .clear, in: RoundedRectangle(cornerRadius: 6))
                         }.buttonStyle(.plain).onHover { if $0 { selection.choose(id) } }.id(id).help(row.label + "\n" + row.detail).accessibilityAddTraits(selection.id == id ? .isSelected : [])
                     } }
                     if results.isEmpty { Text("No matching spaces, terminals or agents").foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading).padding(12) }

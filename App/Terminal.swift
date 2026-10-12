@@ -42,52 +42,15 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
     func visible(_ visible: Bool) { view.visible = visible }
 }
 
-final class TerminalView: AppTerminalView {
-    weak var hostSurface: TerminalSurface?
+final class TerminalView: SelectionTerminalView {
     var objectMenu: ((PaneMenuSource) -> NSMenu?)?
     var commands: WorkbenchActions?
-    private var mouseOrigin: NSEvent?
-    private var localSelection = false
-    private var selectionTimer: Timer?
-    private var edgeDirection: String?
-    private func selecting(_ event: NSEvent) -> NSEvent {
-        NSEvent.mouseEvent(with: event.type, location: event.locationInWindow, modifierFlags: event.modifierFlags.union(.shift), timestamp: event.timestamp, windowNumber: event.windowNumber, context: nil, eventNumber: event.eventNumber, clickCount: event.clickCount, pressure: event.pressure) ?? event
-    }
-    private func stopSelection() { selectionTimer?.invalidate(); selectionTimer = nil; edgeDirection = nil; mouseOrigin = nil }
-    override func mouseDown(with event: NSEvent) {
-        stopSelection(); mouseOrigin = event
-        localSelection = (UserDefaults.standard.object(forKey: "disableMouseReporting") as? Bool ?? true) || event.modifierFlags.contains(.shift) || event.clickCount > 1
-        super.mouseDown(with: localSelection ? selecting(event) : event)
-    }
-    override func mouseDragged(with event: NSEvent) {
-        if !localSelection, hostSurface?.isMouseCaptured == true, let origin = mouseOrigin {
-            super.mouseUp(with: event); super.mouseDown(with: selecting(origin)); localSelection = true
-        }
-        super.mouseDragged(with: localSelection ? selecting(event) : event)
-        let point = convert(event.locationInWindow, from: nil)
-        edgeDirection = point.y < 12 ? "down" : point.y > bounds.height - 12 ? "up" : nil
-        if edgeDirection != nil, selectionTimer == nil {
-            let timer = Timer(timeInterval: 0.06, repeats: true) { [weak self] _ in
-                // This timer is registered exclusively on the main run loop below.
-                MainActor.assumeIsolated {
-                    guard let self else { return }
-                    guard self.visible, self.window?.isKeyWindow == true, NSEvent.pressedMouseButtons & 1 != 0, let direction = self.edgeDirection else { self.stopSelection(); return }
-                    guard self.hostSurface?.hasSelection() == true else { return }
-                    _ = self.hostSurface?.performBindingAction("adjust_selection:" + direction)
-                    _ = self.hostSurface?.performBindingAction("scroll_to_selection")
-                }
-            }
-            selectionTimer = timer; RunLoop.main.add(timer, forMode: .common)
-        } else if edgeDirection == nil { selectionTimer?.invalidate(); selectionTimer = nil }
-    }
-    override func mouseUp(with event: NSEvent) { super.mouseUp(with: localSelection ? selecting(event) : event); stopSelection(); localSelection = false }
-    override func viewWillMove(toWindow newWindow: NSWindow?) { stopSelection(); super.viewWillMove(toWindow: newWindow) }
-    override func rightMouseDown(with event: NSEvent) { stopSelection(); if let menu = objectMenu?(.terminal) { NSMenu.popUpContextMenu(menu, with: event, for: self) } else { super.rightMouseDown(with: event) } }
+    override func rightMouseDown(with event: NSEvent) { cancelSelectionGesture(); if let menu = objectMenu?(.terminal) { NSMenu.popUpContextMenu(menu, with: event, for: self) } else { super.rightMouseDown(with: event) } }
     override func rightMouseUp(with event: NSEvent) { if objectMenu == nil { super.rightMouseUp(with: event) } }
     override func menu(for event: NSEvent) -> NSMenu? { objectMenu?(.terminal) ?? super.menu(for: event) }
     var onFocus: (() -> Void)?
     var visible = true {
-        didSet { guard oldValue != visible else { return }; isHidden = !visible; if !visible { stopSelection(); layer?.contents = nil }; setSurfaceVisible(visible) }
+        didSet { guard oldValue != visible else { return }; isHidden = !visible; if !visible { cancelSelectionGesture(); layer?.contents = nil }; setSurfaceVisible(visible) }
     }
     override func selectedRange() -> NSRange { hasMarkedText() ? super.selectedRange() : NSRange(location: 0, length: 0) }
     override func markedRange() -> NSRange { hasMarkedText() ? super.markedRange() : NSRange(location: 0, length: 0) }
@@ -95,6 +58,7 @@ final class TerminalView: AppTerminalView {
     override func layout() { if visible { super.layout() } }
     override func becomeFirstResponder() -> Bool { let result = super.becomeFirstResponder(); if result { onFocus?() }; return result }
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard !hasMarkedText() else { return super.performKeyEquivalent(with: event) }
         let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
         var keys: KeyModifiers = []
         if modifiers.contains(.command) { keys.insert(.command) }; if modifiers.contains(.shift) { keys.insert(.shift) }; if modifiers.contains(.option) { keys.insert(.option) }; if modifiers.contains(.control) { keys.insert(.control) }
@@ -210,7 +174,7 @@ struct TerminalCanvas: NSViewRepresentable {
                 let active = focused == key && window?.isKeyWindow == true
                 if let context = NSGraphicsContext.current?.cgContext {
                     context.saveGState()
-                    context.setStrokeColor((active ? Theme.accent : Theme.foreground.withAlphaComponent(0.28)).cgColor)
+                    context.setStrokeColor((active ? Theme.accentStroke : Theme.decoration).cgColor)
                     context.setLineWidth(PaneMetrics.borderWidth(scale: window?.backingScaleFactor ?? 2))
                     let radii = paneCorners(rect).inset(by: PaneMetrics.borderWidth(scale: window?.backingScaleFactor ?? 2) / 2)
                     context.addPath(PaneShape.path(in: frame, corners: radii))

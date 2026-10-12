@@ -14,7 +14,7 @@ struct DeviceSwitcher: View {
                 if let selected { connectionDot(selected) }
                 Image(systemName: "chevron.up.chevron.down").font(.system(size: 9)).foregroundStyle(Color(nsColor: Theme.secondary))
             }.padding(.horizontal, 8).frame(height: 28)
-                .background(Color(nsColor: Theme.selection).opacity(showing ? 0.18 : 0.055), in: RoundedRectangle(cornerRadius: 6))
+                .background(Color(nsColor: showing ? Theme.accentWash : Theme.hover), in: RoundedRectangle(cornerRadius: 6))
         }.buttonStyle(.plain).help(selected?.displayName ?? L("All Devices")).accessibilityLabel("Device Filter").accessibilityValue(selected?.displayName ?? L("All Devices"))
             .popover(isPresented: $showing, arrowEdge: .top) {
                 VStack(alignment: .leading, spacing: 4) {
