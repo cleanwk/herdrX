@@ -11,17 +11,18 @@ Real, disposable Linux server checks found:
 | Herdr | Startup area | Single pane rectangle | Original normalization |
 | --- | --- | --- | --- |
 | 0.8.2 | (26, 1, 94, 39) | (26, 1, 94, 39) | (0.2766…, 0.0256…, 1, 1), clipped |
+| 0.8.2, after attaching an 80×24 TUI | (26, 1, 54, 23) | (26, 1, 54, 23) | (0.4815…, 0.0435…, 1, 1), clipped |
 | 0.9.0–0.9.3 | (0, 0, 120, 40) | (0, 0, 120, 40) | (0, 0, 1, 1), fills canvas |
 
 The normalizer now computes `(pane.x - area.x) / area.width` and the equivalent y coordinate. Widths/heights retain their existing conversion. This preserves authoritative split placement and chrome insets, keeps the zero-origin path unchanged and does not hardcode a sidebar size or display scale. It adds no layout RPC or terminal restart.
 
-`Core/PaneLayoutGeometry` owns the conversion used by `Desk.layoutRects`. Existing opt-in Debug diagnostics also record canvas frame/bounds origin, backing scale and normalized pane rectangles, to distinguish a server-coordinate offset from a host-view/display issue if the Air still reproduces it.
+`Core/Sources/HerdCore/PaneLayoutGeometry.swift` owns the conversion used by `Desk.layoutRects`. Existing opt-in Debug diagnostics also record canvas frame/bounds origin, backing scale and normalized pane rectangles, to distinguish a server-coordinate offset from a host-view/display issue if the Air still reproduces it.
 
 ## Verification
 
-- Four Core regression tests cover nonzero sidebar/header origins, nested splits/chrome insets, legacy missing fields and unavailable/zero-size areas.
+- Four new Core regression tests passed, covering nonzero sidebar/header origins, nested splits/chrome insets, legacy missing fields and unavailable/zero-size areas.
 - The maintained `scripts/layout-origin-fixture.py` starts separate named servers with isolated configuration/state, captures single/column/nested layouts from real Herdr 0.8.2 and 0.9.3, preserves the original terminal while splitting and stops only those fixture servers. The six-case capture passed locally.
-- `scripts/test-panes.sh` compiles the production JSON conversion and AppKit point/pixel geometry. It consumes those real snapshots and checks containment, no overlap and full single-pane coverage at 703×583, 996×774 and 1436×870 points, at 1× and 2×. A synthetic 26/1 origin in a 54×23 area exercises the roughly half-canvas displacement seen on a narrower TUI. These are geometry assertions, not physical display captures.
-- All 14 existing Python release tests passed locally. macOS Core, geometry, native terminal and full build checks are pending CI.
+- `scripts/test-panes.sh` passed on macOS, compiling the production JSON conversion and native point/pixel geometry. It consumes those real snapshots and checks containment, no overlap and full single-pane coverage at 703×583, 996×774 and 1436×870 points, at 1× and 2×. The fixed 26/1 origin in a 54×23 area is also observed with a real 0.8.2 TUI at 80×24; its prior normalized x is about 48% of the canvas width. These are geometry assertions, not physical display captures.
+- [Full macOS CI passed at implementation commit 88ff634](https://github.com/cleanwk/herdrX/actions/runs/38266464475): all 63 Core tests, 13 native terminal tests, 14 Python checks, real legacy/current layout captures, coexistence/plugin integration, PTY/tab/input checks, universal build/package and the signed delta-update fixture. Python release checks also passed locally. The final follow-up only records this evidence.
 
 The legacy-server coordinate defect is reproduced. Its connection to this particular Air remains a hypothesis until the running Herdr version/layout or a corrected build is checked on that machine. No physical Air/Pro comparison, live GUI screenshot acceptance, release or installation was performed here.
