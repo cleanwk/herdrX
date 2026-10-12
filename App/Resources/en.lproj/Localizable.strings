@@ -443,3 +443,5 @@
 "The foreground process has not returned to the shell. Input modes were left unchanged." = "The foreground process has not returned to the shell. Input modes were left unchanged.";
 "Could not verify the foreground shell. Input modes were left unchanged." = "Could not verify the foreground shell. Input modes were left unchanged.";
 "Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved." = "Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved.";
+
+"Viewing only — reconnect to scroll." = "Viewing only — reconnect to scroll.";

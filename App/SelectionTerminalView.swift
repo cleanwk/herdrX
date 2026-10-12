@@ -40,7 +40,10 @@ class SelectionTerminalView: AppTerminalView {
     deinit { for observer in observers { NotificationCenter.default.removeObserver(observer) } }
 
     override func scrollWheel(with event: NSEvent) {
-        guard allowsRemoteScroll else { return }
+        guard allowsRemoteScroll else {
+            showFeedback(L("Viewing only — reconnect to scroll."), color: Theme.secondary)
+            return
+        }
         guard case .idle = gesture, let surface = hostSurface else {
             // A selection drag retains the engine's local scroll/anchor behavior.
             super.scrollWheel(with: event)
@@ -177,7 +180,7 @@ class SelectionTerminalView: AppTerminalView {
         let before = pasteboard.changeCount
         guard hostSurface?.performBindingAction("copy_to_clipboard:plain") == true,
               pasteboard.changeCount != before, pasteboard.string(forType: .string) == text else { return false }
-        showCopyFeedback()
+        showFeedback(L("Copied"), color: Theme.success)
         return true
     }
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
@@ -189,15 +192,19 @@ class SelectionTerminalView: AppTerminalView {
         }
         return super.performKeyEquivalent(with: event)
     }
-    private func showCopyFeedback() {
+    private func showFeedback(_ message: String, color: NSColor) {
+        // A trackpad gesture contains many events; announce the same visible
+        // feedback once instead of flooding VoiceOver on every wheel sample.
+        guard feedback.isHidden || feedback.stringValue != message else { return }
         feedbackRevision += 1
         let revision = feedbackRevision
-        feedback.stringValue = L("Copied")
+        feedback.stringValue = message
+        feedback.textColor = color
         feedback.sizeToFit()
         feedback.frame.origin = NSPoint(x: max(4, bounds.width - feedback.frame.width - 8), y: 4)
         feedback.isHidden = false
         NSAccessibility.post(element: self, notification: .announcementRequested, userInfo: [
-            .announcement: L("Copied"), .priority: NSAccessibilityPriorityLevel.low.rawValue
+            .announcement: message, .priority: NSAccessibilityPriorityLevel.low.rawValue
         ])
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { [weak self] in
             guard let self, self.feedbackRevision == revision else { return }

@@ -10,7 +10,7 @@ Verified in Herdr 0.9.3 (`7b116c05bfda646af39d2524c54e70c751f57ee8`): `src/clien
 
 The selection host temporarily enables reporting only around an idle wheel event, refreshes position/modifiers while reporting is disabled to avoid hover input, and restores the saved preference. Existing selection gestures keep their local behavior. Shell recovery resets keyboard/focus state while preserving the live attachment's mouse modes. Detach/restart still perform the full cleanup.
 
-Herdr 0.9.3 observers receive live ANSI viewport frames, do not read stdin, and do not expose an independent history viewport. The read-only banner now states that scrolling needs Reconnect or explicit Take Control. Read-only wheel input is blocked; no automatic takeover or shared pane.scroll request is used to simulate private observation scrolling.
+Herdr 0.9.3 observers receive live ANSI viewport frames, do not read stdin, and do not expose an independent history viewport. The read-only banner now states that scrolling needs Reconnect or explicit Take Control. Read-only wheel input shows a pane-local explanation even if another pane has focus; no automatic takeover or shared pane.scroll request is used to simulate private observation scrolling.
 
 ## Regression coverage
 
