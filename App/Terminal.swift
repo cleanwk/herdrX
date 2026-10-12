@@ -16,6 +16,7 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
     var observationCommand: (UInt16, UInt16) -> String
     var onExit: ((Int32) -> Void)?
     var onObservationEnded: (() -> Void)?
+    var onKeyboardModesEnabled: (() -> Void)?
     private(set) var attachmentID = UUID()
     private(set) var hoverURL: URL?
     init(command: String, takeoverCommand: String, observationCommand: @escaping (UInt16, UInt16) -> String) {
@@ -33,7 +34,6 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
         view.controller = Self.controller; view.delegate = self
         view.configuration = TerminalSurfaceOptions(backend: .inMemory(session))
         let session = self.session
-        process.output = { [weak session] in session?.receive($0) }
         observation.output = { [weak session] in session?.receive($0) }
         observation.ended = { [weak self] _ in self?.onObservationEnded?() }
         process.exited = { [weak self] status in
@@ -44,10 +44,24 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
             self.onExit?(status)
         }
         view.onFocus = { [weak self] in self?.focused?() }
-        process.start(command)
+        start(command)
     }
     var focused: (() -> Void)?
-    func restart(takeover: Bool = false) { attachmentID = UUID(); observation.stop(); resetInput(); view.allowsRemoteScroll = true; process.start(takeover ? takeoverCommand : command) }
+    private func start(_ command: String) {
+        let monitor = TerminalKeyboardMonitor(), attachment = attachmentID
+        let session = session
+        process.output = { [weak self, weak session] data in
+            session?.receive(data)
+            if monitor.append(data) {
+                Task { @MainActor [weak self] in
+                    guard let self, self.attachmentID == attachment, !self.observation.isRunning else { return }
+                    self.onKeyboardModesEnabled?()
+                }
+            }
+        }
+        process.start(command)
+    }
+    func restart(takeover: Bool = false) { attachmentID = UUID(); observation.stop(); resetInput(); view.allowsRemoteScroll = true; start(takeover ? takeoverCommand : command) }
     // The live `herdr terminal attach` owns mouse capture, independently of the
     // child Agent. Clearing it on Agent exit disables shell/history scrolling.
     func repair() { view.cancelSelectionGesture(); session.receive(TerminalInputRecovery.keyboardBytes) }
@@ -66,7 +80,7 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
     func visible(_ visible: Bool) { view.visible = visible }
 }
 
-final class TerminalView: SelectionTerminalView {
+final class TerminalView: InterruptTerminalView {
     var objectMenu: ((PaneMenuSource) -> NSMenu?)?
     var commands: WorkbenchActions?
     override func rightMouseDown(with event: NSEvent) { cancelSelectionGesture(); if let menu = objectMenu?(.terminal) { NSMenu.popUpContextMenu(menu, with: event, for: self) } else { super.rightMouseDown(with: event) } }

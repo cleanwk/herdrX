@@ -3,7 +3,10 @@ import Foundation
 private final class ByteCapture: @unchecked Sendable {
     private let lock = NSLock()
     private var bytes = Data()
-    func append(_ data: Data) { lock.lock(); bytes.append(data); lock.unlock() }
+    private let keyboard = TerminalKeyboardMonitor()
+    private var detectedKeyboardModes = false
+    var keyboardModesEnabled: Bool { lock.lock(); defer { lock.unlock() }; return detectedKeyboardModes }
+    func append(_ data: Data) { lock.lock(); bytes.append(data); detectedKeyboardModes = keyboard.append(data) || detectedKeyboardModes; lock.unlock() }
     func contains(_ text: String) -> Bool { lock.lock(); defer { lock.unlock() }; return String(decoding: bytes, as: UTF8.self).contains(text) }
     func diagnostic() -> String { lock.lock(); defer { lock.unlock() }; return String(decoding: bytes.prefix(2000), as: UTF8.self).debugDescription }
 }
@@ -32,7 +35,17 @@ private final class ByteCapture: @unchecked Sendable {
         second.exited = { _ in secondExited = true }
         observer.output = { observed.append($0) }; observer.ended = { observerEnded = true; observerReason = $0 }
         let before = try await client.call("pane.process_info", ["pane_id": .string(pane)])["process_info"]
+        // Reproduce opening a pane whose shell inherited an unbalanced Kitty
+        // mode from an earlier program, without relying on Agent metadata.
+        let staleReady = directory + "/stale-keyboard-ready"
+        _ = try await client.call("pane.send_text", ["pane_id": .string(pane), "text": .string("printf '\\033[>7u'; printf OK > " + quote(staleReady))])
+        _ = try await client.call("pane.send_keys", ["pane_id": .string(pane), "keys": .array([.string("Enter")])])
+        try await wait("stale keyboard fixture") { FileManager.default.fileExists(atPath: staleReady) }
         first.start(command(.control))
+        try await wait("keyboard negotiation on initial attach") { output.keyboardModesEnabled }
+        guard TerminalInputRecovery.isIdleShell(try await client.call("pane.process_info", ["pane_id": .string(pane)])["process_info"], pane: pane) else { throw Failure("Stale keyboard shell was not recoverable") }
+        first.write(Data([3]))
+        first.write(Data("printf '\\033[<99u\\033[=0u'\n".utf8))
         try await Task.sleep(for: .milliseconds(700)); first.resize(97, 31)
         first.write(Data("printf 'READY_OWNER\\n'\n".utf8))
         try await wait("first controller input") { output.contains("READY_OWNER") }
@@ -131,6 +144,6 @@ private final class ByteCapture: @unchecked Sendable {
         try await wait("observer never owns input") { FileManager.default.fileExists(atPath: thirdMarker) }
         let after = try await client.call("pane.process_info", ["pane_id": .string(pane)])["process_info"]
         guard before["shell_pid"] == after["shell_pid"] else { throw Failure("Server shell changed") }
-        print("PASS: production PTY attach refuses takeover; observer streams/resizes/restarts without stealing input or resizing owner; up/down wheel scrolls real server history and reaches alternate-screen TUI; explicit takeover; detach preserves shell PID; actual foreground shell guard")
+        print("PASS: stale Kitty mode detected on initial attach with a verified shell; raw Ctrl-C remains usable; production PTY attach refuses takeover; observer streams/resizes/restarts without stealing input or resizing owner; up/down wheel scrolls real server history and reaches alternate-screen TUI; explicit takeover; detach preserves shell PID; actual foreground shell guard")
     }
 }

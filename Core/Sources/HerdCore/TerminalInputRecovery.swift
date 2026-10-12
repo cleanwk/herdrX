@@ -16,3 +16,41 @@ public enum TerminalInputRecovery {
         }
     }
 }
+
+/// Observe only keyboard-mode negotiation, without rewriting terminal output.
+/// A fresh monitor belongs to one attachment; reads may split any CSI sequence.
+public final class TerminalKeyboardMonitor: @unchecked Sendable {
+    private let lock = NSLock()
+    private var pending: [UInt8] = []
+    public init() {}
+
+    public func append(_ data: Data) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        var enabled = false
+        for byte in data {
+            if byte == 0x1b { pending = [byte]; continue }
+            guard !pending.isEmpty else { continue }
+            if pending.count == 1 {
+                if byte == 0x5b { pending.append(byte) } else { pending.removeAll(keepingCapacity: true) }
+                continue
+            }
+            if (0x40...0x7e).contains(byte) {
+                let parameters = String(decoding: pending.dropFirst(2), as: UTF8.self)
+                if byte == 0x75, parameters.first == ">" || parameters.first == "=" {
+                    let flags = parameters.dropFirst().split(separator: ";").first.flatMap { Int($0) } ?? 0
+                    // CSI = flags;3u removes flags rather than enabling them.
+                    let mode = parameters.dropFirst().split(separator: ";").dropFirst().first
+                    enabled = enabled || (flags > 0 && (parameters.first == ">" || mode != "3"))
+                } else if byte == 0x6d, [">4;1", ">4;2"].contains(parameters) {
+                    enabled = true
+                }
+                pending.removeAll(keepingCapacity: true)
+            } else if (0x20...0x3f).contains(byte), pending.count < 64 {
+                pending.append(byte)
+            } else {
+                pending.removeAll(keepingCapacity: true)
+            }
+        }
+        return enabled
+    }
+}

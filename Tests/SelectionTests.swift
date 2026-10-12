@@ -10,6 +10,60 @@ import HerdCore
 }
 
 @Suite(.serialized) @MainActor struct SelectionTests {
+    @Test func physicalControlCBypassesStaleKeyboardProtocolsAndSuppressesRelease() async throws {
+        let h = try await Harness()
+        defer { h.close() }
+        var interrupts = 0
+        h.view.onInterrupt = { interrupts += 1; h.session.sendInput(Data([3])); return true }
+        defer { h.view.onInterrupt = nil }
+        for mode in ["\u{1b}[>7u", "\u{1b}[>31u", "\u{1b}[>4;2m"] {
+            h.receive(String(decoding: TerminalInputRecovery.keyboardBytes, as: UTF8.self) + mode)
+            h.output.clear()
+            let down = h.key(.keyDown, characters: "\u{3}", ignoring: "c", modifiers: .control, code: 8)
+            #expect(h.view.performKeyEquivalent(with: down))
+            // A second press must not disappear while asynchronous repair waits.
+            h.view.keyDown(with: down)
+            h.view.keyUp(with: h.key(.keyUp, characters: "c", ignoring: "c", code: 8))
+            try await Task.sleep(for: .milliseconds(80))
+            #expect(h.output.data == Data([3, 3]), "Ctrl-C or its release leaked CSI u input")
+        }
+        #expect(interrupts == 6)
+        // Sending the interrupt alone must not reset a still-running TUI's mode.
+        h.receive("\u{1b}[>31u")
+        h.output.clear()
+        h.view.keyDown(with: h.key(.keyDown, characters: "a", ignoring: "a", code: 0))
+        h.view.keyUp(with: h.key(.keyUp, characters: "a", ignoring: "a", code: 0))
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(String(decoding: h.output.data, as: UTF8.self).contains("\u{1b}[97;1:3u"))
+        h.receive(String(decoding: TerminalInputRecovery.keyboardBytes, as: UTF8.self))
+        h.output.clear()
+        h.view.keyDown(with: h.key(.keyDown, characters: "a", ignoring: "a", code: 0))
+        h.view.keyUp(with: h.key(.keyUp, characters: "a", ignoring: "a", code: 0))
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(h.output.data == Data("a".utf8))
+    }
+
+    @Test func interruptRequiresAnActiveHandlerAndPreservesOtherShortcuts() async throws {
+        let h = try await Harness()
+        defer { h.close() }
+        h.receive("\u{1b}[>7u")
+        h.view.onInterrupt = { false }
+        h.output.clear()
+        h.view.keyDown(with: h.key(.keyDown, characters: "\u{3}", ignoring: "c", modifiers: .control, code: 8))
+        h.view.keyUp(with: h.key(.keyUp, characters: "\u{3}", ignoring: "c", modifiers: .control, code: 8))
+        try await Task.sleep(for: .milliseconds(80))
+        let encoded = String(decoding: h.output.data, as: UTF8.self)
+        #expect(encoded.contains("\u{1b}[99;5u"))
+        #expect(encoded.contains("\u{1b}[99;5:3u"))
+        var interrupts = 0
+        h.view.onInterrupt = { interrupts += 1; return true }
+        for modifiers in [NSEvent.ModifierFlags.command, [.control, .shift], [.control, .option], []] {
+            h.view.keyDown(with: h.key(.keyDown, characters: "c", ignoring: "c", modifiers: modifiers, code: 8))
+            h.view.keyUp(with: h.key(.keyUp, characters: "c", ignoring: "c", modifiers: modifiers, code: 8))
+        }
+        #expect(interrupts == 0)
+    }
+
     @Test func wheelReportsSurviveLocalSelectionPreference() async throws {
         let h = try await Harness()
         defer { h.close() }
@@ -326,7 +380,7 @@ private final class LockedOutput: @unchecked Sendable {
     static let text = "\u{1b}[2J\u{1b}[HALPHA_ONE bravo charlie\r\nDELTA_TWO echo foxtrot\r\n中文选择测试 标点，句号。 emoji 👩‍💻 END\r\n"
     let output = LockedOutput()
     let session: InMemoryTerminalSession
-    let view = SelectionTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 400))
+    let view = InterruptTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 400))
     let window: NSWindow
     var openedURLs: [String] = []
     private var metrics: TerminalGridMetrics?
@@ -368,6 +422,11 @@ private final class LockedOutput: @unchecked Sendable {
         Theme.apply()
     }
     func receive(_ text: String) { session.receive(text); session.waitForPendingOutput() }
+    func key(_ type: NSEvent.EventType, characters: String, ignoring: String, modifiers: NSEvent.ModifierFlags = [], code: UInt16) -> NSEvent {
+        NSEvent.keyEvent(with: type, location: .zero, modifierFlags: modifiers, timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber, context: nil, characters: characters, charactersIgnoringModifiers: ignoring,
+            isARepeat: false, keyCode: code)!
+    }
     func clipboard(_ text: String) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(text, forType: .string) }
     // The pinned engine default is 2pt padding on each edge. Cell metrics
     // exclude that inset; include it before sending AppKit coordinates.
