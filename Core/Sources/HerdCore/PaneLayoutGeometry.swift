@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 /// Herdr's pane rectangles use the same absolute cell coordinates as `area`.
 /// The GUI canvas has its own origin and must not inherit the TUI's chrome offset.
