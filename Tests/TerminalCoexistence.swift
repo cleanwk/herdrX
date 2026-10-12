@@ -36,7 +36,7 @@ private final class ByteCapture: @unchecked Sendable {
         first.write(Data("printf 'READY_OWNER\\n'\n".utf8))
         try await wait("first controller input") { output.contains("READY_OWNER") }
         second.start(command(.control))
-        try await wait("ordinary second attach is rejected") { secondExited }
+        try await wait("ordinary second attach is rejected") { secondExited && secondOutput.contains("already has an attached client") }
         guard !firstExited, secondOutput.contains("already has an attached client") else { throw Failure("Second attachment displaced the owner") }
         second.stop()
         let observe: (UInt16, UInt16) -> String = { cols, rows in TerminalAttachment.command(endpoint: endpoint, socket: socket, terminal: target, mode: .observe, columns: cols, rows: rows) }

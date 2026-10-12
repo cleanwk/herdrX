@@ -16,7 +16,7 @@ Recovery queries `pane.process_info`, checks pane identity, positive shell PID, 
 
 - Linux: official Herdr 0.9.3 in an isolated named session, separate XDG config/state and HERDRX_STATE_DIR. Ordinary second controller refused without disconnecting the owner; observer received live output; observer detach preserved owner; explicit takeover preserved the shell PID. `scripts/coexistence-fixture.py` passed.
 - Python packaging/update tests: 6 passed; whitespace check passed.
-- macOS first run: 37 Core tests and 7 real Ghostty tests passed, including keyboard/mouse recovery with history and bracketed paste. Application compilation identified a missing MainActor annotation on a local validation function; corrected before publication.
+- macOS: 37 Core tests, 7 real Ghostty tests, production PTY stress tests and the universal app build passed. Ghostty coverage includes keyboard/mouse recovery with history and bracketed paste. The isolated Herdr fixture selects panes by the returned workspace ID so macOS /tmp canonicalization cannot misidentify its target.
 - Current-head macOS CI gate ([PR #20](https://github.com/cleanwk/herdrX/pull/20)): Core contract tests, Ghostty keyboard/mouse/history regression, production ByteProcess + TerminalObservation against the real isolated Herdr session, existing native selection/PTY/tab/input/pane tests, universal build and package.
 
 ## Limits

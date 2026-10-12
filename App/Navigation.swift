@@ -60,11 +60,16 @@ extension Desk {
         L(terminals[key]?.observation.isRunning == true ? "Viewing only. Another client may control this terminal." : "Attachment ended. The server pane may still be running.")
     }
     func reconnect(_ key: PaneKey, takeover: Bool = false) {
-        guard terminals[key] != nil, canWrite(key.device) && sessions[key.device]?.panes.contains(where: { $0.id == key.pane }) == true else { return }
+        guard let terminal = terminals[key], canWrite(key.device),
+              let target = sessions[key.device]?.panes.first(where: { $0.id == key.pane })?.terminal else { return }
+        let endpoint = devices.first(where: { $0.id == key.device })?.endpoint
         if takeover {
             let alert = NSAlert(); alert.messageText = L("Take control of this terminal?"); alert.informativeText = L("This takes attachment ownership from any other client. The server process keeps running.")
             alert.addButton(withTitle: L("Take Control")); alert.addButton(withTitle: L("Cancel")); guard alert.runModal() == .alertFirstButtonReturn else { return }
         }
-        ended.remove(key); exitStatus[key] = nil; terminals[key]?.restart(takeover: takeover); requestFocus()
+        guard canWrite(key.device), terminals[key] === terminal,
+              devices.first(where: { $0.id == key.device })?.endpoint == endpoint,
+              sessions[key.device]?.panes.contains(where: { $0.id == key.pane && $0.terminal == target }) == true else { return }
+        ended.remove(key); exitStatus[key] = nil; terminal.restart(takeover: takeover); requestFocus()
     }
 }

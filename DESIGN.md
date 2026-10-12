@@ -88,7 +88,7 @@ typography:
     fontWeight: 600
   pane-context:
     fontFamily: "macOS system monospaced font"
-    fontSize: "10pt"
+    fontSize: "11pt"
   settings-body:
     fontFamily: "macOS system font"
     fontSize: "13pt"

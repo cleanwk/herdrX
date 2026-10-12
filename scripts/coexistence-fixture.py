@@ -20,7 +20,7 @@ def main():
         env = os.environ.copy()
         for key in ("HERDR_SOCKET_PATH", "HERDR_CLIENT_SOCKET_PATH", "HERDR_SESSION", "HERDR_SESSION_NAME", "HERDR_PANE_ID", "HERDR_TERMINAL_ID"):
             env.pop(key, None)
-        env.update(XDG_CONFIG_HOME=temp + "/c", XDG_STATE_HOME=temp + "/s", HERDRX_STATE_DIR=temp + "/x", SHELL="/bin/sh")
+        env.update(XDG_CONFIG_HOME=temp + "/c", XDG_STATE_HOME=temp + "/s", HERDR_CONFIG_PATH=temp + "/c/herdr/config.toml", HERDRX_STATE_DIR=temp + "/x", SHELL="/bin/sh")
         bindir = root / "bin"
         bindir.mkdir()
         (bindir / "herdr").symlink_to(binary)
@@ -61,9 +61,10 @@ def main():
                     if server.poll() is not None:
                         raise RuntimeError((root / "server.log").read_text())
                     time.sleep(.05)
-                rpc("workspace.create", dict(cwd=temp, label="Isolated coexistence test", focus=False))
+                created = rpc("workspace.create", dict(cwd=temp, label="Isolated coexistence test", focus=False))
                 snapshot = rpc("session.snapshot")["snapshot"]
-                pane = next(p for p in snapshot["panes"] if p.get("cwd") == temp)
+                # macOS canonicalizes /tmp to /private/tmp; use server identity.
+                pane = next(p for p in snapshot["panes"] if p["workspace_id"] == created["workspace"]["workspace_id"])
                 env["HERDR_SOCKET_PATH"] = str(path)
                 if len(sys.argv) > 2:
                     subprocess.run([str(Path(sys.argv[2]).resolve()), str(path), pane["terminal_id"], pane["pane_id"], temp], env=env, check=True, timeout=60)
