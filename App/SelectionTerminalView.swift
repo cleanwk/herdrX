@@ -40,6 +40,7 @@ class SelectionTerminalView: AppTerminalView {
 
     override func mouseDown(with event: NSEvent) {
         cancelSelectionGesture()
+        feedbackRevision += 1; feedback.isHidden = true
         window?.makeFirstResponder(self)
         origin = event
         let reporting = !(UserDefaults.standard.object(forKey: "disableMouseReporting") as? Bool ?? true)

@@ -199,7 +199,7 @@ private final class LockedOutput: @unchecked Sendable {
     func clear() { lock.lock(); bytes.removeAll(); lock.unlock() }
 }
 
-@MainActor private final class Harness: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfaceGridResizeDelegate, TerminalSurfaceOpenURLDelegate {
+@MainActor private final class Harness: TerminalSurfaceLifecycleDelegate, TerminalSurfaceGridResizeDelegate, TerminalSurfaceOpenURLDelegate {
     static let text = "\u{1b}[2J\u{1b}[HALPHA_ONE bravo charlie\r\nDELTA_TWO echo foxtrot\r\n中文选择测试 标点，句号。 emoji 👩‍💻 END\r\n"
     let output = LockedOutput()
     let session: InMemoryTerminalSession
@@ -218,7 +218,6 @@ private final class LockedOutput: @unchecked Sendable {
         window.isReleasedWhenClosed = false
         let output = output
         session = InMemoryTerminalSession(write: { output.append($0) }, resize: { _ in })
-        super.init()
         for key in keys { if let value = UserDefaults.standard.object(forKey: key) { saved[key] = value } }
         clipboardItems = (NSPasteboard.general.pasteboardItems ?? []).map { item in
             Dictionary(uniqueKeysWithValues: item.types.compactMap { type in item.data(forType: type).map { (type, $0) } })

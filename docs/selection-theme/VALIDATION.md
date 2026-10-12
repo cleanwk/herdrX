@@ -10,11 +10,12 @@ Production sources: `App/SelectionTerminalView.swift`, `Theme.swift`, `ThemeColo
 
 | Check | Status |
 | --- | --- |
-| Python release/tap/appcast contracts | Pending local run |
+| Python release/tap/appcast contracts | PASS: 6 tests on Linux |
 | macOS universal app build, Core, PTY, tab, text-input and geometry checks | Pending CI |
 | Consecutive ASCII/Chinese selection, clipboard unchanged while dragging, on/off reporting and capture, selection cleared after copy | Pending CI |
 | DEC 1000/1002/1003 pending/click/drag input isolation | Pending CI |
 | Copy off, manual copy, empty copy, hidden-pane cancellation and next anchor | Pending CI |
+| Real Shift expansion, captured Command-link dispatch, hard lines/indentation/Chinese/emoji and bracketed paste | Pending CI |
 | Stationary upper/lower edge growth for >1s, release/focus cancellation stops | Pending CI |
 | Every family/appearance/accent role contrast and normal text independence; mounted content retained across theme update | Pending CI |
 | Physical mouse, user's actual Agent attach, Herdr history and alternate screen, full app light/dark A/B, actual IME and VoiceOver output | NOT_RUN: Linux editing environment; macOS CI supplies engine checks only |

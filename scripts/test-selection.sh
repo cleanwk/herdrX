@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/tests
+scripts/icon.sh
 xcodegen generate
 # A hostless bundle: no HerdrX startup, default Herdr session or user preferences.
 xcodebuild test -project HerdrX.xcodeproj -scheme SelectionTests -configuration Debug \

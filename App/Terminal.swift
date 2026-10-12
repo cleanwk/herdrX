@@ -174,7 +174,7 @@ struct TerminalCanvas: NSViewRepresentable {
                 let active = focused == key && window?.isKeyWindow == true
                 if let context = NSGraphicsContext.current?.cgContext {
                     context.saveGState()
-                    context.setStrokeColor((active ? Theme.accentStroke : Theme.decoration).cgColor)
+                    context.setStrokeColor((active ? Theme.accentStroke : Theme.decoration.withAlphaComponent(0.45)).cgColor)
                     context.setLineWidth(PaneMetrics.borderWidth(scale: window?.backingScaleFactor ?? 2))
                     let radii = paneCorners(rect).inset(by: PaneMetrics.borderWidth(scale: window?.backingScaleFactor ?? 2) / 2)
                     context.addPath(PaneShape.path(in: frame, corners: radii))
