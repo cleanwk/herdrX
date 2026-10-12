@@ -25,10 +25,12 @@ jobs:
       - run: scripts/test-tabs.sh
       - run: scripts/test-inputs.sh
       - run: scripts/package.sh
+      - run: python3 scripts/check-delta-updates.py
       - uses: actions/upload-artifact@v4
         with:
           name: HerdrX-preview
           path: |
             build/dist/*
             build/tests/*.png
+            build/tests/delta-updates.json
           retention-days: 14

@@ -70,8 +70,9 @@ jobs:
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: scripts/package.sh
-      - name: Generate and verify signed updates
+      - name: Generate and verify signed full and delta updates
         env:
+          GH_TOKEN: ${{ github.token }}
           SPARKLE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
           SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_KEY }}
         run: |
@@ -80,8 +81,7 @@ jobs:
           printf '%s' "$SPARKLE_KEY" > "$RUNNER_TEMP/sparkle-key"
           tool=$(find build/release/SourcePackages/artifacts -path '*/bin/generate_appcast' -type f -print -quit)
           [[ -n "$tool" ]] || { echo 'Missing Sparkle appcast tool'; exit 1; }
-          "$tool" --ed-key-file "$RUNNER_TEMP/sparkle-key" --download-url-prefix "https://github.com/cleanwk/herdrX/releases/download/v${VERSION}/" build/dist
-          python3 scripts/appcast.py build/dist build/release/Build/Products/Release/HerdrX.app "$(dirname "$tool")/sign_update" "$RUNNER_TEMP/sparkle-key" "$SPARKLE_PUBLIC_KEY"
+          python3 scripts/updates.py build/dist build/release/Build/Products/Release/HerdrX.app "$tool" "$RUNNER_TEMP/sparkle-key" "$SPARKLE_PUBLIC_KEY"
       - name: Publish verified release
         env:
           GH_TOKEN: ${{ github.token }}

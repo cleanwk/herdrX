@@ -1,5 +1,21 @@
 # App update validation
 
+## Delta release pipeline (2026-10-12)
+
+`scripts/updates.py` prepares the three most recent preceding stable GitHub releases. Drafts, prereleases, the current version and newer versions are excluded. Each base must match the GitHub asset size/SHA-256, release metadata, bundle version, identity and Sparkle public key. Duplicate or nonpreceding build numbers are excluded. Unavailable or invalid history emits a warning and skips that base; a first release needs no history.
+
+Sparkle 2.9.6's official `generate_appcast` runs in a temporary staging directory with `--versions <current build> --maximum-versions 1 --maximum-deltas 3`. This retains a single latest full enclosure and attaches deltas keyed by the installed `CFBundleVersion`. Sparkle omits patches larger than approximately 7/8 of the full archive. Only the new signed feed and its referenced deltas reach `build/dist`; previous full archives remain temporary. `scripts/appcast.py` validates delta sources, exact versioned URLs, lengths and every payload's Ed25519 signature before publishing. `release.json` records delta sizes/hashes/source builds; `SHA256SUMS` covers the full archive, feed and deltas. The existing full archive metadata and Homebrew contract remain available.
+
+The app continues to use the unmodified Sparkle downloader/installer. Sparkle's `SUAppcastDriver` selects deltas by installed build (and embedded framework compatibility); `SPUCoreBasedUpdateDriver` retries the full enclosure after delta download or extraction failures. No user setting or new installer is required. Initial installs, uncovered old builds, locally modified app bundles that cannot apply a patch, and Homebrew upgrades can still require the full archive.
+
+Validation for this change:
+
+- Python release tests cover stable version ordering/window, missing history, partial download failures, asset integrity/identity checks, source build validation, delta URLs/lengths/signatures and the existing Homebrew contract.
+- `scripts/check-delta-updates.py` runs after the universal build on macOS CI with ephemeral fixture keys and four copies of the built app. It generates signed full-only and three-base feeds, applies each real Sparkle delta, compares every bundle file, symlink and permission with the target, and verifies deep code signatures. It also rejects a modified base and a same-length tampered delta, checks that historical archives are not published, and records byte counts in `build/tests/delta-updates.json`.
+- macOS CI result pending. Fixture byte counts are not a prediction for a real version change. Live GUI download/install/fallback and a published production delta release have not been exercised by this change.
+
+The earlier updater acceptance below is historical and does not establish delta installation results.
+
 Recorded 2026-10-10. The updater extends the existing native macOS settings world. Its source is `App/Updater.swift`, `App/Main.swift`, `App/Preferences.swift`, `App/Info.plist` and `project.yml`, with release checks in `.github/workflows/release.yml`, `scripts/appcast.py` and `distribution/tap/update.py`. [DESIGN.md](../../DESIGN.md), the [sidecar](../../.impeccable/design.json) and [surface brief](../../.impeccable/surfaces/app-workbench-swift.md) now document the new About behavior. No web detector applies.
 
 ## Implemented behavior
