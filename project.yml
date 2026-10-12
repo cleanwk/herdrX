@@ -85,8 +85,13 @@ targets:
       - App/ThemeColors.swift
       - App/Localization.swift
       - Tests/SelectionTests.swift
+      - Tests/FloatingTerminalTests.swift
+      - App/FloatingTerminal.swift
+      - App/PTY.swift
     dependencies:
       - package: HerdCore
+      - package: HerdCore
+        product: PTY
       - package: Ghostty
         product: GhosttyTerminal
       - package: Ghostty

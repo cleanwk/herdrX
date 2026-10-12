@@ -43,6 +43,11 @@ private struct Devices: View {
     @State private var error: String?
     var body: some View {
         Form {
+            Section("Herdr machines") {
+                Toggle("Follow Herdr machine directory", isOn: Binding(get: { desk.followHerdrMachines }, set: desk.setFollowHerdrMachines))
+                Text("Sync at startup, on activation and every 60 seconds. Only Herdr-managed devices are updated or removed.").font(.caption).foregroundStyle(.secondary)
+                if let error = desk.machineSyncError { Text(error).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
+            }
             Section("Saved devices") {
                 ViewThatFits(in: .horizontal) {
                     HStack { discoveryActions }
@@ -70,13 +75,14 @@ private struct Devices: View {
                                     desk.tailcatEditRequest = device.id
                                     UserDefaults.standard.set("Tailcat", forKey: "settingsPage")
                                 } else { draft = ConnectionDraft(device); error = nil }
-                            }.fixedSize()
+                            }.fixedSize().disabled(desk.followHerdrMachines && device.herdrProfile != nil)
                             Button("Remove") {
                                 let alert = NSAlert(); alert.messageText = LF("Forget %@?", device.displayName); alert.informativeText = L("Only this connection is removed. Server sessions and processes continue."); alert.addButton(withTitle: L("Forget Connection")); alert.addButton(withTitle: L("Cancel"))
                                 if alert.runModal() == .alertFirstButtonReturn { desk.remove(device.id); if draft.id == device.id { reset() } }
-                            }
+                            }.disabled(desk.followHerdrMachines && device.herdrProfile != nil)
                         }
-                        Text(DisplayTitle.detail([device.endpoint.target, device.endpoint.socketPath])).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                        if device.herdrProfile != nil { Label("Managed by Herdr", systemImage: "arrow.triangle.2.circlepath").font(.caption).foregroundStyle(.secondary) }
+                        Text(DisplayTitle.detail([device.endpoint.target, device.endpoint.session, device.endpoint.socketPath])).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
                         if desk.canWrite(device.id) { Text("Connected").font(.caption).foregroundStyle(.secondary) }
                         else { ConnectionRecovery(device: device, showsSettings: false).padding(.top, 4) }
                     }
@@ -86,13 +92,14 @@ private struct Devices: View {
                 TextField("Name", text: $draft.name)
                 Picker("Connection", selection: $draft.local) { Text("SSH").tag(false); Text("Local Herdr session").tag(true) }.pickerStyle(.segmented)
                 if !draft.local { TextField("SSH host or config alias", text: $draft.target); TextField("Port", text: $draft.port, prompt: Text("Automatic")); TextField("SSH config file (optional)", text: $draft.sshConfig) }
-                TextField("Herdr socket", text: $draft.socket, prompt: Text("/home/user/.config/herdr/herdr.sock"))
-                Text("Use an absolute socket path for the intended named session. SSH uses your existing keys and SSH configuration.").font(.caption).foregroundStyle(.secondary)
+                if !draft.local { TextField("Named session (optional)", text: $draft.session) }
+                TextField("Herdr socket", text: $draft.socket, prompt: Text("/home/user/.config/herdr/herdr.sock")).disabled(!draft.local && !draft.session.isEmpty)
+                Text("Enter a named session to resolve and start Herdr when connecting, or an absolute socket path. SSH uses your existing keys and configuration.").font(.caption).foregroundStyle(.secondary)
                 if let error { Text(error).font(.caption).foregroundStyle(.secondary) }
                 HStack {
                     Button(LocalizedStringKey(draft.id == nil ? "Add Device" : "Save Changes")) {
                         do { let device = try draft.device(); if draft.id != nil { desk.update(device) } else { desk.add(device) }; reset() }
-                        catch { self.error = L("Enter a valid name, host, port and absolute socket path.") }
+                        catch { self.error = L("Enter a valid name, host, port and named session or absolute socket path.") }
                     }
                     Button(LocalizedStringKey(draft.id == nil ? "Clear Form" : "Cancel Editing")) { reset() }
                 }

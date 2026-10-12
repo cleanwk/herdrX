@@ -12,6 +12,7 @@ extension FocusedValues {
     }
 }
 struct WorkbenchCommands: Commands {
+    @ObservedObject var desk: Desk
     @FocusedValue(\.workbenchActions) private var actions
     func button(_ title: String, _ id: String, _ key: KeyEquivalent, _ modifiers: EventModifiers = .command) -> some View {
         Button(L(title)) { actions?.perform(id) }.keyboardShortcut(key, modifiers: modifiers).disabled(actions?.enabled(id) != true)
@@ -36,6 +37,21 @@ struct WorkbenchCommands: Commands {
                 button("Restore Input Modes", "repair", "r", [.command, .shift])
                 Button("Interrupt Task and Repair TTY…") { actions?.perform("interrupt") }.disabled(actions?.enabled("repair") != true)
             }
+        }
+        CommandMenu(L("Plugins")) {
+            ForEach(desk.pluginCommands) { entry in
+                Button(entry.label + " · " + entry.detail) { desk.runCommand(entry.id) }.disabled(!desk.commandAvailable(entry.id))
+            }
+            if desk.pluginCommands.isEmpty { Text("No plugin actions available") }
+            Divider()
+            Button("Refresh Plugins") { desk.refreshPluginCatalogs() }
+            ForEach(desk.devices.filter { desk.pluginErrors[$0.id] != nil }) { device in
+                Text(device.displayName + ": " + L("Plugin API unavailable"))
+            }
+        }
+        CommandMenu(L("Herdr Commands")) {
+            ForEach(desk.herdrConfig.popups) { entry in Button(entry.title) { desk.runCommand(entry.id) } }
+            if desk.herdrConfig.popups.isEmpty { Text("No popup commands configured") }
         }
         CommandMenu(L("Workspace")) {
             button("Search…", "search", "k")

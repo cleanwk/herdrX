@@ -445,3 +445,22 @@
 "Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved." = "Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved.";
 
 "Viewing only — reconnect to scroll." = "Viewing only — reconnect to scroll.";
+
+"Herdr machines" = "Herdr machines";
+"Follow Herdr machine directory" = "Follow Herdr machine directory";
+"Sync at startup, on activation and every 60 seconds. Only Herdr-managed devices are updated or removed." = "Sync at startup, on activation and every 60 seconds. Only Herdr-managed devices are updated or removed.";
+"Managed by Herdr" = "Managed by Herdr";
+"Named session (optional)" = "Named session (optional)";
+"Enter a named session to resolve and start Herdr when connecting, or an absolute socket path. SSH uses your existing keys and configuration." = "Enter a named session to resolve and start Herdr when connecting, or an absolute socket path. SSH uses your existing keys and configuration.";
+"Enter a valid name, host, port and named session or absolute socket path." = "Enter a valid name, host, port and named session or absolute socket path.";
+"Invalid machine entries kept unchanged: %@" = "Invalid machine entries kept unchanged: %@";
+"Could not sync Herdr machines. Existing devices were kept: %@" = "Could not sync Herdr machines. Existing devices were kept: %@";
+"Could not read Herdr config: %@" = "Could not read Herdr config: %@";
+"Herdr config unavailable" = "Herdr config unavailable";
+"Herdr command" = "Herdr command";
+"No plugin actions available" = "No plugin actions available";
+"Refresh Plugins" = "Refresh Plugins";
+"Plugin API unavailable" = "Plugin API unavailable";
+"Herdr Commands" = "Herdr Commands";
+"No popup commands configured" = "No popup commands configured";
+"No matching spaces, terminals, agents or commands" = "No matching spaces, terminals, agents or commands";

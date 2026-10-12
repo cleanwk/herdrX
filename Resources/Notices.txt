@@ -24,3 +24,7 @@ Agent tool icons: Lobe Icons (MIT)
 https://github.com/lobehub/lobe-icons
 Pinned source URLs and adaptations are recorded in Resources/Icon/AgentIcons.json.
 Brand names and logos identify their respective tools; no affiliation is implied.
+
+TOMLKit 0.6.0: MIT
+https://github.com/LebJe/TOMLKit
+Includes toml++ 3.4.0 (MIT); see bundled licenses.

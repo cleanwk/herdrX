@@ -6,6 +6,26 @@
 #include <libproc.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <spawn.h>
+
+// Own a process group so timeout/cancellation can stop shell children too.
+pid_t herd_command(const char *file, char *const argv[], char *const env[], int input, int output, int error) {
+    posix_spawnattr_t attr;
+    posix_spawn_file_actions_t actions;
+    posix_spawnattr_init(&attr); posix_spawn_file_actions_init(&actions);
+    sigset_t empty, defaults; sigemptyset(&empty); sigemptyset(&defaults);
+    sigaddset(&defaults, SIGTERM); sigaddset(&defaults, SIGINT); sigaddset(&defaults, SIGHUP);
+    posix_spawnattr_setsigmask(&attr, &empty); posix_spawnattr_setsigdefault(&attr, &defaults);
+    posix_spawnattr_setpgroup(&attr, 0);
+    posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_SETSIGMASK | POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_CLOEXEC_DEFAULT);
+    posix_spawn_file_actions_adddup2(&actions, input, 0);
+    posix_spawn_file_actions_adddup2(&actions, output, 1);
+    posix_spawn_file_actions_adddup2(&actions, error, 2);
+    pid_t pid = -1;
+    int result = posix_spawn(&pid, file, &actions, &attr, argv, env);
+    posix_spawn_file_actions_destroy(&actions); posix_spawnattr_destroy(&attr);
+    return result == 0 ? pid : -1;
+}
 pid_t herd_pty(int *master, const char *file, char *const argv[], char *const env[]) {
     struct winsize size = {.ws_row = 24, .ws_col = 80};
     pid_t pid = forkpty(master, NULL, NULL, &size);

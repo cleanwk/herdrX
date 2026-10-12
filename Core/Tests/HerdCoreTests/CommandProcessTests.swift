@@ -21,4 +21,23 @@ final class CommandProcessTests: XCTestCase {
         catch { XCTFail("Cancellation returned an unrelated error: \(error)") }
         XCTAssertTrue(started, "The helper never started; this must exercise in-flight cancellation")
     }
+    func testTimeoutKillsShellChildrenThatIgnoreTermination() async throws {
+        let started = Date()
+        do {
+            _ = try await CommandProcess.run("/bin/sh", ["-c", "trap '' TERM; sleep 30 & wait"], input: Data(), timeout: 0.15)
+            XCTFail("A timed-out shell returned success")
+        } catch { XCTAssertTrue(error.localizedDescription.contains("timed out")) }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 3)
+    }
+    func testOutputLimitAndStderr() async throws {
+        do {
+            _ = try await CommandProcess.run("/bin/sh", ["-c", "while :; do printf '0123456789'; done"], input: Data(), outputLimit: 1024)
+            XCTFail("Unbounded output")
+        } catch { XCTAssertTrue(error.localizedDescription.contains("limit")) }
+        do {
+            _ = try await CommandProcess.run("/bin/sh", ["-c", "printf 'expected error' >&2; exit 2"], input: Data())
+            XCTFail("Accepted failed command")
+        } catch { XCTAssertEqual(error.localizedDescription, "expected error") }
+    }
+
 }
