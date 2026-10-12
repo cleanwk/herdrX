@@ -12,7 +12,7 @@ import CoreGraphics
         ]
         func equal(_ a: CGFloat, _ b: CGFloat) -> Bool { abs(a - b) < 0.00001 }
         for scale: CGFloat in [1, 2] {
-            precondition(PaneMetrics.borderWidth(scale: scale) == (scale == 2 ? 1.5 : 2))
+            precondition(PaneMetrics.borderWidth(scale: scale) == 1)
             for size in [CGSize(width: 719, height: 585), CGSize(width: 997.5, height: 725.5)] {
                 for layout in layouts {
                     let frames = layout.map { PaneMetrics.frame($0, in: size, scale: scale) }
@@ -21,6 +21,7 @@ import CoreGraphics
                         precondition(frame.width > 0 && frame.height > 0)
                         precondition(frame.contains(border), "Independent border escaped pane frame")
                         let half = PaneMetrics.borderWidth(scale: scale) / 2
+                        precondition(equal(frame.maxY - border.maxY - half, 7), "Top outline offset changed")
                         for edge in [border.minX - half, border.maxX + half, border.minY - half, border.maxY + half] {
                             precondition(equal(edge * scale, (edge * scale).rounded()), "Stroke is not aligned to backing pixels")
                         }
@@ -30,10 +31,14 @@ import CoreGraphics
                             let other = layout[j], next = frames[j]
                             precondition(!frame.intersects(next), "Pane frames overlap")
                             if equal(rect.maxX, other.minX), min(rect.maxY, other.maxY) > max(rect.minY, other.minY) {
-                                precondition(equal(next.minX - frame.maxX, 8), "Horizontal gutter changed")
+                                precondition(equal(next.minX - frame.maxX, 6), "Horizontal gutter changed")
+                                let nextBorder = PaneMetrics.borderFrame(next, scale: scale)
+                                precondition(equal(nextBorder.minX - border.maxX - 2 * half, 6), "Horizontal border gap changed")
                             }
                             if equal(rect.maxY, other.minY), min(rect.maxX, other.maxX) > max(rect.minX, other.minX) {
-                                precondition(equal(frame.minY - next.maxY, 8), "Vertical gutter changed")
+                                precondition(equal(frame.minY - next.maxY, 6), "Vertical gutter changed")
+                                let nextBorder = PaneMetrics.borderFrame(next, scale: scale)
+                                precondition(equal(border.minY - nextBorder.maxY - 2 * half, 13), "Vertical border gap changed")
                             }
                         }
                     }
@@ -53,7 +58,7 @@ import CoreGraphics
         let sidebar = PaneCorners(right: 12)
         precondition(sidebar.forPane(left, fullScreen: false) == PaneCorners())
         precondition(sidebar.forPane(right, fullScreen: false) == sidebar)
-        precondition(outer.inset(by: 0.75) == PaneCorners(left: 11.25, right: 11.25))
+        precondition(outer.inset(by: 0.5) == PaneCorners(left: 11.5, right: 11.5))
         precondition(outer.inset(by: 4) == PaneCorners(left: 8, right: 8))
         precondition(outer.inset(by: 20) == PaneCorners())
         let shape = CGRect(x: 0, y: 0, width: 300, height: 200)
@@ -78,6 +83,6 @@ import CoreGraphics
             precondition(PaneMetrics.canSplit(fits, horizontal: horizontal, minimum: minimum))
             precondition(!PaneMetrics.canSplit(short, horizontal: horizontal, minimum: minimum))
         }
-        print("PASS: independent pane borders, 8pt gutters, nested/stacked/grid layouts, resize, 1×/2× pixel alignment, outer canvas edges, selective continuous corners and concentric terminal masks")
+        print("PASS: 1pt inside borders, 6pt horizontal / 13pt vertical border gaps, 7pt top offset, nested/stacked/grid layouts, resize, 1×/2× pixel alignment, outer canvas edges, selective continuous corners and concentric terminal masks")
     }
 }

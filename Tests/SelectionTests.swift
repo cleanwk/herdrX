@@ -1,6 +1,7 @@
 import AppKit
 import GhosttyTerminal
 import Testing
+import HerdCore
 
 // The production selection view and Theme compile unchanged in a hostless test
 // bundle. Only the application-wide controller holder is supplied by the harness.
@@ -9,6 +10,36 @@ import Testing
 }
 
 @Suite(.serialized) @MainActor struct SelectionTests {
+    @Test func restoreKeyboardAndMouseModesPreservesHistory() async throws {
+        let h = try await Harness()
+        defer { h.close() }
+        h.preferences(copy: false, reporting: true)
+        h.receive((0..<60).map { "HISTORY_\($0)\r\n" }.joined() + "SHELL_PROMPT")
+        #expect(h.view.hostSurface?.performBindingAction("select_all") == true)
+        let history = try #require(h.view.hostSurface?.readSelection())
+        #expect(history.contains("HISTORY_0"))
+        #expect(h.view.copySelectedTextToPasteboard())
+        h.receive("\u{1b}[>31u\u{1b}[>31u\u{1b}[>4;2m\u{1b}[?1003h\u{1b}[?1006h\u{1b}[?2004h")
+        h.receive(String(decoding: TerminalInputRecovery.bytes, as: UTF8.self))
+        #expect(h.view.hostSurface?.performBindingAction("select_all") == true)
+        #expect(h.view.hostSurface?.readSelection() == history)
+        #expect(h.view.copySelectedTextToPasteboard())
+        h.output.clear()
+        h.down(row: 1, column: 1); h.up(row: 1, column: 1)
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(h.output.data.isEmpty, "Mouse reports survived recovery")
+        for type in [NSEvent.EventType.keyDown, .keyUp] {
+            let event = try #require(NSEvent.keyEvent(with: type, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: h.window.windowNumber, context: nil, characters: "a", charactersIgnoringModifiers: "a", isARepeat: false, keyCode: 0))
+            if type == .keyDown { h.view.keyDown(with: event) } else { h.view.keyUp(with: event) }
+        }
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(String(decoding: h.output.data, as: UTF8.self) == "a", "Kitty key releases survived recovery")
+        h.output.clear()
+        #expect(h.view.paste(text: "中文\n  text"))
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(String(decoding: h.output.data, as: UTF8.self) == "\u{1b}[200~中文\n  text\u{1b}[201~")
+    }
+
     @Test func repeatedSelectionsCopyOnlyOnRelease() async throws {
         let h = try await Harness()
         defer { h.close() }

@@ -16,12 +16,13 @@ jobs:
           cache-dependency-path: Tools/Tailcat/go.sum
       - run: brew install xcodegen
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - run: scripts/test-coexistence.sh
+      - run: scripts/test-panes.sh
       - run: scripts/test-selection.sh
       - run: scripts/build.sh
       - run: scripts/test-pty.sh
       - run: scripts/test-tabs.sh
       - run: scripts/test-inputs.sh
-      - run: scripts/test-panes.sh
       - run: scripts/package.sh
       - uses: actions/upload-artifact@v4
         with:

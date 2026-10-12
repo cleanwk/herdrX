@@ -182,7 +182,6 @@
 "Forget Connection" = "忘记连接";
 "Only this connection is removed. Server sessions and processes continue." = "仅移除此连接；服务端会话和进程继续运行。";
 "Interrupt the foreground task?" = "中断前台任务？";
-"Sends Ctrl-C followed by stty sane to this terminal." = "向此终端发送 Ctrl-C，然后执行 stty sane。";
 "Interrupt and Repair" = "中断并修复";
 
 "New Terminal Tab" = "新建终端标签页";
@@ -433,3 +432,14 @@
 "Local Herdr theme" = "本机 Herdr 主题";
 
 "Reads the local Herdr theme family. Custom colors and remote themes are not synced." = "读取本机 Herdr 的主题系列，不同步自定义颜色或远端主题。";
+
+// Terminal coexistence and input recovery
+"Viewing only. Another client may control this terminal." = "当前仅查看，其他客户端可能正在控制此终端。";
+"Take Control…" = "接管输入…";
+"Take Control" = "接管输入";
+"Take control of this terminal?" = "接管此终端的输入？";
+"No agents reported by Herdr." = "Herdr 暂未报告 Agent。";
+"Untitled Task" = "未命名任务";
+"The foreground process has not returned to the shell. Input modes were left unchanged." = "前台进程尚未返回 Shell，未更改输入模式。";
+"Could not verify the foreground shell. Input modes were left unchanged." = "无法确认前台已返回 Shell，未更改输入模式。";
+"Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved." = "发送 Ctrl-C，确认前台返回 Shell 后才恢复输入模式，并保留终端历史。";

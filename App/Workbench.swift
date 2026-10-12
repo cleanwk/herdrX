@@ -40,13 +40,19 @@ struct Workbench: View {
                     } label: { Image(systemName: "rectangle.split.2x1") }.menuIndicator(.hidden).frame(width: 22).accessibilityLabel("Pane Layout").help("Splits require room for at least 24 columns and 6 rows per pane.")
                 }.font(.system(size: 12)).buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.trailing, 8).frame(height: TabMetrics.barHeight).background(Color(nsColor: Theme.chrome)).zIndex(1)
                 Divider()
-                // Pane titles supply the top clearance; the other three sides use one shared inset.
+                // Each pane contributes 3pt outside its border, including the top.
                 ZStack(alignment: .bottom) {
                     GeometryReader { geo in
                         TerminalCanvas(terminals: desk.canvas, focused: desk.focused, dividers: desk.dividers, setRatio: desk.setRatio, previewRatio: desk.previewRatio, titles: desk.paneTitles, close: { desk.closePane($0) }, canClose: { desk.canAct(on: $0) }, zoomed: desk.zoomed, restore: { desk.zoomed = false }, focusRevision: desk.focusRevision, minimumPaneSize: desk.minimumPaneSize, actions: WorkbenchActions(perform: command, enabled: enabled), corners: paneCorners(geo))
                     }
                     if let key = desk.focused, desk.ended.contains(key) {
-                        HStack { Text(desk.recoveryLabel(key)); Button("Reconnect") { desk.reconnect(key) }.disabled(!desk.canWrite(key.device)) }.padding(12).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 8)).padding(20)
+                        VStack(spacing: 8) {
+                            Text(desk.recoveryLabel(key)).multilineTextAlignment(.center)
+                            HStack {
+                                Button("Reconnect") { desk.reconnect(key) }
+                                Button("Take Control…") { desk.reconnect(key, takeover: true) }
+                            }.disabled(!desk.canWrite(key.device))
+                        }.padding(12).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 8)).padding(20)
                     }
                     if desk.activeRects.isEmpty {
                         VStack(spacing: 10) {
@@ -62,7 +68,7 @@ struct Workbench: View {
                         }.frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     }
-                }.background(GeometryReader { geo in Color.clear.onAppear { desk.canvasSize = geo.size }.onChange(of: geo.size) { desk.canvasSize = $1 } }).clipped().padding([.horizontal, .bottom], PaneMetrics.edgeInset)
+                }.background(GeometryReader { geo in Color.clear.onAppear { desk.canvasSize = geo.size }.onChange(of: geo.size) { desk.canvasSize = $1 } }).clipped().padding(PaneMetrics.edgeInset)
             }
         }.foregroundStyle(Color(nsColor: Theme.foreground)).tint(Color(nsColor: Theme.accent))
         .overlay(alignment: .leading) { if showSidebar { ResizeStrip(width: $sidebar, limits: 200...480, reset: 260).frame(width: 7).offset(x: sidebar - 3) } }
@@ -114,7 +120,10 @@ struct Workbench: View {
             LazyVStack(alignment: .leading, spacing: 2, pinnedViews: [.sectionHeaders]) {
                 ForEach(desk.devices.filter { desk.deviceFilter.isEmpty || $0.id == desk.deviceFilter }) { device in deviceGroup(device) }
                 let agents = desk.agents.filter { desk.deviceFilter.isEmpty || $0.device == desk.deviceFilter }
-                SidebarGroup(title: L("Agents"), id: "agents", empty: agents.isEmpty) { ForEach(agents) { row in agentRow(row) } }
+                SidebarGroup(title: L("Agents"), id: "agents", empty: false) {
+                    ForEach(agents) { row in agentRow(row) }
+                    if agents.isEmpty { Text("No agents reported by Herdr.").font(.system(size: 11)).foregroundStyle(Color(nsColor: Theme.secondary)).padding(.horizontal, 18).padding(.vertical, 8) }
+                }
 
             }.padding(.horizontal, 10).padding(.bottom, 8).background(SidebarScrollStyle())
         }.onChange(of: desk.sidebarReveal) { _, value in if let value { reader.scrollTo(value) } } }
@@ -165,16 +174,17 @@ struct Workbench: View {
         let selected = desk.focused == row.id
         let unread = desk.attentionState.unread.contains(row.id)
         let status = L(unread ? "Completed, unread" : row.pane.stateLabel)
-        let context = DisplayTitle.detail([row.pane.agent, desk.sessions[row.device]?.spaces.first { $0.id == row.pane.workspace }?.label, desk.deviceFilter.isEmpty && desk.devices.count > 1 ? desk.devices.first { $0.id == row.device }?.displayName : nil])
+        let title = DisplayTitle.agentRow(row.pane, tab: desk.sessions[row.device]?.tabs.first { $0.id == row.pane.tab }, fallback: L("Untitled Task"))
+        let context = DisplayTitle.detail([desk.sessions[row.device]?.spaces.first { $0.id == row.pane.workspace }?.label, desk.deviceFilter.isEmpty && desk.devices.count > 1 ? desk.devices.first { $0.id == row.device }?.displayName : nil])
         return SidebarRow(selected: desk.focused == row.id, action: { desk.jump(row.device + "|" + row.pane.id) }, verticalPadding: 9.5, radius: 7, filledSelection: true) {
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) { Text(desk.title(device: row.device, pane: row.pane)).font(.system(size: 13)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading); AgentStatus(status: row.pane.status, unread: unread, selected: selected).accessibilityHidden(true) }
+                HStack(spacing: 6) { Text(title).font(.system(size: 13)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading); AgentStatus(status: row.pane.status, unread: unread, selected: selected).accessibilityHidden(true) }
                 HStack(spacing: 5) {
                     HStack(spacing: 4) { AgentIcon(tool: row.pane.agent); Text(context).lineLimit(1) }.frame(maxWidth: .infinity, alignment: .leading).foregroundStyle(Color(nsColor: selected ? Theme.selectedSecondary : Theme.secondary))
                     Text(unread ? L("Unread") : status).lineLimit(1).truncationMode(.tail).foregroundStyle(AgentStatus.color(row.pane.status, unread: unread, selected: selected)).frame(width: 64, alignment: .trailing).help(status)
                 }.font(.system(size: 11))
             }.padding(.leading, 18)
-        }.help(desk.paneHelp(row) + "\n" + status).accessibilityValue(status).contextMenu { paneActions(row) }
+        }.help(desk.paneHelp(row) + "\n" + status).accessibilityLabel(DisplayTitle.detail([title, row.pane.agent, context])).accessibilityValue(status).contextMenu { paneActions(row) }
     }
     @ViewBuilder func paneActions(_ row: AgentRow) -> some View {
         Button("Rename Pane…") { desk.renamePane(row.id) }.disabled(!desk.canAct(on: row.id))
@@ -192,7 +202,8 @@ struct Workbench: View {
         if action.hasPrefix("tab"), let number = Int(action.dropFirst(3)) { return number <= tabs.count }
         if ["close", "closePane"].contains(action) { return desk.focused.map(desk.canAct) ?? false }
         if action == "zoom" { return desk.focused.map(desk.canZoom) == true }
-        if ["repair", "interrupt", "left", "right", "up", "down", "resizeLeft", "resizeRight", "resizeUp", "resizeDown"].contains(action) { return desk.focused != nil }
+        if ["repair", "interrupt"].contains(action) { return desk.focused.map { desk.canWrite($0.device) && !desk.ended.contains($0) && desk.terminals[$0] != nil } == true }
+        if ["left", "right", "up", "down", "resizeLeft", "resizeRight", "resizeUp", "resizeDown"].contains(action) { return desk.focused != nil }
         if action == "renameTab" { return desk.selectedDevice.map { desk.canAct(device: $0, object: "tab|" + desk.selectedTab) } == true && !tabs.isEmpty }
         if action == "closeTab" { return !tabs.isEmpty && (desk.selectedDevice.map(desk.canWrite) ?? false) }
         if ["previous", "next"].contains(action) { return !tabs.isEmpty }
@@ -214,11 +225,11 @@ struct Workbench: View {
         case "zoom": desk.zoomed.toggle()
         case "previous": desk.changeTab(-1)
         case "next": desk.changeTab(1)
-        case "repair": if let key = desk.focused { desk.terminals[key]?.repair() }
+        case "repair": if let key = desk.focused { desk.restoreInput(key) }
         case "interrupt":
             let key = desk.focused
-            let alert = NSAlert(); alert.messageText = L("Interrupt the foreground task?"); alert.informativeText = L("Sends Ctrl-C followed by stty sane to this terminal."); alert.addButton(withTitle: L("Interrupt and Repair")); alert.addButton(withTitle: L("Cancel"))
-            if let key, alert.runModal() == .alertFirstButtonReturn { desk.terminals[key]?.interruptAndRepair() }
+            let alert = NSAlert(); alert.messageText = L("Interrupt the foreground task?"); alert.informativeText = L("Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved."); alert.addButton(withTitle: L("Interrupt and Repair")); alert.addButton(withTitle: L("Cancel"))
+            if let key, alert.runModal() == .alertFirstButtonReturn { desk.restoreInput(key, interrupt: true) }
         case "left", "right", "up", "down": desk.focusDirection(action)
         case "resizeLeft", "resizeRight", "resizeUp", "resizeDown": desk.resize(String(action.dropFirst(6)).lowercased())
         default: if action.hasPrefix("tab"), let number = Int(action.dropFirst(3)), tabs.indices.contains(number - 1) { desk.select(device: desk.selectedDevice, space: desk.selectedSpace, tab: tabs[number - 1].id) }

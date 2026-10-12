@@ -227,7 +227,7 @@ final class Desk: ObservableObject {
         guard let index = devices.firstIndex(where: { $0.id == device.id }) else { return }
         if devices[index].endpoint != device.endpoint {
             detach(device.id); sessions[device.id] = nil; attentionState.remove(device: device.id)
-            for key in Array(terminals.keys) where key.device == device.id { terminals.removeValue(forKey: key)?.process.stop(); ended.remove(key) }
+            for key in Array(terminals.keys) where key.device == device.id { terminals.removeValue(forKey: key)?.stop(); ended.remove(key) }
         }
         devices[index] = device; save(); connect(device); reindex()
     }
@@ -241,7 +241,7 @@ final class Desk: ObservableObject {
     }
     func remove(_ id: String) {
         detach(id); TailcatSecrets.remove("token." + id); attentionState.remove(device: id); devices.removeAll { $0.id == id }; sessions[id] = nil; connections[id] = nil
-        for key in Array(terminals.keys) where key.device == id { terminals.removeValue(forKey: key)?.process.stop(); ended.remove(key) }
+        for key in Array(terminals.keys) where key.device == id { terminals.removeValue(forKey: key)?.stop(); ended.remove(key) }
         if deviceFilter == id { deviceFilter = "" }
         if selectedDevice == id { select(device: nil) }; save(); reindex()
     }
@@ -369,6 +369,40 @@ final class Desk: ObservableObject {
         }
     }
     func rpc(_ id: String) throws -> RPC { guard let path = paths[id] else { throw Failure("Device is disconnected") }; return RPC(path: path) }
+    func restoreInput(_ key: PaneKey, automatic: Bool = false, interrupt: Bool = false) {
+        let action = key.device + "|recovery|" + key.pane
+        guard canWrite(key.device), !ended.contains(key), !busy.contains(action),
+              let terminal = terminals[key], let client = try? rpc(key.device),
+              let target = sessions[key.device]?.panes.first(where: { $0.id == key.pane })?.terminal else { return }
+        let connection = connectionIDs[key.device], attachment = terminal.attachmentID
+        busy.insert(action)
+        if interrupt { terminal.interrupt() }
+        Task { [weak self, weak terminal] in
+            guard let self, let terminal else { return }
+            defer { busy.remove(action) }
+            @MainActor func valid() -> Bool {
+                canWrite(key.device) && connectionIDs[key.device] == connection && paths[key.device] == client.path
+                    && terminals[key] === terminal && terminal.attachmentID == attachment && !ended.contains(key)
+                    && sessions[key.device]?.panes.contains(where: { $0.id == key.pane && $0.terminal == target && (!automatic || $0.agent == nil) }) == true
+            }
+            do {
+                for attempt in 0..<((interrupt || automatic) ? 10 : 1) {
+                    if interrupt || attempt > 0 { try await Task.sleep(for: .milliseconds(200)) }
+                    guard valid() else { return }
+                    let info = try await client.call("pane.process_info", ["pane_id": .string(key.pane)], timeout: 3)["process_info"]
+                    guard valid() else { return }
+                    if TerminalInputRecovery.isIdleShell(info, pane: key.pane) {
+                        terminal.repair()
+                        if !automatic, focused == key { requestFocus() }
+                        return
+                    }
+                }
+                if !automatic { message = L("The foreground process has not returned to the shell. Input modes were left unchanged.") }
+            } catch {
+                if !automatic, valid() { message = L("Could not verify the foreground shell. Input modes were left unchanged.") + "\n" + error.localizedDescription }
+            }
+        }
+    }
     private var refreshIDs: [String: UUID] = [:]
     func refresh(_ id: String, client: RPC) async throws {
         guard paths[id] == client.path else { throw CancellationError() }
@@ -377,8 +411,8 @@ final class Desk: ObservableObject {
         let snapshot = try await Session.load(client)
         try Task.checkCancellation()
         guard connectionIDs[id] == connection, paths[id] == client.path, refreshIDs[id] == token, devices.contains(where: { $0.id == id }) else { return }
-        if sessions[id] != snapshot { let old = sessions[id]; attentionState.update(device: id, old: old, new: snapshot); notifyChanges(device: id, old: old, new: snapshot); sessions[id] = snapshot; reconcile(id, previous: old); reindex() }
         if connections[id] != .connected { connections[id] = .connected }
+        if sessions[id] != snapshot { let old = sessions[id]; attentionState.update(device: id, old: old, new: snapshot); notifyChanges(device: id, old: old, new: snapshot); sessions[id] = snapshot; reconcile(id, previous: old); reindex() }
         if selectedDevice == nil, let space = snapshot.spaces.first { select(device: id, space: space.id) }
         if let device = devices.first(where: { $0.id == id }) { refreshBranches(device, snapshot: snapshot) }
     }
@@ -409,20 +443,24 @@ final class Desk: ObservableObject {
         for pane in session.panes where pane.tab == selectedTab {
             let key = PaneKey(device: device.id, pane: pane.id)
 
-            let args: String
-            if pane.agent != nil { args = "agent attach " + quote(pane.id) + " --takeover" }
-            else if let terminal = pane.terminal { args = "terminal attach " + quote(terminal) + " --takeover" }
-            else { continue }
-            let script = "export HERDR_SOCKET_PATH=" + quote(device.endpoint.kind == "tailcat" ? paths[device.id] ?? device.endpoint.socketPath : device.endpoint.socketPath) + "; exec herdr " + args
-            let command = device.endpoint.kind == "ssh" ? "exec /usr/bin/ssh " + (device.endpoint.sshConfig.map { "-F " + quote($0) + " " } ?? "") + "-tt " + (device.endpoint.port.map { "-p \($0) " } ?? "") + "\(quote(device.endpoint.target ?? "")) \(quote("/bin/sh -lc " + quote("export PATH=\"$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\"; " + script)))" : script
-            if let terminal = terminals[key] { terminal.command = command } else { makeTerminal(key, command: command) }
+            guard let target = pane.terminal else { continue }
+            let socket = device.endpoint.kind == "tailcat" ? paths[device.id] ?? device.endpoint.socketPath : device.endpoint.socketPath
+            let command = TerminalAttachment.command(endpoint: device.endpoint, socket: socket, terminal: target, mode: .control)
+            let takeover = TerminalAttachment.command(endpoint: device.endpoint, socket: socket, terminal: target, mode: .takeover)
+            let observe: (UInt16, UInt16) -> String = { columns, rows in
+                TerminalAttachment.command(endpoint: device.endpoint, socket: socket, terminal: target, mode: .observe, columns: columns, rows: rows)
+            }
+            if let terminal = terminals[key] {
+                terminal.command = command; terminal.takeoverCommand = takeover; terminal.observationCommand = observe
+            } else if canWrite(device.id) { makeTerminal(key, command: command, takeover: takeover, observe: observe) }
         }
     }
-    private func makeTerminal(_ key: PaneKey, command: String) {
-        let terminal = Terminal(command: command)
+    private func makeTerminal(_ key: PaneKey, command: String, takeover: String, observe: @escaping (UInt16, UInt16) -> String) {
+        let terminal = Terminal(command: command, takeoverCommand: takeover, observationCommand: observe)
         terminal.view.objectMenu = { [weak self] source in self?.paneMenu(key, source: source) }
         terminal.focused = { [weak self] in if self?.focused != key { self?.focused = key } }
         terminal.onExit = { [weak self] status in self?.ended.insert(key); self?.exitStatus[key] = status }
+        terminal.onObservationEnded = { [weak self] in self?.objectWillChange.send() }
         terminal.process.inputRejected = { [weak self] in self?.message = L("Terminal input is waiting for the process. Try a smaller paste when it responds.") }
         terminals[key] = terminal
     }
@@ -519,6 +557,11 @@ final class Desk: ObservableObject {
     }
 
     func reconcile(_ device: String, previous: Session? = nil) {
+        if let previous {
+            for pane in sessions[device]?.panes ?? [] where pane.agent == nil && previous.panes.contains(where: { $0.id == pane.id && $0.agent != nil }) {
+                restoreInput(PaneKey(device: device, pane: pane.id), automatic: true)
+            }
+        }
         if selectedDevice == device {
             let oldFocus = focused, ownedFocus = focused.flatMap { terminals[$0]?.view } === NSApp.keyWindow?.firstResponder
             selectedSpace = NeighbourSelection.resolve(selectedSpace, previous: previous?.spaces.map(\.id) ?? [], current: sessions[device]?.spaces.map(\.id) ?? [])
@@ -528,14 +571,14 @@ final class Desk: ObservableObject {
             ensureAttachments()
         }
         let valid = Set(sessions[device]?.panes.map(\.id) ?? [])
-        for key in Array(terminals.keys) where key.device == device && !valid.contains(key.pane) { terminals.removeValue(forKey: key)?.process.stop(); ended.remove(key) }
+        for key in Array(terminals.keys) where key.device == device && !valid.contains(key.pane) { terminals.removeValue(forKey: key)?.stop(); ended.remove(key) }
     }
     private func rank(_ status: String) -> Int { Attention.rank(status) }
     func reindex() {
         let ordered = devices.flatMap { device -> [AgentRow] in
             guard let session = sessions[device.id] else { return [] }
             let tabs = Dictionary(grouping: session.tabs, by: \.workspace)
-            let panes = Dictionary(grouping: session.panes.filter { $0.agent != nil }, by: \.tab)
+            let panes = Dictionary(grouping: session.agents, by: \.tab)
             return session.spaces.flatMap { space in (tabs[space.id] ?? []).flatMap { tab in (panes[tab.id] ?? []).map { AgentRow(device: device.id, pane: $0) } } }
         }
         let ranked = ordered.enumerated().sorted { (rank($0.element.pane.status), $0.offset) < (rank($1.element.pane.status), $1.offset) }.map(\.element)
@@ -643,7 +686,7 @@ final class Desk: ObservableObject {
         hiddenTask?.cancel(); hiddenTask = nil
         objectWillChange.send()
     }
-    func shutdown() { discoveryTask?.cancel(); hiddenTask?.cancel(); reorderTasks.values.forEach { $0.cancel() }; layoutTask?.cancel(); Array(polls.keys).forEach { detach($0) }; terminals.values.forEach { $0.process.stop() } }
+    func shutdown() { discoveryTask?.cancel(); hiddenTask?.cancel(); reorderTasks.values.forEach { $0.cancel() }; layoutTask?.cancel(); Array(polls.keys).forEach { detach($0) }; terminals.values.forEach { $0.stop() } }
 }
 
 
