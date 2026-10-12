@@ -83,6 +83,46 @@ import Testing
         #expect(NSPasteboard.general.string(forType: .string) == "click sentinel")
     }
 
+    @Test func realShiftLinksAndTextFidelity() async throws {
+        let h = try await Harness()
+        defer { h.close() }
+        h.preferences(copy: false, reporting: true)
+        h.receive("\u{1b}[?1000h\u{1b}[?1006h\u{1b}[>1s" + Harness.text)
+        h.output.clear()
+        h.down(row: 0, column: 0.25); h.drag(row: 0, column: 8.75); h.up(row: 0, column: 8.75)
+        try await Task.sleep(for: .milliseconds(550))
+        let end = h.point(row: 1, column: 8.75)
+        h.view.mouseDown(with: h.event(.leftMouseDown, local: end, modifiers: .shift))
+        h.view.mouseUp(with: h.event(.leftMouseUp, local: end, modifiers: .shift))
+        #expect(h.view.hostSurface?.readSelection() == "ALPHA_ONE bravo charlie\nDELTA_TWO")
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(h.output.data.isEmpty)
+
+        // An OSC8 link routes to the test delegate, never NSWorkspace/network.
+        let url = "https://example.com/audit?q=alpha&lang=zh"
+        h.receive("\u{1b}[2J\u{1b}[H\u{1b}]8;;" + url + "\u{1b}\\LINK\u{1b}]8;;\u{1b}\\")
+        try await Task.sleep(for: .milliseconds(550))
+        let link = h.point(row: 0, column: 1.25)
+        h.view.mouseDown(with: h.event(.leftMouseDown, local: link, modifiers: .command))
+        h.view.mouseUp(with: h.event(.leftMouseUp, local: link, modifiers: .command))
+        #expect(h.openedURLs == [url])
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(h.output.data.isEmpty)
+
+        h.preferences(copy: false, reporting: false)
+        let lines = "中文 👩‍💻，句号。\r\n    indented path /tmp/a b.swift\r\nhard line"
+        h.receive("\u{1b}[?1000l\u{1b}[2J\u{1b}[H" + lines)
+        #expect(h.view.hostSurface?.performBindingAction("select_all") == true)
+        #expect(h.view.copySelectedTextToPasteboard())
+        #expect(NSPasteboard.general.string(forType: .string) == lines.replacingOccurrences(of: "\r\n", with: "\n"))
+        let paste = "中文 👩‍💻\n  pasted text"
+        h.receive("\u{1b}[?2004h")
+        h.output.clear()
+        #expect(h.view.paste(text: paste))
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(String(decoding: h.output.data, as: UTF8.self) == "\u{1b}[200~" + paste.replacingOccurrences(of: "\n", with: "\r") + "\u{1b}[201~")
+    }
+
     @Test func stationaryEdgesGrowAndCancellationStops() async throws {
         let h = try await Harness()
         defer { h.close() }
@@ -159,12 +199,13 @@ private final class LockedOutput: @unchecked Sendable {
     func clear() { lock.lock(); bytes.removeAll(); lock.unlock() }
 }
 
-@MainActor private final class Harness: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfaceGridResizeDelegate {
+@MainActor private final class Harness: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfaceGridResizeDelegate, TerminalSurfaceOpenURLDelegate {
     static let text = "\u{1b}[2J\u{1b}[HALPHA_ONE bravo charlie\r\nDELTA_TWO echo foxtrot\r\n中文选择测试 标点，句号。 emoji 👩‍💻 END\r\n"
     let output = LockedOutput()
     let session: InMemoryTerminalSession
     let view = SelectionTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 400))
     let window: NSWindow
+    var openedURLs: [String] = []
     private var metrics: TerminalGridMetrics?
     private let keys = ["copyOnSelect", "disableMouseReporting", "palette", "accent", "fontFamily", "fontSize"]
     private var saved: [String: Any] = [:]
@@ -195,6 +236,7 @@ private final class LockedOutput: @unchecked Sendable {
         _ = try #require(view.hostSurface)
         _ = try #require(metrics)
     }
+    func terminalDidRequestOpenURL(_ url: String, kind: TerminalOpenURLKind) { openedURLs.append(url) }
     func terminalDidAttachSurface(_ surface: TerminalSurface) { view.hostSurface = surface }
     func terminalDidDetachSurface() { view.hostSurface = nil }
     func terminalDidResize(_ size: TerminalGridMetrics) { metrics = size }

@@ -321,25 +321,25 @@
       "measurementUnit": "pt",
       "derivedColors": {
         "content": "Selected GhosttyThemeDefinition.background.",
-        "foreground": "Explicit per-family foreground seed from Theme.roles, then ThemeColors.readable against all authored surfaces; not an alias for terminal ANSI/default foreground.",
-        "secondary": "Family foreground seed blended 0.20 toward background in either appearance, then ThemeColors.readable against all authored surfaces.",
-        "chrome": "Selected background blended toward the family foreground seed by 0.025 light / 0.06 dark.",
+        "foreground": "Explicit per-family foreground checked against normal canvas, chrome and hover; independent of accent.",
+        "secondary": "Explicit Catppuccin seed, otherwise family foreground blended 0.28 toward background; checked against normal surfaces only.",
+        "chrome": "Catppuccin Latte mantle / Mocha crust; other themes use background toward foreground by 0.045 light / 0.06 dark.",
         "paneSeparator": "Theme.foreground at 0.16 alpha.",
         "nativeSeparator": "NSColor.separatorColor for the sidebar separator and native Divider rendering.",
         "chromeTint": "Theme.accent. Native settings labels retain system semantic styles.",
-        "agentStatusWords": "Working/unread: Theme.accent; blocked: Theme.warning; done/idle: Theme.success; unknown: Theme.secondary.",
-        "agentGlyph": "Done/idle use secondary at 0.6; other statuses use AgentStatus.color.",
+        "agentStatusWords": "Working/unread: stable Theme.working; blocked: warning; done: success; idle/unknown: neutral secondary. Selected roles are checked on selected surfaces.",
+        "agentGlyph": "Working half-filled, blocked/unread filled, done/idle/unknown outline; color follows the same semantic role as the label.",
         "paneMainTitle": "Theme.accent for active pane in key window; Theme.secondary otherwise.",
         "paneContext": "Theme.secondary.",
         "deviceConnection": "Theme.success when connected, Theme.failure when offline.",
         "fontPreview": "Theme.content with Theme.foreground.",
-        "selection": "Raw selected accent seed; preserves hue for translucent row/tab/search/device fills.",
-        "accent": "Selected accent seed adjusted by ThemeColors.readable against all authored surfaces for focus, text and tint.",
-        "semanticStateColors": "Success/warning/failure seeds also use ThemeColors.readable against the same surfaces."
+        "selection": "Distinct opaque accentWash, accentStrongWash and tabWash plus accentWashBorder. Selected text and metadata have separate contrast checks.",
+        "accent": "Raw accentStroke, readable accent text on normal surfaces, separate wash/border/onAccent roles.",
+        "semanticStateColors": "Working/success/warning/failure seeds checked against normal surfaces, independent of user accent; selectedState checks selected fills."
       },
       "themeSources": {
         "implementation": "App/Theme.swift, App/ThemeColors.swift and Core/Sources/HerdCore/ThemePreference.swift.",
-        "upstream": "Pinned libghostty-spm GhosttyTheme definitions supply the source palettes. Named HerdrX light adaptations and chromatic ANSI shade adjustments are applied in App/Theme.swift.",
+        "upstream": "Pinned libghostty-spm GhosttyTheme palettes with existing named HerdrX light adaptations. No global ANSI contrast rewrite.",
         "palettes": [
           {
             "id": "default",
@@ -799,13 +799,10 @@
         "implementation": "App/ThemeColors.swift: ThemeColors.init/readable; App/Theme.swift: roles/stateColor.",
         "minimumRatio": 4.5,
         "surfaces": [
-          "Palette canvas",
-          "Chrome: background toward family foreground seed, 0.025 light / 0.06 dark",
-          "Hover: background toward family foreground seed, 0.05",
-          "Strongest sidebar selection: background toward raw accent, 0.25 light / 0.30 dark",
-          "Selected tab: chrome toward raw accent, 0.18 light / 0.20 dark"
+          "Normal: canvas, chrome and 0.04 foreground hover",
+          "Selected: accentWash 0.10 light / 0.14 dark, accentStrongWash 0.14 light / 0.19 dark, tabWash 0.10 light / 0.14 dark over chrome"
         ],
-        "method": "Calculate WCAG relative luminance in sRGB. Keep passing colors; otherwise binary-search a minimal mix toward whichever of black or white gives better minimum contrast across the authored surfaces.",
+        "method": "WCAG sRGB contrast, 4.5 for normal text on normal surfaces and selected text on selected surfaces independently; raw stroke/wash and decorative roles are not body text.",
         "foregroundSeedTokens": {
           "default": [
             "catppuccin-light-foreground",
@@ -886,6 +883,12 @@
         "navigation": "Group Agent panes/tabs before ordering and precompute status ranks; publish derived Agent/search rows only when content or order changes.",
         "settings": "Read immutable bundled notices once; preserve unchanged native popup items.",
         "evidenceBoundary": "Source behavior; no new frame-rate or interaction-latency claim."
+      },
+      "selectionTheme013": {
+        "validation": "docs/selection-theme/VALIDATION.md",
+        "selection": "Deferred captured clicks; local gestures temporarily disable engine reporting, copy once on release, clear on copy, accessible feedback; native engine edge autoscroll; cancel on hide/focus/configuration changes.",
+        "terminal": "Keep authored ANSI slots, minimum contrast 1, faint opacity 0.65, no truecolor/indexed byte transform.",
+        "supersedes": "Earlier all-surface contrast, chromatic ANSI shade adjustment and 0.85 faint contracts; historical screenshot/test evidence remains historical."
       }
     },
     "agentIcons": {

@@ -71,3 +71,9 @@ Context menus distinguish title/content, group Close separately, omit single-obj
 All 20 findings now have implementation changes: [REVIEW](../../docs/adversarial-ui-review/REVIEW.md). Local/CI/runtime evidence boundaries: [VALIDATION](../../docs/adversarial-ui-review/VALIDATION.md). Fresh macOS running-app acceptance remains pending; no release or shipping raster added.
 
 Follow-up: independent Tab count slot; conservative shell-title shortening and adaptive context; shared async rename sheet for Space/Tab/Pane; inline discovery/import state and cancellation; Add Device resets the Connections form only on explicit request; direct Tailcat editing; grouped main-menu navigation/repair. See the same review/validation record for exact behavior and remaining macOS acceptance.
+
+## 0.1.13 selection and color contract
+
+Supersedes COLOR above: normal and selected text have independent contrast checks. Normal metadata is accent-independent; accent stroke retains the source hue while text, washes, wash border and on-accent roles remain separate. Catppuccin chrome uses Latte mantle / Mocha crust. Working/unread is stable blue, done success, idle neutral. ANSI slots keep authored values, faint opacity is 0.65, and no generic RGB/indexed stream rewrite is applied. Local Herdr theme follows the local family only.
+
+Captured presses wait for click versus a 4pt local drag; local gestures disable engine reporting through its supported toggle without invented Shift. Host copy commits once at release and clears selection, with verified feedback. A 12pt edge zone supplies out-of-bounds coordinates to Ghostty's own autoscroll. Hiding, focus loss and configuration changes cancel without copying. Current evidence and NOT_RUN boundaries: [validation](../../docs/selection-theme/VALIDATION.md).

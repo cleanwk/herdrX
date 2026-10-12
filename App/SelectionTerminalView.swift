@@ -60,6 +60,13 @@ class SelectionTerminalView: AppTerminalView {
         gesture = .local
         copyEligible = event.clickCount > 1 || event.modifierFlags.contains(.shift)
         super.mouseDown(with: event)
+        if event.modifierFlags.contains(.command), hostSurface?.isMouseCaptured == true {
+            // Captured links require Shift for hover discovery in this engine.
+            // Add it only to hover after the fresh, unmodified anchor was set.
+            let point = convert(event.locationInWindow, from: nil)
+            hostSurface?.sendMousePos(x: point.x, y: bounds.height - point.y,
+                modifiers: TerminalInputModifiers(from: event.modifierFlags).union(.shift))
+        }
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -88,7 +95,9 @@ class SelectionTerminalView: AppTerminalView {
             for (sample, state) in [(start, GHOSTTY_MOUSE_PRESS), (event, GHOSTTY_MOUSE_RELEASE)] {
                 let point = convert(sample.locationInWindow, from: nil)
                 let mods = TerminalInputModifiers(from: sample.modifierFlags)
-                hostSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: mods.union(.shift))
+                _ = hostSurface?.performBindingAction("toggle_mouse_reporting")
+                hostSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: mods)
+                _ = hostSurface?.performBindingAction("toggle_mouse_reporting")
                 hostSurface?.sendMouseButton(state: state, button: GHOSTTY_MOUSE_LEFT, modifiers: mods)
             }
         case .local:

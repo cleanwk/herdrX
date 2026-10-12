@@ -12,19 +12,19 @@ struct Workbench: View {
             if showSidebar {
                 VStack(spacing: 0) {
                     HStack { Spacer(); Button { showSidebar = false } label: { Image(systemName: "sidebar.left") }.help("Toggle Sidebar · ⌘B").accessibilityLabel("Hide Sidebar") }
-                        .buttonStyle(.borderless).padding(.leading, 78).padding(.trailing, 12).frame(height: TabMetrics.barHeight)
+                        .buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.leading, 78).padding(.trailing, 12).frame(height: TabMetrics.barHeight)
                     HStack(spacing: 5) {
                         Button { desk.quickSpace() } label: { Label("New", systemImage: "plus") }.disabled(desk.creatingSpace).help(desk.creationHelp)
                         Menu { Button("New Space…") { desk.showSpaceForm() } } label: { Image(systemName: "chevron.down") }.menuIndicator(.hidden).fixedSize().accessibilityLabel("Space Options")
                         Spacer(minLength: 0)
                         Button { desk.openSearch() } label: { Image(systemName: "magnifyingglass") }.help("Search · ⌘K").accessibilityLabel("Search")
-                    }.font(.system(size: 12, weight: .medium)).buttonStyle(.borderless).padding(.horizontal, 16).frame(height: 40)
+                    }.font(.system(size: 12, weight: .medium)).buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.horizontal, 16).frame(height: 40)
                     sidebarView
                     HStack {
                         DeviceSwitcher()
                         Spacer(minLength: 0)
                         SettingsLink { Image(systemName: "gearshape") }.help("Settings · ⌘,").accessibilityLabel("Settings")
-                    }.buttonStyle(.borderless).padding(.horizontal, 12).frame(height: 40)
+                    }.buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.horizontal, 12).frame(height: 40)
                 }.frame(width: sidebar)
                 Rectangle().fill(Color(nsColor: .separatorColor)).frame(width: 1)
             }
@@ -38,7 +38,7 @@ struct Workbench: View {
                         Button("Split Down") { desk.split(horizontal: false) }.disabled(!desk.canSplit(horizontal: false))
                         Button(LocalizedStringKey(desk.zoomed ? "Restore Pane" : "Zoom Pane")) { desk.zoomed.toggle() }.disabled(desk.focused.map(desk.canZoom) != true)
                     } label: { Image(systemName: "rectangle.split.2x1") }.menuIndicator(.hidden).frame(width: 22).accessibilityLabel("Pane Layout").help("Splits require room for at least 24 columns and 6 rows per pane.")
-                }.font(.system(size: 12)).buttonStyle(.borderless).padding(.trailing, 8).frame(height: TabMetrics.barHeight).background(Color(nsColor: Theme.chrome)).zIndex(1)
+                }.font(.system(size: 12)).buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.trailing, 8).frame(height: TabMetrics.barHeight).background(Color(nsColor: Theme.chrome)).zIndex(1)
                 Divider()
                 // Pane titles supply the top clearance; the other three sides use one shared inset.
                 ZStack(alignment: .bottom) {
@@ -252,7 +252,7 @@ struct Jump: View {
                                     if let agent = pane?.agent { AgentIcon(tool: agent, size: 14) }
                                     else { Image(systemName: row.pane != nil || row.tab != nil ? "terminal" : "square.stack.3d.up").foregroundStyle(.secondary) }
                                 }.frame(width: 20).accessibilityHidden(true)
-                                VStack(alignment: .leading, spacing: 1) { Text(row.label).lineLimit(1); Text(row.detail).font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1) }
+                                VStack(alignment: .leading, spacing: 1) { Text(row.label).foregroundStyle(Color(nsColor: selection.id == id ? Theme.selectedText : Theme.foreground)).lineLimit(1); Text(row.detail).font(.system(size: 10.5)).foregroundStyle(Color(nsColor: selection.id == id ? Theme.selectedSecondary : Theme.secondary)).lineLimit(1) }
                                 Spacer(minLength: 0)
                                 if let pane, let device = row.device, pane.agent != nil { AgentStatus(status: pane.status, unread: desk.attentionState.unread.contains(PaneKey(device: device, pane: pane.id))) }
                             }.padding(.horizontal, 10).frame(height: 36).frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).background(selection.id == id ? Color(nsColor: Theme.accentWash) : .clear, in: RoundedRectangle(cornerRadius: 6))
