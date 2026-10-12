@@ -18,6 +18,8 @@ import HerdCore
         defer { h.view.onInterrupt = nil }
         for mode in ["\u{1b}[>7u", "\u{1b}[>31u", "\u{1b}[>4;2m"] {
             h.receive(String(decoding: TerminalInputRecovery.keyboardBytes, as: UTF8.self) + mode)
+            h.view.flagsChanged(with: h.key(.flagsChanged, characters: "", ignoring: "", modifiers: .control, code: 0x3b))
+            try await Task.sleep(for: .milliseconds(80))
             h.output.clear()
             let down = h.key(.keyDown, characters: "\u{3}", ignoring: "c", modifiers: .control, code: 8)
             #expect(h.view.performKeyEquivalent(with: down))

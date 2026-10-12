@@ -10,7 +10,7 @@ class InterruptTerminalView: SelectionTerminalView {
     private func isInterrupt(_ event: NSEvent) -> Bool {
         !hasMarkedText()
             && event.modifierFlags.intersection([.command, .control, .option, .shift]) == .control
-            && event.charactersIgnoringModifiers?.lowercased() == "c"
+            && (event.characters == "\u{3}" || event.charactersIgnoringModifiers?.lowercased() == "c")
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
