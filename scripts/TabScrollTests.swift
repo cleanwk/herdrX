@@ -5,6 +5,7 @@ import SwiftUI
 func L(_ value: String) -> String { value }
 func LF(_ value: String, _ count: Int) -> String { String(format: value, count) }
 enum Theme {
+    static let selectedText = NSColor.labelColor, selectedSecondary = NSColor.secondaryLabelColor, tabWash = NSColor.windowBackgroundColor, accentWashBorder = NSColor.systemBlue, accentStroke = NSColor.systemBlue
     static let foreground = NSColor.labelColor, secondary = NSColor.secondaryLabelColor, accent = NSColor.systemBlue
 }
 final class ActionMenuItem: NSMenuItem {

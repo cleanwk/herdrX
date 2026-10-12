@@ -5,7 +5,7 @@ import GhosttyTheme
 import HerdCore
 
 enum Theme {
-    static let palettes = [("default", "HerdrX Default"), ("herdr", "Follow Herdr"), ("catppuccin", "Catppuccin"), ("tokyo-night", "Tokyo Night"), ("gruvbox", "Gruvbox"), ("one", "One"), ("solarized", "Solarized"), ("kanagawa", "Kanagawa"), ("rose-pine", "Rosé Pine"), ("dracula", "Dracula"), ("nord", "Nord"), ("vesper", "Vesper")]
+    static let palettes = [("default", "HerdrX Default"), ("herdr", "Local Herdr theme"), ("catppuccin", "Catppuccin"), ("tokyo-night", "Tokyo Night"), ("gruvbox", "Gruvbox"), ("one", "One"), ("solarized", "Solarized"), ("kanagawa", "Kanagawa"), ("rose-pine", "Rosé Pine"), ("dracula", "Dracula"), ("nord", "Nord"), ("vesper", "Vesper")]
     static let accents = ["blue", "graphite", "green", "cyan", "purple", "amber", "pink", "red", "orange"]
     static var family: String {
         let name = UserDefaults.standard.string(forKey: "palette") ?? "default"
@@ -125,23 +125,43 @@ enum Theme {
         let appearance = NSAppearance(named: dark ? .darkAqua : .aqua)!
         var selectedAccent = NSColor.black
         appearance.performAsCurrentDrawingAppearance { selectedAccent = accent(name).usingColorSpace(.sRGB)! }
-        return ThemeColors(background: color(definition.background), foreground: color(text), accent: selectedAccent, dark: dark)
+        let catppuccin = !["tokyo-night", "gruvbox", "one", "solarized", "kanagawa", "rose-pine", "dracula", "nord", "vesper"].contains(family)
+        return ThemeColors(background: color(definition.background), foreground: color(text), accent: selectedAccent, dark: dark,
+            chrome: catppuccin ? color(dark ? 0x181825 : 0xe6e9ef) : nil,
+            secondary: catppuccin ? color(dark ? 0xa6adc8 : 0x676b80) : nil,
+            decoration: catppuccin ? color(dark ? 0x6c7086 : 0x8c8fa1) : nil)
     }
     static var content: NSColor { dynamic { roles(dark: $0).background } }
     static var foreground: NSColor { dynamic { roles(dark: $0).foreground } }
     static var secondary: NSColor { dynamic { roles(dark: $0).secondary } }
     static var chrome: NSColor { dynamic { roles(dark: $0).chrome } }
-    static var selection: NSColor { dynamic { roles(dark: $0).selection } }
-    static var accent: NSColor { dynamic { roles(dark: $0).accent } }
+    static var selectedText: NSColor { dynamic { roles(dark: $0).selectedText } }
+    static var selectedSecondary: NSColor { dynamic { roles(dark: $0).selectedSecondary } }
+    static var decoration: NSColor { dynamic { roles(dark: $0).decoration } }
+    static var hover: NSColor { dynamic { roles(dark: $0).hover } }
+    static var accentStroke: NSColor { dynamic { roles(dark: $0).accentStroke } }
+    static var accent: NSColor { dynamic { roles(dark: $0).accentText } }
+    static var accentWash: NSColor { dynamic { roles(dark: $0).accentWash } }
+    static var accentStrongWash: NSColor { dynamic { roles(dark: $0).accentStrongWash } }
+    static var tabWash: NSColor { dynamic { roles(dark: $0).tabWash } }
+    static var accentWashBorder: NSColor { dynamic { roles(dark: $0).accentWashBorder } }
+    static var onAccent: NSColor { dynamic { roles(dark: $0).onAccent } }
+    static func selectedState(_ color: NSColor) -> NSColor { dynamic { dark in
+        var resolved = color
+        NSAppearance(named: dark ? .darkAqua : .aqua)!.performAsCurrentDrawingAppearance { resolved = color.usingColorSpace(.sRGB)! }
+        return ThemeColors.readable(resolved, on: roles(dark: dark).selectedSurfaces)
+    } }
     static var separator: NSColor { foreground.withAlphaComponent(0.16) }
     static func stateColor(light: UInt32, dark: UInt32) -> NSColor { dynamic {
         ThemeColors.readable(color($0 ? dark : light), on: roles(dark: $0).surfaces)
     } }
+    static var working: NSColor { stateColor(light: 0x2463eb, dark: 0x82aaff) }
     static var success: NSColor { stateColor(light: 0x287b48, dark: 0xa6e3a1) }
     static var warning: NSColor { stateColor(light: 0x986500, dark: 0xf9e2af) }
     static var failure: NSColor { stateColor(light: 0xc43b4b, dark: 0xf38ba8) }
     static var defaultFont: String { NSFont(name: "Maple Mono CN", size: 13.5) != nil ? "Maple Mono CN" : "SF Mono" }
     @MainActor static func apply() {
+        NotificationCenter.default.post(name: SelectionTerminalView.configurationWillChange, object: nil)
         let defaults = UserDefaults.standard
         if defaults.string(forKey: "palette") == "herdr" {
             let path = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".config/herdr/config.toml")
@@ -154,17 +174,13 @@ enum Theme {
                 if let color = theme.cursorColor { $0.withCustom("cursor-color", color) }
                 if let color = theme.cursorText { $0.withCustom("cursor-text", color) }
                 $0.withMinimumContrast(1)
-                $0.withCustom("faint-opacity", "0.85")
+                $0.withCustom("faint-opacity", "0.65")
                 if let color = theme.selectionBackground { $0.withSelectionBackground(color) }
                 if let color = theme.selectionForeground { $0.withSelectionForeground(color) }
                 for index in theme.palette.keys.sorted() {
-                    // Keep ANSI hue identity. Adjust chromatic foreground roles
-                    // gently; retain the black/white slots for inverse/background use.
-                    let raw = theme.palette[index]!
-                    let chromatic = ![0, 7, 8, 15].contains(index)
-                    let value = chromatic ? ThemeColors.readable(color(raw), on: [color(theme.background)]) : color(raw)
-                    let rgb = value.usingColorSpace(.sRGB)!
-                    $0.withPalette(index, color: String(format: "%02x%02x%02x", Int((rgb.redComponent * 255).rounded()), Int((rgb.greenComponent * 255).rounded()), Int((rgb.blueComponent * 255).rounded())))
+                    // An ANSI slot may be foreground, background or inverted.
+                    // Preserve palette semantics instead of darkening both uses.
+                    $0.withPalette(index, color: theme.palette[index]!)
                 }
             }
         }
@@ -176,7 +192,10 @@ enum Theme {
             if family == "SF Mono" { $0.withCustom("font-style", defaults.string(forKey: "fontWeight") ?? "Regular") }
             $0.withFontThicken(!(defaults.object(forKey: "thinStrokes") as? Bool ?? true))
             $0.withCustom("adjust-cell-height", "\(Int(max(0, defaults.double(forKey: "lineSpacing") - 1) * 100))%")
-            $0.withCustom("copy-on-select", (defaults.object(forKey: "copyOnSelect") as? Bool ?? true) ? "clipboard" : "false")
+            $0.withCustom("copy-on-select", "none")
+            $0.withCustom("selection-clear-on-copy", "true")
+            $0.withCustom("mouse-shift-capture", "never")
+            $0.withCustom("mouse-reporting", (defaults.object(forKey: "disableMouseReporting") as? Bool ?? true) ? "false" : "true")
             $0.withCustom("macos-option-as-alt", "true")
         })
     }

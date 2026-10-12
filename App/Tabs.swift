@@ -107,9 +107,9 @@ struct Tabs: NSViewRepresentable {
             while buttons.count < entries.count { let button = TabButton(); button.title = ""; button.isBordered = false; button.focusRingType = .exterior; button.bezelStyle = .regularSquare; button.target = self; button.action = #selector(pressed(_:)); button.lineBreakMode = .byTruncatingTail; addSubview(button); buttons.append(button) }
             var x = TabMetrics.inset
             for (index, button) in buttons.enumerated() {
-                button.tag = index; button.displayTitle = entries[index].title; button.paneCount = entries[index].count
+                button.state = selected == entries[index].id ? .on : .off; button.tag = index; button.displayTitle = entries[index].title; button.paneCount = entries[index].count
                 button.font = .systemFont(ofSize: 12, weight: selected == entries[index].id ? .semibold : .regular)
-                button.contentTintColor = selected == entries[index].id ? Theme.foreground : Theme.secondary
+                button.contentTintColor = selected == entries[index].id ? Theme.selectedText : Theme.secondary
                 // Reserve the selected weight so changing tabs does not move its neighbours.
                 let width = min(200, max(40, (button.displayTitle as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: .semibold)]).width + 18 + button.countWidth + (button.paneCount > 1 ? 8 : 0)))
                 button.frame = NSRect(x: x, y: max(0, (bounds.height - TabMetrics.height) / 2), width: width, height: TabMetrics.height); x += width + TabMetrics.gap
@@ -131,7 +131,7 @@ struct Tabs: NSViewRepresentable {
                 super.draw(dirtyRect)
                 let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingTail
                 (displayTitle as NSString).draw(in: labelRect, withAttributes: [.font: font ?? NSFont.systemFont(ofSize: 12), .foregroundColor: contentTintColor ?? Theme.foreground, .paragraphStyle: style])
-                if paneCount > 1 { (String(paneCount) as NSString).draw(in: countRect, withAttributes: [.font: countFont, .foregroundColor: Theme.secondary]) }
+                if paneCount > 1 { (String(paneCount) as NSString).draw(in: countRect, withAttributes: [.font: countFont, .foregroundColor: state == .on ? Theme.selectedSecondary : Theme.secondary]) }
             }
             override func mouseDown(with event: NSEvent) { (superview as? Strip)?.mouseDown(with: event) }
             override func mouseDragged(with event: NSEvent) { (superview as? Strip)?.mouseDragged(with: event) }
@@ -175,13 +175,13 @@ struct Tabs: NSViewRepresentable {
             for (index, entry) in entries.enumerated() where buttons.indices.contains(index) {
                 let active = selected == entry.id
                 let path = NSBezierPath(roundedRect: buttons[index].frame.insetBy(dx: 0.5, dy: 0.5), xRadius: TabMetrics.radius, yRadius: TabMetrics.radius)
-                (active ? Theme.accent.withAlphaComponent(0.11) : Theme.foreground.withAlphaComponent(hover == index ? 0.09 : 0.06)).setFill()
+                (active ? Theme.tabWash : Theme.foreground.withAlphaComponent(hover == index ? 0.04 : 0.02)).setFill()
                 path.fill()
-                if active { Theme.accent.withAlphaComponent(0.45).setStroke(); path.lineWidth = 1; path.stroke() }
+                if active { Theme.accentWashBorder.setStroke(); path.lineWidth = 1; path.stroke() }
             }
             if let insertion {
                 let x = insertion < buttons.count ? buttons[insertion].frame.minX - TabMetrics.gap / 2 : (buttons.last?.frame.maxX ?? 0) + TabMetrics.gap / 2
-                Theme.accent.setFill()
+                Theme.accentStroke.setFill()
                 NSRect(x: x - 1, y: max(0, (bounds.height - TabMetrics.height) / 2), width: 2, height: TabMetrics.height).fill()
             }
         }

@@ -65,7 +65,7 @@ targets:
         PRODUCT_NAME: HerdrX
         PRODUCT_BUNDLE_IDENTIFIER: io.github.cleanwk.herdrx
         SWIFT_VERSION: '5.0'
-        MARKETING_VERSION: '0.1.12'
+        MARKETING_VERSION: '0.1.13'
         CURRENT_PROJECT_VERSION: 1
         CODE_SIGN_IDENTITY: '-'
         CODE_SIGN_STYLE: Manual
@@ -75,6 +75,28 @@ targets:
         ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS: NO
         ARCHS: 'arm64 x86_64'
         SPARKLE_PUBLIC_KEY: 'w8jgM0H2M0MbKYlOoIDr+R2bDHJ1SngN8bKZ6rDwKzw='
+  SelectionTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - App/SelectionTerminalView.swift
+      - App/Theme.swift
+      - App/ThemeColors.swift
+      - App/Localization.swift
+      - Tests/SelectionTests.swift
+    dependencies:
+      - package: HerdCore
+      - package: Ghostty
+        product: GhosttyTerminal
+      - package: Ghostty
+        product: GhosttyTheme
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.cleanwk.herdrx.selection-tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: '5.0'
+        CODE_SIGN_IDENTITY: '-'
+        CODE_SIGN_STYLE: Manual
 schemes:
   HerdrX:
     build:
@@ -82,3 +104,11 @@ schemes:
         HerdrX: all
     run:
       config: Debug
+  SelectionTests:
+    build:
+      targets:
+        SelectionTests: [test]
+    test:
+      targets: [SelectionTests]
+      parallelizeBuild: false
+      randomExecutionOrder: false

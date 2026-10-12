@@ -164,7 +164,7 @@ private struct TerminalSettings: View {
         }.onAppear {
             if families.count == 1 { families = Array(Set(NSFontManager.shared.availableFontFamilies.filter { NSFont(name: $0, size: 12)?.isFixedPitch == true } + ["SF Mono", family])).sorted() }
             apply()
-        }.onChange(of: size) { apply() }.onChange(of: family) { apply() }.onChange(of: spacing) { apply() }.onChange(of: thin) { apply() }.onChange(of: copy) { apply() }.onChange(of: weight) { apply() }
+        }.onChange(of: size) { apply() }.onChange(of: family) { apply() }.onChange(of: spacing) { apply() }.onChange(of: thin) { apply() }.onChange(of: copy) { apply() }.onChange(of: noMouse) { apply() }.onChange(of: weight) { apply() }
     }
     func preferenceToggle(_ title: String, description: String, value: Binding<Bool>) -> some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -252,7 +252,12 @@ private struct Appearance: View {
                     Text("Session appearance follows the app theme.").font(.system(size: 11)).foregroundStyle(.secondary)
                 }
             }
-            row("Palette") { PreferenceMenu(label: "Palette", items: Theme.palettes, selection: $palette).frame(width: 120, height: 24) }
+            row("Palette") {
+                VStack(alignment: .leading, spacing: 4) {
+                    PreferenceMenu(label: "Palette", items: Theme.palettes, selection: $palette).frame(width: 150, height: 24)
+                    if palette == "herdr" { Text("Reads the local Herdr theme family. Custom colors and remote themes are not synced.").font(.system(size: 11)).foregroundStyle(.secondary) }
+                }
+            }
             row("Accent") {
                 VStack(alignment: .leading, spacing: 4) {
                     ViewThatFits(in: .horizontal) {

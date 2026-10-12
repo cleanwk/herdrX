@@ -12,9 +12,9 @@ struct DeviceSwitcher: View {
                 Image(systemName: selected.map(symbol) ?? "square.stack.3d.up").font(.system(size: 11))
                 Text(selected?.displayName ?? L("All Devices")).font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.middle)
                 if let selected { connectionDot(selected) }
-                Image(systemName: "chevron.up.chevron.down").font(.system(size: 9)).foregroundStyle(Color(nsColor: Theme.secondary))
-            }.padding(.horizontal, 8).frame(height: 28)
-                .background(Color(nsColor: Theme.selection).opacity(showing ? 0.18 : 0.055), in: RoundedRectangle(cornerRadius: 6))
+                Image(systemName: "chevron.up.chevron.down").font(.system(size: 9)).foregroundStyle(Color(nsColor: showing ? Theme.selectedSecondary : Theme.secondary))
+            }.foregroundStyle(Color(nsColor: showing ? Theme.selectedText : Theme.foreground)).padding(.horizontal, 8).frame(height: 28)
+                .background(Color(nsColor: showing ? Theme.accentWash : Theme.hover), in: RoundedRectangle(cornerRadius: 6))
         }.buttonStyle(.plain).help(selected?.displayName ?? L("All Devices")).accessibilityLabel("Device Filter").accessibilityValue(selected?.displayName ?? L("All Devices"))
             .popover(isPresented: $showing, arrowEdge: .top) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -55,7 +55,7 @@ struct DeviceSwitcher: View {
                 Image(systemName: symbol).font(.system(size: 16, weight: .regular)).frame(width: 18)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) { Text(name).font(.system(size: 13)).lineLimit(1); if let device { connectionDot(device) } }
-                    Text(detail).font(.system(size: 11)).lineLimit(1).truncationMode(.middle).foregroundStyle(Color(nsColor: Theme.secondary))
+                    Text(detail).font(.system(size: 11)).lineLimit(1).truncationMode(.middle).foregroundStyle(Color(nsColor: desk.deviceFilter == id ? Theme.selectedSecondary : Theme.secondary))
                 }.frame(maxWidth: .infinity, alignment: .leading)
                 if desk.deviceFilter == id { Image(systemName: "checkmark").font(.system(size: 13, weight: .medium)) }
             }

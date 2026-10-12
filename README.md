@@ -47,6 +47,10 @@ Stopped local sessions show a start action. Custom socket paths show connection 
 | ⌘⇧W / ⌘⌥W | Close pane / tab |
 | ⌘, | Settings |
 
+Drag terminal text to select it; **Copy on Select** copies once when you release and briefly shows “Copied”. Turn it off to retain a selection for ⌘C or the pane's Copy menu. Hold a drag at the top or bottom edge to extend through available terminal scrollback. With mouse reporting enabled, a click goes to the terminal app while a drag selects locally. Alternate-screen apps can only expose the history they render.
+
+**Local Herdr theme** follows the local theme family; custom palette overrides and remote themes are not synced.
+
 Settings also provides themes, terminal preferences, notifications, Tailcat connections, and access to Herdr plugins.
 
 ## Development
@@ -60,6 +64,7 @@ scripts/test-pty.sh
 scripts/test-tabs.sh
 scripts/test-inputs.sh
 scripts/test-panes.sh
+scripts/test-selection.sh
 python3 -m unittest discover -s scripts -p 'test_*.py'
 scripts/package.sh
 ```

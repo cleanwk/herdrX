@@ -1,0 +1,185 @@
+import AppKit
+import GhosttyTerminal
+import GhosttyKit
+
+/// A left gesture belongs to either the local selection or the terminal app.
+/// Delaying captured clicks lets a drag choose selection without leaking input.
+class SelectionTerminalView: AppTerminalView {
+    static let configurationWillChange = Notification.Name("HerdrXTerminalConfigurationWillChange")
+    weak var hostSurface: TerminalSurface? {
+        willSet { if hostSurface !== newValue { cancelSelectionGesture() } }
+    }
+    private enum Gesture { case idle, pending(NSEvent), local }
+    private var gesture = Gesture.idle
+    private var origin: NSEvent?
+    private var restoresReporting = false
+    private var copyEligible = false
+    private var observers: [NSObjectProtocol] = []
+    private var feedbackRevision = 0
+    private let feedback = CopyFeedback(labelWithString: "")
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        feedback.isHidden = true
+        feedback.font = .systemFont(ofSize: 11, weight: .medium)
+        feedback.textColor = Theme.success
+        feedback.backgroundColor = Theme.content
+        feedback.drawsBackground = true
+        addSubview(feedback)
+        for name in [NSWindow.didResignKeyNotification, Self.configurationWillChange] {
+            observers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
+                MainActor.assumeIsolated {
+                    guard let self, name == Self.configurationWillChange || (note.object as? NSWindow) === self.window else { return }
+                    self.cancelSelectionGesture()
+                }
+            })
+        }
+    }
+    @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
+    deinit { for observer in observers { NotificationCenter.default.removeObserver(observer) } }
+
+    override func mouseDown(with event: NSEvent) {
+        cancelSelectionGesture()
+        feedbackRevision += 1; feedback.isHidden = true
+        window?.makeFirstResponder(self)
+        origin = event
+        let reporting = !(UserDefaults.standard.object(forKey: "disableMouseReporting") as? Bool ?? true)
+        if reporting, hostSurface?.isMouseCaptured == true,
+           event.modifierFlags.isDisjoint(with: [.shift, .command]), event.clickCount == 1 {
+            gesture = .pending(event)
+        } else {
+            beginLocal(event)
+        }
+    }
+
+    private func beginLocal(_ event: NSEvent) {
+        // The pinned engine's Shift means "extend the old selection". Use its
+        // supported reporting toggle instead of inventing Shift for a new anchor.
+        // Disable reporting even before a TUI requests capture during this drag.
+        let reporting = !(UserDefaults.standard.object(forKey: "disableMouseReporting") as? Bool ?? true)
+        restoresReporting = reporting && hostSurface?.performBindingAction("toggle_mouse_reporting") == true
+        gesture = .local
+        copyEligible = event.clickCount > 1 || event.modifierFlags.contains(.shift)
+        if event.modifierFlags.contains(.command), hostSurface?.isMouseCaptured == true {
+            // Captured links require Shift for hover discovery in this engine.
+            // Its embedded adapter drops same-position modifier changes, so
+            // refresh hover before pressing. No key or shifted press is sent.
+            let point = convert(event.locationInWindow, from: nil)
+            hostSurface?.sendMousePos(x: -1, y: -1)
+            hostSurface?.sendMousePos(x: point.x, y: bounds.height - point.y,
+                modifiers: TerminalInputModifiers(from: event.modifierFlags).union(.shift))
+        }
+        super.mouseDown(with: event)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        if case let .pending(start) = gesture {
+            guard hypot(event.locationInWindow.x - start.locationInWindow.x,
+                        event.locationInWindow.y - start.locationInWindow.y) >= 4 else { return }
+            beginLocal(start)
+        }
+        guard case .local = gesture else { return }
+        if let origin, hypot(event.locationInWindow.x - origin.locationInWindow.x,
+                             event.locationInWindow.y - origin.locationInWindow.y) >= 4 { copyEligible = true }
+        let point = convert(event.locationInWindow, from: nil)
+        var y = bounds.height - point.y
+        // One engine-owned timer drives stationary edge selection. Keep x and
+        // the original anchor; don't scroll toward the selection's upper left.
+        if y < 12 { y = -max(1, 12 - y) }
+        else if y > bounds.height - 12 { y = bounds.height + max(1, y - (bounds.height - 12)) }
+        hostSurface?.sendMousePos(x: point.x, y: y, modifiers: TerminalInputModifiers(from: event.modifierFlags))
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        switch gesture {
+        case let .pending(start):
+            // Position updates must not manufacture a DEC 1003 hover report
+            // while replaying the deferred click. Real button modifiers remain.
+            for (sample, state) in [(start, GHOSTTY_MOUSE_PRESS), (event, GHOSTTY_MOUSE_RELEASE)] {
+                let point = convert(sample.locationInWindow, from: nil)
+                let mods = TerminalInputModifiers(from: sample.modifierFlags)
+                _ = hostSurface?.performBindingAction("toggle_mouse_reporting")
+                hostSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: mods)
+                _ = hostSurface?.performBindingAction("toggle_mouse_reporting")
+                hostSurface?.sendMouseButton(state: state, button: GHOSTTY_MOUSE_LEFT, modifiers: mods)
+            }
+        case .local:
+            if event.modifierFlags.contains(.command), hostSurface?.isMouseCaptured == true {
+                let point = convert(event.locationInWindow, from: nil)
+                let mods = TerminalInputModifiers(from: event.modifierFlags)
+                // Preserve captured-link hover through the final position. A
+                // plain position update clears it even with reporting disabled.
+                hostSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: mods.union(.shift))
+                hostSurface?.sendMouseButton(state: GHOSTTY_MOUSE_RELEASE, button: GHOSTTY_MOUSE_LEFT, modifiers: mods)
+            } else {
+                super.mouseUp(with: event)
+            }
+            if copyEligible, UserDefaults.standard.object(forKey: "copyOnSelect") as? Bool ?? true {
+                _ = copySelectedTextToPasteboard()
+            }
+        case .idle: return
+        }
+        finishGesture()
+    }
+
+    func cancelSelectionGesture() {
+        if case .local = gesture {
+            // Release without a new position or Command modifier: no link open,
+            // clipboard commit, scroll wheel, or TUI input on cancellation.
+            hostSurface?.sendMouseButton(state: GHOSTTY_MOUSE_RELEASE, button: GHOSTTY_MOUSE_LEFT)
+        }
+        finishGesture()
+    }
+    private func finishGesture() {
+        if restoresReporting { _ = hostSurface?.performBindingAction("toggle_mouse_reporting") }
+        restoresReporting = false
+        gesture = .idle; origin = nil; copyEligible = false
+    }
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+        cancelSelectionGesture()
+        super.viewWillMove(toWindow: newWindow)
+    }
+    override func resignFirstResponder() -> Bool {
+        cancelSelectionGesture()
+        return super.resignFirstResponder()
+    }
+    override var isHidden: Bool {
+        didSet { if isHidden { cancelSelectionGesture() } }
+    }
+    override func copySelectedTextToPasteboard() -> Bool {
+        guard let text = hostSurface?.readSelection(), !text.isEmpty else { return false }
+        let pasteboard = NSPasteboard.general
+        let before = pasteboard.changeCount
+        guard hostSurface?.performBindingAction("copy_to_clipboard:plain") == true,
+              pasteboard.changeCount != before, pasteboard.string(forType: .string) == text else { return false }
+        showCopyFeedback()
+        return true
+    }
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if window?.firstResponder === self, !hasMarkedText(),
+           event.modifierFlags.intersection([.command, .shift, .option, .control]) == .command,
+           event.charactersIgnoringModifiers == "c", hostSurface?.hasSelection() == true {
+            _ = copySelectedTextToPasteboard()
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+    private func showCopyFeedback() {
+        feedbackRevision += 1
+        let revision = feedbackRevision
+        feedback.stringValue = L("Copied")
+        feedback.sizeToFit()
+        feedback.frame.origin = NSPoint(x: max(4, bounds.width - feedback.frame.width - 8), y: 4)
+        feedback.isHidden = false
+        NSAccessibility.post(element: self, notification: .announcementRequested, userInfo: [
+            .announcement: L("Copied"), .priority: NSAccessibilityPriorityLevel.low.rawValue
+        ])
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { [weak self] in
+            guard let self, self.feedbackRevision == revision else { return }
+            self.feedback.isHidden = true
+        }
+    }
+    private final class CopyFeedback: NSTextField {
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    }
+}
