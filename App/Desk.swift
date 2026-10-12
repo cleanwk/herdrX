@@ -220,8 +220,9 @@ final class Desk: ObservableObject {
             if let layout = snapshot.layouts.array.first(where: { $0["tab_id"].string == selectedTab }),
                let width = layout["area"]["width"].int, let height = layout["area"]["height"].int, width > 0, height > 0 {
                 return layout["panes"].array.compactMap { leaf in
-                    guard let id = leaf["pane_id"].string else { return nil }; let r = leaf["rect"]
-                    return (PaneKey(device: device, pane: id), CGRect(x: Double(r["x"].int ?? 0) / Double(width), y: Double(r["y"].int ?? 0) / Double(height), width: Double(r["width"].int ?? width) / Double(width), height: Double(r["height"].int ?? height) / Double(height)))
+                    guard let id = leaf["pane_id"].string,
+                          let rect = PaneLayoutGeometry.normalizedRect(leaf["rect"], in: layout["area"]) else { return nil }
+                    return (PaneKey(device: device, pane: id), rect)
                 }
             }
             return panes.enumerated().map { (PaneKey(device: device, pane: $0.element.id), CGRect(x: Double($0.offset) / Double(max(1, panes.count)), y: 0, width: 1 / Double(max(1, panes.count)), height: 1)) }
