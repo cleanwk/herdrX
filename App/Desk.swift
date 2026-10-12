@@ -440,8 +440,12 @@ final class Desk: ObservableObject {
         let snapshot = try await Session.load(client)
         try Task.checkCancellation()
         guard connectionIDs[id] == connection, paths[id] == client.path, refreshIDs[id] == token, devices.contains(where: { $0.id == id }) else { return }
-        if connections[id] != .connected { connections[id] = .connected; refreshPluginCatalog(id) }
+        let reconnected = connections[id] != .connected
+        if reconnected { connections[id] = .connected; refreshPluginCatalog(id) }
         if sessions[id] != snapshot { let old = sessions[id]; attentionState.update(device: id, old: old, new: snapshot); notifyChanges(device: id, old: old, new: snapshot); sessions[id] = snapshot; reconcile(id, previous: old); reindex() }
+        // A restored server can retain topology/IDs but move its socket. Refresh
+        // the existing terminal commands even when the snapshot is unchanged.
+        else if reconnected, selectedDevice == id { ensureAttachments() }
         if selectedDevice == nil, let space = snapshot.spaces.first { select(device: id, space: space.id) }
         if let device = devices.first(where: { $0.id == id }) { refreshBranches(device, snapshot: snapshot) }
     }

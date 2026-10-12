@@ -40,4 +40,20 @@ final class RemoteHerdrTests: XCTestCase {
         let calls = await fixture.calls
         XCTAssertEqual(socket, "/fixed.sock"); XCTAssertTrue(calls.isEmpty)
     }
+    func testRebuiltSessionWithSameTerminalIdentityUsesFreshSocket() async throws {
+        var endpoint = self.endpoint
+        endpoint.socketPath = "/stale-cache.sock"
+        let fixture = RemoteFixture([#"{"running":true,"socket":"/before.sock"}"#, #"{"running":true,"socket":"/rebuilt.sock"}"#])
+        let first = try await RemoteHerdr.resolve(endpoint) { try await fixture.run($0) }
+        let second = try await RemoteHerdr.resolve(endpoint) { try await fixture.run($0) }
+        XCTAssertEqual(first, "/before.sock")
+        XCTAssertEqual(second, "/rebuilt.sock")
+        for mode in [TerminalAttachment.Mode.control, .observe, .takeover] {
+            let command = TerminalAttachment.command(endpoint: endpoint, socket: second, terminal: "same-terminal", mode: mode)
+            XCTAssertTrue(command.contains("/rebuilt.sock"))
+            XCTAssertFalse(command.contains("/before.sock"))
+            XCTAssertFalse(command.contains("/stale-cache.sock"))
+        }
+    }
+
 }
