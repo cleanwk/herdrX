@@ -17,6 +17,7 @@ class SelectionTerminalView: AppTerminalView {
     private var observers: [NSObjectProtocol] = []
     private var feedbackRevision = 0
     private let feedback = CopyFeedback(labelWithString: "")
+    var allowsRemoteScroll = true
 
     override init(frame: NSRect) {
         super.init(frame: frame)
@@ -37,6 +38,30 @@ class SelectionTerminalView: AppTerminalView {
     }
     @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
     deinit { for observer in observers { NotificationCenter.default.removeObserver(observer) } }
+
+    override func scrollWheel(with event: NSEvent) {
+        guard allowsRemoteScroll else { return }
+        guard case .idle = gesture, let surface = hostSurface else {
+            // A selection drag retains the engine's local scroll/anchor behavior.
+            super.scrollWheel(with: event)
+            return
+        }
+        // Herdr renders a viewport into our surface. Its history and the Agent's
+        // TUI scrolling live upstream, so wheel reports must reach `terminal
+        // attach` even when the user prefers local clicks and text selection.
+        let reporting = !(UserDefaults.standard.object(forKey: "disableMouseReporting") as? Bool ?? true)
+        if reporting { _ = surface.performBindingAction("toggle_mouse_reporting") }
+        // Refresh position/modifiers without emitting a DEC 1003 hover event.
+        let point = convert(event.locationInWindow, from: nil)
+        surface.sendMousePos(x: -1, y: -1)
+        surface.sendMousePos(x: point.x, y: bounds.height - point.y,
+            modifiers: TerminalInputModifiers(from: event.modifierFlags))
+        _ = surface.performBindingAction("toggle_mouse_reporting")
+        defer { if !reporting { _ = surface.performBindingAction("toggle_mouse_reporting") } }
+        // Keep native precision, direction and momentum; Ghostty accumulates
+        // small trackpad deltas and encodes the requested mouse protocol.
+        super.scrollWheel(with: event)
+    }
 
     override func mouseDown(with event: NSEvent) {
         cancelSelectionGesture()

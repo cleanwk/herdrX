@@ -10,6 +10,79 @@ import HerdCore
 }
 
 @Suite(.serialized) @MainActor struct SelectionTests {
+    @Test func wheelReportsSurviveLocalSelectionPreference() async throws {
+        let h = try await Harness()
+        defer { h.close() }
+        for reporting in [false, true] {
+            h.preferences(copy: true, reporting: reporting)
+            // `terminal attach` renders its remote viewport in the alternate
+            // screen and requests capture even when the child is a plain shell.
+            h.receive("\u{1b}[?1049h\u{1b}[?1003h\u{1b}[?1006h" + Harness.text)
+            for (delta, button) in [(Int32(1), 64), (-1, 65)] {
+                h.output.clear()
+                h.wheel(y: delta, unit: .line)
+                try await Task.sleep(for: .milliseconds(80))
+                let bytes = String(decoding: h.output.data, as: UTF8.self)
+                #expect(bytes.contains("\u{1b}[<\(button);"), "Wheel lost with reporting=\(reporting): \(bytes.debugDescription)")
+                #expect(!bytes.contains("[<35;"), "Position refresh leaked a hover report")
+                #expect(!bytes.contains("\u{1b}[A") && !bytes.contains("\u{1b}[B"), "Wheel became shell history keys")
+            }
+            // Fractional high-resolution motion, including momentum, must
+            // accumulate instead of truncating every small event to zero.
+            h.output.clear()
+            for _ in 0..<200 { h.wheel(y: 1, unit: .pixel, momentum: 2) }
+            try await Task.sleep(for: .milliseconds(80))
+            #expect(String(decoding: h.output.data, as: UTF8.self).contains("\u{1b}[<64;"))
+            h.output.clear()
+            for _ in 0..<200 { h.wheel(y: -1, unit: .pixel, momentum: 2) }
+            try await Task.sleep(for: .milliseconds(80))
+            #expect(String(decoding: h.output.data, as: UTF8.self).contains("\u{1b}[<65;"))
+            #expect(UserDefaults.standard.bool(forKey: "disableMouseReporting") == !reporting)
+            h.output.clear()
+            h.down(row: 0, column: 0.25); h.drag(row: 0, column: 8.75); h.up(row: 0, column: 8.75)
+            try await Task.sleep(for: .milliseconds(80))
+            #expect(h.output.data.isEmpty, "Wheel changed subsequent drag ownership")
+            #expect(NSPasteboard.general.string(forType: .string) == "ALPHA_ONE")
+            if !reporting {
+                h.down(row: 1, column: 1); h.up(row: 1, column: 1)
+                try await Task.sleep(for: .milliseconds(80))
+                #expect(h.output.data.isEmpty, "Wheel left click reporting enabled")
+            }
+        }
+    }
+
+    @Test func wheelRespectsLocalHistoryRecoveryAndObservation() async throws {
+        let h = try await Harness()
+        defer { h.close() }
+        h.preferences(copy: false, reporting: false)
+        h.receive((0..<180).map { "ROW_\($0)\r\n" }.joined())
+        let bottom = h.session.readViewportText()
+        h.output.clear()
+        h.wheel(y: 12, unit: .line)
+        let scrolled = h.session.readViewportText()
+        #expect(scrolled != bottom, "Plain local history did not scroll upward")
+        h.wheel(y: -12, unit: .line)
+        #expect(h.session.readViewportText() == bottom, "Plain local history did not return downward")
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(h.output.data.isEmpty, "Local history generated terminal input")
+
+        h.receive("\u{1b}[?1049h\u{1b}[?1003h\u{1b}[?1006h\u{1b}[>31u")
+        h.receive(String(decoding: TerminalInputRecovery.keyboardBytes, as: UTF8.self))
+        h.output.clear()
+        h.wheel(y: 1, unit: .line)
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(String(decoding: h.output.data, as: UTF8.self).contains("\u{1b}[<64;"), "Agent exit recovery disabled attach scrolling")
+        h.view.allowsRemoteScroll = false
+        h.output.clear()
+        h.wheel(y: 1, unit: .line)
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(h.output.data.isEmpty, "Read-only observer sent input")
+        h.view.allowsRemoteScroll = true
+        h.wheel(y: -1, unit: .line)
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(String(decoding: h.output.data, as: UTF8.self).contains("\u{1b}[<65;"), "Reconnect did not restore wheel input")
+    }
+
     @Test func restoreKeyboardAndMouseModesPreservesHistory() async throws {
         let h = try await Harness()
         defer { h.close() }
@@ -307,6 +380,15 @@ private final class LockedOutput: @unchecked Sendable {
     func down(row: Int, column: Double) { view.mouseDown(with: event(.leftMouseDown, local: point(row: row, column: column))) }
     func drag(row: Int, column: Double) { view.mouseDragged(with: event(.leftMouseDragged, local: point(row: row, column: column))) }
     func up(row: Int, column: Double) { view.mouseUp(with: event(.leftMouseUp, local: point(row: row, column: column))) }
+    func wheel(y: Int32, unit: CGScrollEventUnit, momentum: Int64 = 0) {
+        // Real AppKit wheel events, delivered only to the test view. No system
+        // event posting, accessibility permission or physical input injection.
+        let cg = CGEvent(scrollWheelEvent2Source: nil, units: unit, wheelCount: 1, wheel1: y, wheel2: 0, wheel3: 0)!
+        let local = view.convert(point(row: 3, column: 4), to: nil)
+        cg.location = NSPoint(x: local.x, y: (NSScreen.screens.first?.frame.height ?? 0) - local.y)
+        cg.setIntegerValueField(.scrollWheelEventMomentumPhase, value: momentum)
+        view.scrollWheel(with: NSEvent(cgEvent: cg)!)
+    }
     func close() {
         view.cancelSelectionGesture()
         window.orderOut(nil); view.removeFromSuperview(); window.close()

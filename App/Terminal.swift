@@ -38,7 +38,8 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
         observation.ended = { [weak self] _ in self?.onObservationEnded?() }
         process.exited = { [weak self] status in
             guard let self else { return }
-            self.process.stop(); self.repair()
+            self.view.allowsRemoteScroll = false
+            self.process.stop(); self.resetInput()
             self.observation.start(self.observationCommand)
             self.onExit?(status)
         }
@@ -46,10 +47,13 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
         process.start(command)
     }
     var focused: (() -> Void)?
-    func restart(takeover: Bool = false) { attachmentID = UUID(); observation.stop(); repair(); process.start(takeover ? takeoverCommand : command) }
-    func repair() { view.cancelSelectionGesture(); session.receive(TerminalInputRecovery.bytes) }
+    func restart(takeover: Bool = false) { attachmentID = UUID(); observation.stop(); resetInput(); view.allowsRemoteScroll = true; process.start(takeover ? takeoverCommand : command) }
+    // The live `herdr terminal attach` owns mouse capture, independently of the
+    // child Agent. Clearing it on Agent exit disables shell/history scrolling.
+    func repair() { view.cancelSelectionGesture(); session.receive(TerminalInputRecovery.keyboardBytes) }
+    private func resetInput() { view.cancelSelectionGesture(); session.receive(TerminalInputRecovery.bytes) }
     func interrupt() { process.write(Data([3])) }
-    func stop() { attachmentID = UUID(); observation.stop(); process.stop() }
+    func stop() { attachmentID = UUID(); view.allowsRemoteScroll = false; observation.stop(); process.stop() }
     func terminalDidAttachSurface(_ surface: TerminalSurface) { self.surface = surface; view.hostSurface = surface }
     func terminalDidDetachSurface() { surface = nil; view.hostSurface = nil }
     func terminalDidRequestOpenURL(_ url: String, kind: TerminalOpenURLKind) {

@@ -56,6 +56,58 @@ private final class ByteCapture: @unchecked Sendable {
         try await Task.sleep(for: .milliseconds(400))
         observer.stop()
         guard !firstExited, !observerEnded else { throw Failure("Observer restart affected controller") }
+
+        // Server-owned history cannot be recovered by scrolling the rendered
+        // Ghostty viewport. Exercise the same SGR wheel bytes emitted by the
+        // native view through the production interactive attachment.
+        first.write(Data("i=0; while [ $i -lt 200 ]; do printf 'SCROLL_ROW_%s\\n' \"$i\"; i=$((i+1)); done\n".utf8))
+        try await wait("server scrollback") {
+            let info = try await client.call("pane.get", ["pane_id": .string(pane)])["pane"]
+            return (info["scroll"]["max_offset_from_bottom"].int ?? 0) > 100
+        }
+        first.write(Data("\u{1b}[<64;5;4M".utf8))
+        try await wait("wheel scrolls server history upward") {
+            let info = try await client.call("pane.get", ["pane_id": .string(pane)])["pane"]
+            return (info["scroll"]["offset_from_bottom"].int ?? 0) > 0
+        }
+        first.write(Data("\u{1b}[<65;5;4M".utf8))
+        try await wait("wheel scrolls server history downward") {
+            let info = try await client.call("pane.get", ["pane_id": .string(pane)])["pane"]
+            return info["scroll"]["offset_from_bottom"].int == 0
+        }
+
+        // Synthetic alternate-screen TUI, not an Agent detector claim. Record
+        // actual child input so the test distinguishes TUI routing from history.
+        let tui = directory + "/scroll-tui.py", captured = directory + "/scroll-input", ready = directory + "/scroll-ready"
+        try """
+        import os, sys, termios, tty
+        saved = termios.tcgetattr(0)
+        try:
+            tty.setraw(0)
+            os.write(1, b'\\x1b[?1049h\\x1b[?1000h\\x1b[?1006hSCROLL_TUI')
+            open(sys.argv[2], 'w').close()
+            with open(sys.argv[1], 'wb', buffering=0) as log:
+                while True:
+                    data = os.read(0, 4096)
+                    if b'\\x03' in data:
+                        break
+                    log.write(data)
+        finally:
+            os.write(1, b'\\x1b[?1000l\\x1b[?1006l\\x1b[?1049l')
+            termios.tcsetattr(0, termios.TCSANOW, saved)
+        """.write(toFile: tui, atomically: true, encoding: .utf8)
+        first.write(Data(("python3 " + quote(tui) + " " + quote(captured) + " " + quote(ready) + "\n").utf8))
+        try await wait("synthetic scroll TUI ready") { FileManager.default.fileExists(atPath: ready) && output.contains("SCROLL_TUI") }
+        try await Task.sleep(for: .milliseconds(150))
+        first.write(Data("\u{1b}[<64;5;4M\u{1b}[<65;5;4M".utf8))
+        try await wait("up/down wheel reaches alternate-screen TUI") {
+            let input = (try? String(contentsOfFile: captured, encoding: .utf8)) ?? ""
+            return input.contains("\u{1b}[<64;5;4M") && input.contains("\u{1b}[<65;5;4M")
+        }
+        first.write(Data([3]))
+        try await wait("shell after synthetic TUI") {
+            TerminalInputRecovery.isIdleShell(try await client.call("pane.process_info", ["pane_id": .string(pane)])["process_info"], pane: pane)
+        }
         first.write(Data("sleep 15\n".utf8))
         try await wait("foreground process") {
             let info = try await client.call("pane.process_info", ["pane_id": .string(pane)])["process_info"]
@@ -79,6 +131,6 @@ private final class ByteCapture: @unchecked Sendable {
         try await wait("observer never owns input") { FileManager.default.fileExists(atPath: thirdMarker) }
         let after = try await client.call("pane.process_info", ["pane_id": .string(pane)])["process_info"]
         guard before["shell_pid"] == after["shell_pid"] else { throw Failure("Server shell changed") }
-        print("PASS: production PTY attach refuses takeover; observer streams/resizes/restarts without stealing input or resizing owner; explicit takeover; detach preserves shell PID; actual foreground shell guard")
+        print("PASS: production PTY attach refuses takeover; observer streams/resizes/restarts without stealing input or resizing owner; up/down wheel scrolls real server history and reaches alternate-screen TUI; explicit takeover; detach preserves shell PID; actual foreground shell guard")
     }
 }

@@ -57,7 +57,7 @@ extension Desk {
         return CGSize(width: max(160, font * 0.65 * 24 + PaneMetrics.horizontalOverhead) + PaneMetrics.splitGap, height: max(100, font * 1.5 * 6 + PaneMetrics.verticalOverhead) + PaneMetrics.splitGap)
     }
     func recoveryLabel(_ key: PaneKey) -> String {
-        L(terminals[key]?.observation.isRunning == true ? "Viewing only. Another client may control this terminal." : "Attachment ended. The server pane may still be running.")
+        L(terminals[key]?.observation.isRunning == true ? "Viewing only; history scrolling is unavailable. Reconnect or Take Control to scroll." : "Attachment ended. The server pane may still be running.")
     }
     func reconnect(_ key: PaneKey, takeover: Bool = false) {
         guard let terminal = terminals[key], canWrite(key.device),
