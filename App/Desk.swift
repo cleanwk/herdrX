@@ -370,15 +370,17 @@ final class Desk: ObservableObject {
     }
     func rpc(_ id: String) throws -> RPC { guard let path = paths[id] else { throw Failure("Device is disconnected") }; return RPC(path: path) }
     func restoreInput(_ key: PaneKey, automatic: Bool = false, interrupt: Bool = false) {
-        let action = key.device + "|recovery|" + key.pane
         guard canWrite(key.device), !ended.contains(key),
               let terminal = terminals[key], let client = try? rpc(key.device),
               let target = sessions[key.device]?.panes.first(where: { $0.id == key.pane })?.terminal else { return }
+        let connection = connectionIDs[key.device], attachment = terminal.attachmentID
+        // A probe for an older attachment must not suppress recovery after a
+        // rapid reconnect; each generation owns its own coalescing token.
+        let action = key.device + "|recovery|" + key.pane + "|" + (connection?.uuidString ?? "") + "|" + attachment.uuidString
         // Repeated physical Ctrl-C must still reach a task while a shell probe
         // is pending (some programs need a second interrupt to exit).
         if interrupt { terminal.interrupt() }
         guard !busy.contains(action) else { return }
-        let connection = connectionIDs[key.device], attachment = terminal.attachmentID
         busy.insert(action)
         Task { [weak self, weak terminal] in
             guard let self, let terminal else { return }

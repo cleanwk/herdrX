@@ -62,6 +62,20 @@ import HerdCore
             h.view.keyUp(with: h.key(.keyUp, characters: "c", ignoring: "c", modifiers: modifiers, code: 8))
         }
         #expect(interrupts == 0)
+        h.view.setMarkedText("字", selectedRange: NSRange(location: 1, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0))
+        h.view.keyDown(with: h.key(.keyDown, characters: "\u{3}", ignoring: "c", modifiers: .control, code: 8))
+        #expect(interrupts == 0, "IME composition must retain native handling")
+        h.view.unmarkText()
+
+        // A missing release (for example after focus moved) cannot swallow the
+        // release of a later ordinary C press in a Kitty-aware application.
+        h.view.keyDown(with: h.key(.keyDown, characters: "\u{3}", ignoring: "c", modifiers: .control, code: 8))
+        #expect(interrupts == 1)
+        h.output.clear()
+        h.view.keyDown(with: h.key(.keyDown, characters: "c", ignoring: "c", code: 8))
+        h.view.keyUp(with: h.key(.keyUp, characters: "c", ignoring: "c", code: 8))
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(String(decoding: h.output.data, as: UTF8.self).contains("\u{1b}[99;1:3u"))
     }
 
     @Test func wheelReportsSurviveLocalSelectionPreference() async throws {

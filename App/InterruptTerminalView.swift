@@ -21,6 +21,9 @@ class InterruptTerminalView: SelectionTerminalView {
     }
 
     override func keyDown(with event: NSEvent) {
+        // Focus can move before a release arrives. A new press owns its own
+        // release rather than inheriting suppression from the previous chord.
+        interruptedKeys.remove(event.keyCode)
         if isInterrupt(event), onInterrupt?() == true {
             interruptedKeys.insert(event.keyCode)
             return
