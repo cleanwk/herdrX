@@ -40,7 +40,7 @@ struct Workbench: View {
                     } label: { Image(systemName: "rectangle.split.2x1") }.menuIndicator(.hidden).frame(width: 22).accessibilityLabel("Pane Layout").help("Splits require room for at least 24 columns and 6 rows per pane.")
                 }.font(.system(size: 12)).buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.trailing, 8).frame(height: TabMetrics.barHeight).background(Color(nsColor: Theme.chrome)).zIndex(1)
                 Divider()
-                // Pane titles supply the top clearance; the other three sides use one shared inset.
+                // Each pane contributes 3pt outside its border, including the top.
                 ZStack(alignment: .bottom) {
                     GeometryReader { geo in
                         TerminalCanvas(terminals: desk.canvas, focused: desk.focused, dividers: desk.dividers, setRatio: desk.setRatio, previewRatio: desk.previewRatio, titles: desk.paneTitles, close: { desk.closePane($0) }, canClose: { desk.canAct(on: $0) }, zoomed: desk.zoomed, restore: { desk.zoomed = false }, focusRevision: desk.focusRevision, minimumPaneSize: desk.minimumPaneSize, actions: WorkbenchActions(perform: command, enabled: enabled), corners: paneCorners(geo))
@@ -68,7 +68,7 @@ struct Workbench: View {
                         }.frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     }
-                }.background(GeometryReader { geo in Color.clear.onAppear { desk.canvasSize = geo.size }.onChange(of: geo.size) { desk.canvasSize = $1 } }).clipped().padding([.horizontal, .bottom], PaneMetrics.edgeInset)
+                }.background(GeometryReader { geo in Color.clear.onAppear { desk.canvasSize = geo.size }.onChange(of: geo.size) { desk.canvasSize = $1 } }).clipped().padding(PaneMetrics.edgeInset)
             }
         }.foregroundStyle(Color(nsColor: Theme.foreground)).tint(Color(nsColor: Theme.accent))
         .overlay(alignment: .leading) { if showSidebar { ResizeStrip(width: $sidebar, limits: 200...480, reset: 260).frame(width: 7).offset(x: sidebar - 3) } }

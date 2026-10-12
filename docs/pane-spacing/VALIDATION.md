@@ -1,5 +1,7 @@
 # Pane spacing validation
 
+> Historical geometry. The 0.1.14 [thin pane contract](../pane-spacing/0.1.14.md) supersedes spacing and border weight below; these screenshots predate that change.
+
 2026-10-10. Reference: installed native Herdr GPUI 20261008.1, observed without changing its sessions. Test mutations used only `herdrx-pane-gutters-20261010` with an isolated `HERDRX_STATE_DIR` and uniquely named debug bundles. Real Herdr RPC, PTY and Ghostty surfaces; fixture workspace labels are test data.
 
 ## Final geometry

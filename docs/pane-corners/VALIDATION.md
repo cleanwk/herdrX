@@ -1,5 +1,7 @@
 # Pane window-corner validation
 
+> Historical geometry. The 0.1.14 [thin pane contract](../pane-spacing/0.1.14.md) supersedes spacing and border weight below; these screenshots predate that change.
+
 2026-10-11. Isolated debug bundles, `HERDRX_STATE_DIR=build/corner-review/state`, and disposable Herdr session `herdrx-pane-corners-20261011`. Running-app captures use real Herdr layouts, PTYs and Ghostty surfaces on macOS 27.0.1 at 2×. Fixture names are test data.
 
 ## Geometry contract

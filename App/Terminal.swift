@@ -194,7 +194,7 @@ struct TerminalCanvas: NSViewRepresentable {
                 let active = focused == key && window?.isKeyWindow == true
                 if let context = NSGraphicsContext.current?.cgContext {
                     context.saveGState()
-                    context.setStrokeColor((active ? Theme.accentStroke : Theme.decoration.withAlphaComponent(0.45)).cgColor)
+                    context.setStrokeColor((active ? Theme.accentStroke : Theme.foreground.withAlphaComponent(0.28)).cgColor)
                     context.setLineWidth(PaneMetrics.borderWidth(scale: window?.backingScaleFactor ?? 2))
                     let radii = paneCorners(rect).inset(by: PaneMetrics.borderWidth(scale: window?.backingScaleFactor ?? 2) / 2)
                     context.addPath(PaneShape.path(in: frame, corners: radii))
@@ -204,15 +204,15 @@ struct TerminalCanvas: NSViewRepresentable {
                 let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingTail
                 let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: active ? .semibold : .regular), .foregroundColor: active ? Theme.accent : Theme.secondary, .paragraphStyle: style]
                 let contextStyle = NSMutableParagraphStyle(); contextStyle.lineBreakMode = .byTruncatingMiddle
-                let secondary: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 10, weight: .regular), .foregroundColor: Theme.secondary, .paragraphStyle: contextStyle]
+                let secondary: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: Theme.secondary, .paragraphStyle: contextStyle]
                 let available = max(0, frame.width - (zoomed ? 82 : 56))
                 let context = available >= 260 ? title.context : ""
                 let mainWidth = min(available * (context.isEmpty ? 1 : 0.64), (title.main as NSString).size(withAttributes: attributes).width)
-                let contextWidth = min(max(0, available - mainWidth - 10), (context as NSString).size(withAttributes: secondary).width)
-                let box = NSRect(x: frame.minX + 9, y: frame.maxY - 7, width: mainWidth + (contextWidth > 0 ? contextWidth + 10 : 0) + 8, height: 14)
+                let contextWidth = min(max(0, available - mainWidth - PaneMetrics.titleGap), (context as NSString).size(withAttributes: secondary).width)
+                let box = NSRect(x: paneFrame(rect).minX + PaneMetrics.titleLeading, y: frame.maxY - 7, width: mainWidth + (contextWidth > 0 ? contextWidth + PaneMetrics.titleGap : 0) + PaneMetrics.titlePadding * 2, height: 14)
                 Theme.content.setFill(); box.fill()
-                (title.main as NSString).draw(in: NSRect(x: box.minX + 4, y: box.minY, width: mainWidth, height: 14), withAttributes: attributes)
-                if contextWidth > 0 { (context as NSString).draw(in: NSRect(x: box.minX + mainWidth + 14, y: box.minY, width: contextWidth, height: 14), withAttributes: secondary) }
+                (title.main as NSString).draw(in: NSRect(x: box.minX + PaneMetrics.titlePadding, y: box.minY, width: mainWidth, height: 14), withAttributes: attributes)
+                if contextWidth > 0 { (context as NSString).draw(in: NSRect(x: box.minX + PaneMetrics.titlePadding + mainWidth + PaneMetrics.titleGap, y: box.minY, width: contextWidth, height: 14), withAttributes: secondary) }
 
             }
             // Keep the backing opaque while the button glyph fades across the title outline.
@@ -373,16 +373,26 @@ struct TerminalCanvas: NSViewRepresentable {
             var preview: ((Layout.Divider, Double) -> Void)?
             private var start: CGPoint = .zero
             private var initial: Layout.Divider?
+            private var dragging = false
+            override func draw(_ dirtyRect: NSRect) {
+                guard dragging, let divider else { return }
+                Theme.accentStroke.setFill()
+                let line = divider.horizontal
+                    ? CGRect(x: bounds.midX - 0.5, y: bounds.minY, width: 1, height: bounds.height)
+                    : CGRect(x: bounds.minX, y: bounds.midY - 0.5, width: bounds.width, height: 1)
+                line.fill()
+            }
             override func resetCursorRects() { addCursorRect(bounds, cursor: divider?.horizontal == true ? .resizeLeftRight : .resizeUpDown) }
             override func mouseDown(with event: NSEvent) { start = event.locationInWindow; initial = divider }
             override func mouseDragged(with event: NSEvent) {
                 guard let initial, let parent = superview else { return }
+                dragging = true; needsDisplay = true
                 let delta = initial.horizontal ? (event.locationInWindow.x - start.x) / (parent.bounds.width * initial.box.width) : (start.y - event.locationInWindow.y) / (parent.bounds.height * initial.box.height)
                 // Local layouts update continuously; remote layouts commit on release.
                 preview?(initial, clamped(initial.ratio + delta))
             }
             override func mouseUp(with event: NSEvent) {
-                defer { initial = nil }
+                defer { initial = nil; dragging = false; needsDisplay = true }
                 guard let initial, let parent = superview else { return }
                 let delta = initial.horizontal ? (event.locationInWindow.x - start.x) / (parent.bounds.width * initial.box.width) : (start.y - event.locationInWindow.y) / (parent.bounds.height * initial.box.height)
                 commit?(initial, clamped(initial.ratio + delta))

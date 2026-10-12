@@ -19,7 +19,8 @@ private final class ByteCapture: @unchecked Sendable {
         let args = CommandLine.arguments
         let socket = args[1], target = args[2], pane = args[3], directory = args[4]
         let endpoint = Device.Endpoint(kind: "local", socketPath: socket)
-        func command(_ mode: TerminalAttachment.Mode) -> String { TerminalAttachment.command(endpoint: endpoint, socket: socket, terminal: target, mode: mode) }
+        // A login shell may reorder PATH; select the fixture binary explicitly.
+        func command(_ mode: TerminalAttachment.Mode) -> String { "export PATH=" + quote(directory + "/bin") + ":\"$PATH\"; " + TerminalAttachment.command(endpoint: endpoint, socket: socket, terminal: target, mode: mode) }
         let client = RPC(path: socket)
         let first = ByteProcess(), second = ByteProcess(), third = ByteProcess(), observer = TerminalObservation()
         defer { first.stop(); second.stop(); third.stop(); observer.stop() }

@@ -380,14 +380,14 @@ final class Desk: ObservableObject {
         Task { [weak self, weak terminal] in
             guard let self, let terminal else { return }
             defer { busy.remove(action) }
-            func valid() -> Bool {
+            @MainActor func valid() -> Bool {
                 canWrite(key.device) && connectionIDs[key.device] == connection && paths[key.device] == client.path
                     && terminals[key] === terminal && terminal.attachmentID == attachment && !ended.contains(key)
                     && sessions[key.device]?.panes.contains(where: { $0.id == key.pane && $0.terminal == target && (!automatic || $0.agent == nil) }) == true
             }
             do {
-                for attempt in 0..<(interrupt ? 10 : 1) {
-                    if interrupt { try await Task.sleep(for: .milliseconds(200)) }
+                for attempt in 0..<((interrupt || automatic) ? 10 : 1) {
+                    if interrupt || attempt > 0 { try await Task.sleep(for: .milliseconds(200)) }
                     guard valid() else { return }
                     let info = try await client.call("pane.process_info", ["pane_id": .string(key.pane)], timeout: 3)["process_info"]
                     guard valid() else { return }
@@ -396,7 +396,6 @@ final class Desk: ObservableObject {
                         if !automatic, focused == key { requestFocus() }
                         return
                     }
-                    if attempt == 9 { break }
                 }
                 if !automatic { message = L("The foreground process has not returned to the shell. Input modes were left unchanged.") }
             } catch {

@@ -2,7 +2,9 @@
 
 A native macOS GUI for [Herdr](https://herdr.dev). Work with local and remote terminal spaces, tabs, split panes, and coding agents in one window.
 
-Herdr owns sessions, processes, layouts, and agent state. HerdrX presents them through the existing Herdr API, with SwiftUI, AppKit, and a Ghostty terminal surface. Closing the GUI leaves Herdr sessions running. Opening a pane uses an ordinary attachment; if another client owns input, HerdrX observes it read-only. Reconnect retries without displacing that client; Take Control explicitly confirms a takeover. Restore Terminal Input checks that the foreground has returned to the shell before clearing stale keyboard and mouse reporting modes, preserving history.
+Herdr owns sessions, processes, layouts, and agent state. HerdrX presents them through the existing Herdr API, with SwiftUI, AppKit, and a Ghostty terminal surface. Closing the GUI leaves Herdr sessions running.
+
+Opening a pane uses an ordinary attachment; if another client owns input, HerdrX observes it read-only. Reconnect retries without displacing that client; Take Control explicitly confirms a takeover. Restore Terminal Input checks that the foreground has returned to the shell before clearing stale keyboard and mouse reporting modes, preserving history.
 
 ![HerdrX workbench](docs/accm-fidelity/screenshots/workbench-tokyo-dark.png)
 
@@ -42,6 +44,7 @@ Stopped local sessions show a start action. Custom socket paths show connection 
 | ⌘⌥ arrows | Focus another pane |
 | ⌘⇧Return | Zoom / restore pane |
 | ⌘⌥R | Rename tab; also available by double-click or context menu |
+| ⌘⇧R | Restore input modes after returning to the shell |
 | ⌘K | Search spaces, terminals, and agents |
 | ⌘⇧J | Jump to an agent needing attention |
 | ⌘⇧W / ⌘⌥W | Close pane / tab |
@@ -61,6 +64,7 @@ Use Xcode 27+, XcodeGen, and Go 1.27.1+ (for the Tailcat helper).
 brew install xcodegen go
 scripts/build.sh
 scripts/test-pty.sh
+scripts/test-coexistence.sh
 scripts/test-tabs.sh
 scripts/test-inputs.sh
 scripts/test-panes.sh
