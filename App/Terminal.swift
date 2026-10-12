@@ -33,8 +33,8 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
         view.controller = Self.controller; view.delegate = self
         view.configuration = TerminalSurfaceOptions(backend: .inMemory(session))
         let session = self.session
-        process.output = { session.receive($0) }
-        observation.output = { session.receive($0) }
+        process.output = { [weak session] in session?.receive($0) }
+        observation.output = { [weak session] in session?.receive($0) }
         observation.ended = { [weak self] _ in self?.onObservationEnded?() }
         process.exited = { [weak self] status in
             guard let self else { return }
