@@ -3,6 +3,43 @@ import CoreGraphics
 
 @main struct PaneGeometryTests {
     static func main() {
+        // A TUI sidebar/header can put the server's layout at a nonzero origin.
+        // Reproduce the reported half-canvas shift through the production JSON
+        // conversion and native point/pixel geometry, at narrow and wide sizes.
+        let offset = try! JSONDecoder().decode(JSON.self, from: Data(#"{"x":26,"y":1,"width":54,"height":23}"#.utf8))
+        let normalized = PaneLayoutGeometry.normalizedRect(offset, in: offset)!
+        for scale: CGFloat in [1, 2] {
+            for size in [CGSize(width: 703, height: 583), CGSize(width: 996, height: 774), CGSize(width: 1436, height: 870)] {
+                let frame = PaneMetrics.frame(normalized, in: size, scale: scale)
+                precondition(frame == CGRect(origin: .zero, size: size), "Server chrome shifted the GUI pane")
+                let border = PaneMetrics.borderFrame(frame, scale: scale)
+                precondition(border.minX == 0.5 && border.maxX == size.width - 0.5)
+                precondition(border.maxY == size.height - PaneMetrics.titleOffset - 0.5)
+            }
+        }
+        if CommandLine.arguments.count > 1 {
+            let captures = try! JSONDecoder().decode(JSON.self, from: Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1])))
+            precondition(captures.array.count == 6, "Missing legacy/current single/column/nested fixtures")
+            for capture in captures.array {
+                let layout = capture["layout"], area = layout["area"]
+                let rects = layout["panes"].array.map { PaneLayoutGeometry.normalizedRect($0["rect"], in: area)! }
+                for rect in rects {
+                    precondition(CGRect(x: 0, y: 0, width: 1, height: 1).contains(rect), "Real Herdr layout escaped the normalized canvas")
+                }
+                for scale: CGFloat in [1, 2] {
+                    for size in [CGSize(width: 703, height: 583), CGSize(width: 996, height: 774), CGSize(width: 1436, height: 870)] {
+                        let canvas = CGRect(origin: .zero, size: size)
+                        let frames = rects.map { PaneMetrics.frame($0, in: size, scale: scale) }
+                        for (index, frame) in frames.enumerated() {
+                            precondition(canvas.contains(frame) && frame.width > 0 && frame.height > 0, "Real pane is clipped or empty")
+                            for other in frames.dropFirst(index + 1) { precondition(!frame.intersects(other), "Real panes overlap") }
+                        }
+                        if frames.count == 1 { precondition(frames[0] == canvas, "Single real pane must fill its canvas") }
+                    }
+                }
+            }
+            print("PASS: real Herdr 0.8.2 and 0.9.3 snapshots keep single/column/nested panes inside narrow/wide 1×/2× canvases")
+        }
         let layouts: [[CGRect]] = [
             [CGRect(x: 0, y: 0, width: 1, height: 1)],
             [CGRect(x: 0, y: 0, width: 0.37, height: 1), CGRect(x: 0.37, y: 0, width: 0.63, height: 1)],
@@ -83,6 +120,6 @@ import CoreGraphics
             precondition(PaneMetrics.canSplit(fits, horizontal: horizontal, minimum: minimum))
             precondition(!PaneMetrics.canSplit(short, horizontal: horizontal, minimum: minimum))
         }
-        print("PASS: 1pt inside borders, 6pt horizontal / 13pt vertical border gaps, 7pt top offset, nested/stacked/grid layouts, resize, 1×/2× pixel alignment, outer canvas edges, selective continuous corners and concentric terminal masks")
+        print("PASS: translated Herdr origins at narrow/wide canvas sizes, 1pt inside borders, 6pt horizontal / 13pt vertical border gaps, 7pt top offset, nested/stacked/grid layouts, resize, 1×/2× pixel alignment, outer canvas edges, selective continuous corners and concentric terminal masks")
     }
 }

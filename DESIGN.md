@@ -434,6 +434,8 @@ The [review](docs/adversarial-ui-review/REVIEW.md) records source-backed finding
 
 Split availability uses the clicked pane's unzoomed layout slot and current canvas dimensions; invoking it does not first navigate to that pane. On success, restore the normal layout and focus the new pane only if the user's original focus/navigation is unchanged. Both window activation transitions redraw pane focus treatment. Tab selection reserves the same text width in either weight.
 
+Herdr snapshot rectangles share their area's absolute cell-coordinate origin. Subtract that origin before scaling them into the GUI canvas; server-side sidebar/header offsets must not displace native panes. Preserve the server's split proportions and chrome insets. The [layout-origin compatibility record](docs/pane-spacing/layout-origin.md) covers old/new Herdr snapshots and the physical-device verification boundary.
+
 Object rename hands marked-text commands to the IME; its compact sheet contains the name, optional failure and actions without generic character-format guidance. Connections discovery labels stay short and can stack. Add Device uses one action for mouse/keyboard/accessibility routing to a fresh Connections → Devices form, even if Settings previously showed Plugins or an existing edit. Ordinary Settings navigation retains its state. Removing the filtered device resets the filter. Font import failures are localized and name the file without printing its full path.
 
 These contracts do not establish a fresh rendered or live-IME pass. The [validation record](docs/adversarial-ui-review/VALIDATION.md) separates local checks, macOS CI and outstanding native scenarios. No new raster assets, Herdr protocol, release or preference migration.

@@ -33,4 +33,5 @@ jobs:
             build/dist/*
             build/tests/*.png
             build/tests/delta-updates.json
+            build/tests/layout-origins.json
           retention-days: 14
