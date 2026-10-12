@@ -47,92 +47,92 @@
       "accent-blue-light": {
         "role": "primary",
         "displayName": "Accent Blue Light",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-blue-dark": {
         "role": "primary",
         "displayName": "Accent Blue Dark",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-graphite-light": {
         "role": "primary",
         "displayName": "Accent Graphite Light",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-graphite-dark": {
         "role": "primary",
         "displayName": "Accent Graphite Dark",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-green-light": {
         "role": "primary",
         "displayName": "Accent Green Light",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-green-dark": {
         "role": "primary",
         "displayName": "Accent Green Dark",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-cyan-light": {
         "role": "primary",
         "displayName": "Accent Cyan Light",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-cyan-dark": {
         "role": "primary",
         "displayName": "Accent Cyan Dark",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-purple-light": {
         "role": "primary",
         "displayName": "Accent Purple Light",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-purple-dark": {
         "role": "primary",
         "displayName": "Accent Purple Dark",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-amber-light": {
         "role": "primary",
         "displayName": "Accent Amber Light",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-amber-dark": {
         "role": "primary",
         "displayName": "Accent Amber Dark",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-pink-light": {
         "role": "primary",
         "displayName": "Accent Pink Light",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-pink-dark": {
         "role": "primary",
         "displayName": "Accent Pink Dark",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-red-light": {
         "role": "primary",
         "displayName": "Accent Red Light",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-red-dark": {
         "role": "primary",
         "displayName": "Accent Red Dark",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-orange-light": {
         "role": "primary",
         "displayName": "Accent Orange Light",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "accent-orange-dark": {
         "role": "primary",
         "displayName": "Accent Orange Dark",
-        "purpose": "Independent appearance-aware seed: raw Theme.selection supplies fills; Theme.accent adjusts shade for readable focus/text and native control tint."
+        "purpose": "Independent appearance-aware seed: raw accentStroke retains hue; accentText meets normal text contrast; accentWash, accentWashBorder and onAccent are separate roles."
       },
       "success-light": {
         "role": "secondary",
@@ -350,7 +350,7 @@
           },
           {
             "id": "herdr",
-            "label": "Follow Herdr",
+            "label": "Local Herdr theme",
             "resolution": "Local [theme].name through ThemePreference; Catppuccin fallback; no Herdr configuration writes."
           },
           {
@@ -446,8 +446,8 @@
           "orange"
         ],
         "defaultAccent": "theme",
-        "lightCompanions": "Dracula/Vesper have HerdrX-authored light definitions, not official upstream light variants. Source-derived ANSI hue/saturation is retained with brightness initially capped at 0.55; chromatic slots then receive the common canvas-contrast shade adjustment. Cursor follows foreground; companion selection is defined by Theme.lightCompanion.",
-        "herdr": "Read ~/.config/herdr/config.toml [theme].name when applying Follow Herdr; unknown or absent values resolve to Catppuccin; never write that file.",
+        "lightCompanions": "Dracula/Vesper have HerdrX-authored light definitions, not official upstream light variants. Source-derived ANSI hue/saturation is retained with brightness initially capped at 0.55; no additional foreground-only canvas-contrast adjustment is applied. Cursor follows foreground; companion selection is defined by Theme.lightCompanion.",
+        "herdr": "Local Herdr theme reads ~/.config/herdr/config.toml [theme].name, maps supported families and falls back to Catppuccin. No remote/custom color synchronization or configuration writes.",
         "continuity": "Existing surfaces receive theme configuration. Supplied light/dark, hidden-pane restoration and reattach records retain fixture content/SGR. Before/after ANSI files are equal; terminal/pane IDs and process title match. No independent PID verification or server replay fix is asserted.",
         "terminalAdaptation": {
           "minimumContrast": 1,
@@ -643,7 +643,7 @@
       ],
       "preferenceMenu": {
         "implementation": "NSPopUpButton through App/PreferenceMenu.swift.",
-        "paletteStructure": "Twelve choices with native separator after Default and Follow Herdr.",
+        "paletteStructure": "Twelve choices with native separator after Default and Local Herdr theme.",
         "updateIdentity": "Compare non-separator item titles; preserve an unchanged menu during ordinary view updates.",
         "nativeBehavior": "System keyboard, focus, popup and disabled states."
       },
@@ -959,7 +959,7 @@
       "name": "Terminal Tab",
       "kind": "nav",
       "refersTo": "tab",
-      "description": "22pt native tabs in a shared 28pt bar; 3pt vertical / 8pt leading insets, 4pt gaps, 9pt text padding. 11% selected accent wash and 6% inactive neutral wash. Horizontal overflow only; zero vertical offset across input, selection and resize; no elastic bounce.",
+      "description": "22pt native tabs in a shared 28pt bar; 3pt vertical / 8pt leading insets, 4pt gaps, 9pt text padding. 10% light / 14% dark selected accent wash and 2% inactive neutral wash (4% on hover). Horizontal overflow only; zero vertical offset across input, selection and resize; no elastic bounce.",
       "nativeSource": "App/Tabs.swift: Tabs.Strip"
     },
     {
@@ -1044,7 +1044,7 @@
     "dos": [
       "Do retain HerdrX identity, original icon provenance and native SwiftUI/AppKit/Ghostty rendering.",
       "Do follow the ACCM reference's compact spacing using original Retina pixels and native points.",
-      "Do keep ten theme families plus Default/Follow Herdr, with appearance and accent independent.",
+      "Do keep ten theme families plus Default/Local Herdr theme, with appearance and accent independent.",
       "Do preserve saved sidebar width, terminal preferences, Space sessions, Agent navigation, tabs and splits.",
       "Do distinguish Space selection, Agent selection, pane focus, execution status and device connectivity.",
       "Do derive app text and state colors against the authored surfaces while preserving independent palette and accent choices.",
