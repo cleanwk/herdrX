@@ -24,6 +24,8 @@ brew update && brew upgrade --cask herdrx
 
 [Direct downloads and release notes](https://github.com/cleanwk/herdrX/releases/latest) are also available. Releases use signed Sparkle updates but are not yet notarized by Apple. If macOS blocks the first launch, use **System Settings → Privacy & Security → Open Anyway**.
 
+In-app updates can download signed delta packages from the three most recent stable releases. Sparkle uses a full download when no suitable delta is available or a delta fails. Initial installs and `brew upgrade --cask herdrx` still download the full archive. Delta size depends on what changed; packages that do not provide enough savings are omitted.
+
 ## Get started
 
 1. [Install Herdr](https://herdr.dev/docs/install/) 0.9.3 or later on each device you want to use.

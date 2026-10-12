@@ -3,10 +3,33 @@ import hashlib
 import pathlib
 import tempfile
 import unittest
-from appcast import validate
+from appcast import deltas, validate
 
 
 class AppcastTests(unittest.TestCase):
+    def test_delta_contract_and_rejections(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = pathlib.Path(temporary)
+            delta = directory / "HerdrX42-41.delta"
+            delta.write_bytes(b"fixture delta")
+            signature = base64.b64encode(b"s" * 64).decode()
+            feed = f'''<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"><channel><item>
+                <sparkle:deltas><enclosure url="https://github.com/cleanwk/herdrX/releases/download/v1.2.3/{delta.name}"
+                length="{delta.stat().st_size}" sparkle:deltaFrom="41" sparkle:edSignature="{signature}"/>
+                </sparkle:deltas></item></channel></rss>'''
+            self.assertEqual(deltas(feed, directory, "1.2.3", "42", {"41"}), [(delta, signature, "41")])
+            for old, new in [('deltaFrom="41"', 'deltaFrom="42"'), ('deltaFrom="41"', 'deltaFrom="../41"'),
+                             (delta.name, "../" + delta.name), ("github.com", "example.org"),
+                             ('length="13"', 'length="14"'), (signature, "")]:
+                with self.subTest(old=old), self.assertRaises(ValueError):
+                    deltas(feed.replace(old, new), directory, "1.2.3", "42", {"41"})
+            with self.assertRaises(ValueError): deltas(feed, directory, "1.2.3", "42", {"40"})
+            enclosure = feed[feed.index("<enclosure"):feed.index("/>") + 2]
+            with self.assertRaises(ValueError):
+                deltas(feed.replace("</sparkle:deltas>", enclosure + "</sparkle:deltas>"), directory, "1.2.3", "42")
+            delta.unlink()
+            with self.assertRaises(ValueError): deltas(feed, directory, "1.2.3", "42")
+
     def test_release_contract_and_rejections(self):
         with tempfile.TemporaryDirectory() as directory:
             archive = pathlib.Path(directory) / "HerdrX-1.2.3-universal.zip"

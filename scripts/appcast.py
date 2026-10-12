@@ -5,6 +5,7 @@ import hashlib
 import json
 import pathlib
 import plistlib
+import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -37,21 +38,52 @@ def validate(feed, metadata, info, archive, public_key):
     return signature
 
 
-def main():
+def deltas(feed, directory, version, build, allowed_builds=None):
+    """Validate every delta before using its filename or trusting its signature."""
+    result, sources = [], set()
+    for enclosure in ET.fromstring(feed).findall(f"./channel/item/{SPARKLE}deltas/enclosure"):
+        source = enclosure.get(SPARKLE + "deltaFrom", "")
+        if not re.fullmatch(r"[1-9][0-9]*", source) or int(source) >= int(build) or source in sources:
+            raise ValueError("Invalid or duplicate delta source build")
+        if allowed_builds is not None and source not in allowed_builds:
+            raise ValueError("Delta source was not a verified historical release")
+        filename = f"HerdrX{build}-{source}.delta"
+        expected = f"https://github.com/cleanwk/herdrX/releases/download/v{version}/{filename}"
+        if enclosure.get("url") != expected:
+            raise ValueError("Unexpected delta URL or filename")
+        path = directory / filename
+        if path.is_symlink() or not path.is_file() or int(enclosure.get("length", "0")) != path.stat().st_size or path.stat().st_size == 0:
+            raise ValueError("Missing delta or incorrect length")
+        signature = enclosure.get(SPARKLE + "edSignature", "")
+        if len(base64.b64decode(signature, validate=True)) != 64:
+            raise ValueError("Missing delta Ed25519 signature")
+        sources.add(source)
+        result.append((path, signature, source))
+    return sorted(result, key=lambda value: int(value[2]), reverse=True)
+
+
+def verify(directory, app, tool, key_file, public_key, allowed_builds=None):
     # The private key is only a path passed to Sparkle's official verifier.
-    directory, app, tool, key_file, public_key = sys.argv[1:]
     directory = pathlib.Path(directory)
     metadata_path = directory / "release.json"
     metadata = json.loads(metadata_path.read_text())
     info = plistlib.loads((pathlib.Path(app) / "Contents/Info.plist").read_bytes())
     archive, feed = directory / metadata["filename"], directory / "appcast.xml"
     signature = validate(feed.read_bytes(), metadata, info, archive, public_key)
+    patches = deltas(feed.read_bytes(), directory, metadata["version"], info["CFBundleVersion"], allowed_builds)
     subprocess.run([tool, "--verify", "--ed-key-file", key_file, str(feed)], check=True)
-    subprocess.run([tool, "--verify", "--ed-key-file", key_file, str(archive), signature], check=True)
+    for payload, payload_signature in [(archive, signature)] + [(path, sig) for path, sig, _ in patches]:
+        subprocess.run([tool, "--verify", "--ed-key-file", key_file, str(payload), payload_signature], check=True)
     metadata["signed_updates"] = True
     metadata["appcast_sha256"] = hashlib.sha256(feed.read_bytes()).hexdigest()
+    metadata["deltas"] = [dict(filename=path.name, from_build=source, size=path.stat().st_size,
+                               sha256=hashlib.sha256(path.read_bytes()).hexdigest()) for path, _, source in patches]
     metadata_path.write_text(json.dumps(metadata, indent=2) + "\n")
+    checksums = [(archive.name, metadata["sha256"]), (feed.name, metadata["appcast_sha256"])]
+    checksums.extend((delta["filename"], delta["sha256"]) for delta in metadata["deltas"])
+    (directory / "SHA256SUMS").write_text("".join(f"{digest}  {name}\n" for name, digest in checksums))
+    return metadata
 
 
 if __name__ == "__main__":
-    main()
+    verify(*sys.argv[1:])
