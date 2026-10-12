@@ -192,7 +192,7 @@ enum Theme {
             if family == "SF Mono" { $0.withCustom("font-style", defaults.string(forKey: "fontWeight") ?? "Regular") }
             $0.withFontThicken(!(defaults.object(forKey: "thinStrokes") as? Bool ?? true))
             $0.withCustom("adjust-cell-height", "\(Int(max(0, defaults.double(forKey: "lineSpacing") - 1) * 100))%")
-            $0.withCustom("copy-on-select", "false")
+            $0.withCustom("copy-on-select", "none")
             $0.withCustom("selection-clear-on-copy", "true")
             $0.withCustom("mouse-shift-capture", "never")
             $0.withCustom("mouse-reporting", (defaults.object(forKey: "disableMouseReporting") as? Bool ?? true) ? "false" : "true")

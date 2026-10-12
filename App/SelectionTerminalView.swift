@@ -102,7 +102,16 @@ class SelectionTerminalView: AppTerminalView {
                 hostSurface?.sendMouseButton(state: state, button: GHOSTTY_MOUSE_LEFT, modifiers: mods)
             }
         case .local:
-            super.mouseUp(with: event)
+            if event.modifierFlags.contains(.command), hostSurface?.isMouseCaptured == true {
+                let point = convert(event.locationInWindow, from: nil)
+                let mods = TerminalInputModifiers(from: event.modifierFlags)
+                // Preserve captured-link hover through the final position. A
+                // plain position update clears it even with reporting disabled.
+                hostSurface?.sendMousePos(x: point.x, y: bounds.height - point.y, modifiers: mods.union(.shift))
+                hostSurface?.sendMouseButton(state: GHOSTTY_MOUSE_RELEASE, button: GHOSTTY_MOUSE_LEFT, modifiers: mods)
+            } else {
+                super.mouseUp(with: event)
+            }
             if copyEligible, UserDefaults.standard.object(forKey: "copyOnSelect") as? Bool ?? true {
                 _ = copySelectedTextToPasteboard()
             }

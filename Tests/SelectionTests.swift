@@ -105,6 +105,7 @@ import Testing
         let link = h.point(row: 0, column: 1.25)
         h.view.mouseDown(with: h.event(.leftMouseDown, local: link, modifiers: .command))
         h.view.mouseUp(with: h.event(.leftMouseUp, local: link, modifiers: .command))
+        try await Task.sleep(for: .milliseconds(80))
         #expect(h.openedURLs == [url])
         try await Task.sleep(for: .milliseconds(80))
         #expect(h.output.data.isEmpty)
@@ -120,7 +121,7 @@ import Testing
         h.output.clear()
         #expect(h.view.paste(text: paste))
         try await Task.sleep(for: .milliseconds(80))
-        #expect(String(decoding: h.output.data, as: UTF8.self) == "\u{1b}[200~" + paste.replacingOccurrences(of: "\n", with: "\r") + "\u{1b}[201~")
+        #expect(String(decoding: h.output.data, as: UTF8.self) == "\u{1b}[200~" + paste + "\u{1b}[201~")
     }
 
     @Test func stationaryEdgesGrowAndCancellationStops() async throws {
@@ -154,6 +155,7 @@ import Testing
             defaults.set(family, forKey: "palette")
             for dark in [false, true] {
                 var normal: [NSColor]?
+                var states: [NSColor]?
                 for accent in Theme.accents {
                     defaults.set(accent, forKey: "accent")
                     let r = Theme.roles(dark: dark)
@@ -168,6 +170,18 @@ import Testing
                     }
                     if let normal { #expect(normal == [r.foreground, r.secondary, r.decoration]) }
                     normal = [r.foreground, r.secondary, r.decoration]
+                    var resolvedStates: [NSColor] = []
+                    NSAppearance(named: dark ? .darkAqua : .aqua)!.performAsCurrentDrawingAppearance {
+                        for state in [Theme.working, Theme.success, Theme.warning, Theme.failure] {
+                            let normalState = state.usingColorSpace(.sRGB)!
+                            resolvedStates.append(normalState)
+                            for surface in r.surfaces { #expect(ThemeColors.contrast(normalState, surface) >= 4.499) }
+                            let selectedState = Theme.selectedState(state).usingColorSpace(.sRGB)!
+                            for surface in r.selectedSurfaces { #expect(ThemeColors.contrast(selectedState, surface) >= 4.499) }
+                        }
+                    }
+                    if let states { #expect(states == resolvedStates, "Accent changed semantic state colors") }
+                    states = resolvedStates
                     #expect(r.foreground != r.secondary)
                     #expect(r.secondary != r.decoration)
                     #expect(r.accentWash != r.hover)
@@ -246,7 +260,9 @@ private final class LockedOutput: @unchecked Sendable {
     }
     func receive(_ text: String) { session.receive(text); session.waitForPendingOutput() }
     func clipboard(_ text: String) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(text, forType: .string) }
-    func point(row: Int, column: Double) -> NSPoint { NSPoint(x: column * cellWidth, y: view.bounds.height - (Double(row) + 0.5) * cellHeight) }
+    // The pinned engine default is 2pt padding on each edge. Cell metrics
+    // exclude that inset; include it before sending AppKit coordinates.
+    func point(row: Int, column: Double) -> NSPoint { NSPoint(x: 2 + column * cellWidth, y: view.bounds.height - 2 - (Double(row) + 0.5) * cellHeight) }
     func event(_ type: NSEvent.EventType, local: NSPoint, modifiers: NSEvent.ModifierFlags = [], clicks: Int = 1) -> NSEvent {
         NSEvent.mouseEvent(with: type, location: view.convert(local, to: nil), modifierFlags: modifiers,
             timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil,
