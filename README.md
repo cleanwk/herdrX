@@ -50,7 +50,7 @@ Stopped local sessions show a start action. Custom socket paths show connection 
 | ⌘⇧W / ⌘⌥W | Close pane / tab |
 | ⌘, | Settings |
 
-Drag terminal text to select it; **Copy on Select** copies once when you release and briefly shows “Copied”. Turn it off to retain a selection for ⌘C or the pane's Copy menu. Hold a drag at the top or bottom edge to extend through available terminal scrollback. With mouse reporting enabled, a click goes to the terminal app while a drag selects locally. Alternate-screen apps can only expose the history they render.
+Drag terminal text to select it; **Copy on Select** copies once when you release and briefly shows “Copied”. Turn it off to retain a selection for ⌘C or the pane's Copy menu. Hold a drag at the top or bottom edge to extend through available terminal scrollback. With mouse reporting enabled, a click goes to the terminal app while a drag selects locally. Alternate-screen apps can only expose the history they render. Mouse wheel and trackpad scrolling reach the attached session even with click reporting turned off. In read-only observation, Herdr currently exposes only the live viewport; use Reconnect when control is free, or explicitly Take Control, to scroll history.
 
 **Local Herdr theme** follows the local theme family; custom palette overrides and remote themes are not synced.
 

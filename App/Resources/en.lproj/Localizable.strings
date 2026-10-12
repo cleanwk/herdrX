@@ -300,7 +300,7 @@
 "Font weight is available for SF Mono." = "Font weight is available for SF Mono.";
 "Use finer font strokes for clear, balanced Agent output." = "Use finer text strokes.";
 "Mouse reporting" = "Mouse reporting";
-"Forward clicks to terminal apps. Hold Shift to select text locally." = "Forward clicks to terminal apps. Hold Shift to select text locally.";
+"Forward clicks to terminal apps. Drag to select text; scrolling always reaches the session." = "Forward clicks to terminal apps. Drag to select text; scrolling always reaches the session.";
 "Copy on select" = "Copy on select";
 "Copy text to the clipboard when you finish selecting it." = "Copy text to the clipboard when you finish selecting it.";
 "Import from Ghostty…" = "Import from Ghostty…";
@@ -434,7 +434,7 @@
 "Reads the local Herdr theme family. Custom colors and remote themes are not synced." = "Reads the local Herdr theme family. Custom colors and remote themes are not synced.";
 
 // Terminal coexistence and input recovery
-"Viewing only. Another client may control this terminal." = "Viewing only. Another client may control this terminal.";
+"Viewing only; history scrolling is unavailable. Reconnect or Take Control to scroll." = "Viewing only; history scrolling is unavailable. Reconnect or Take Control to scroll.";
 "Take Control…" = "Take Control…";
 "Take Control" = "Take Control";
 "Take control of this terminal?" = "Take control of this terminal?";
@@ -443,3 +443,5 @@
 "The foreground process has not returned to the shell. Input modes were left unchanged." = "The foreground process has not returned to the shell. Input modes were left unchanged.";
 "Could not verify the foreground shell. Input modes were left unchanged." = "Could not verify the foreground shell. Input modes were left unchanged.";
 "Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved." = "Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved.";
+
+"Viewing only — reconnect to scroll." = "Viewing only — reconnect to scroll.";

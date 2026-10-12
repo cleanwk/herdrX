@@ -146,7 +146,7 @@ private struct TerminalSettings: View {
                     Color.clear.frame(width: 0, height: 0)
                     VStack(alignment: .leading, spacing: 9) {
                         preferenceToggle("Thin strokes", description: "Use finer font strokes for clear, balanced Agent output.", value: $thin)
-                        preferenceToggle("Mouse reporting", description: "Forward clicks to terminal apps. Hold Shift to select text locally.", value: Binding(get: { !noMouse }, set: { noMouse = !$0 }))
+                        preferenceToggle("Mouse reporting", description: "Forward clicks to terminal apps. Drag to select text; scrolling always reaches the session.", value: Binding(get: { !noMouse }, set: { noMouse = !$0 }))
                         preferenceToggle("Copy on select", description: "Copy text to the clipboard when you finish selecting it.", value: $copy)
                         HStack(spacing: 10) {
                             Button("Restore Defaults") { size = 13.5; family = Theme.defaultFont; spacing = 1; thin = true; copy = true; noMouse = true; weight = "Regular" }
