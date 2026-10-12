@@ -36,16 +36,34 @@ public struct Session: Equatable, Sendable {
     public let spaces: [Item]
     public let tabs: [Item]
     public let panes: [Item]
+    public let agents: [Item]
     public let layouts: JSON
     public init(_ snapshot: JSON) throws {
         guard case .array = snapshot["workspaces"], case .array = snapshot["tabs"], case .array = snapshot["panes"] else { throw Failure("Incomplete session snapshot") }
         spaces = try snapshot["workspaces"].array.map { try Item($0, kind: "workspace") }
         tabs = try snapshot["tabs"].array.map { try Item($0, kind: "tab") }
         panes = try snapshot["panes"].array.map { try Item($0, kind: "pane") }
+        if case .array(let records) = snapshot["agents"] {
+            let values = Dictionary(snapshot["panes"].array.compactMap { value in value["pane_id"].string.map { ($0, value) } }, uniquingKeysWith: { first, _ in first })
+            agents = try records.compactMap { record in
+                guard let id = record["pane_id"].string, let pane = values[id],
+                      record["terminal_id"] == pane["terminal_id"], record["tab_id"] == pane["tab_id"],
+                      record["workspace_id"] == pane["workspace_id"] else { return nil }
+                var merged = pane.object
+                for (key, value) in record.object { merged[key] = value }
+                merged["agent"] = record["agent"]
+                if merged["agent"]?.string == nil, let tool = record["agent_session"]["agent"].string {
+                    merged["agent"] = .string(tool)
+                }
+                return try Item(.object(merged), kind: "pane")
+            }
+        } else {
+            agents = panes.filter { $0.agent != nil }
+        }
         layouts = snapshot["layouts"]
         let spaceIDs = Set(spaces.map(\.id))
         let tabKeys = Set(tabs.map { $0.workspace + "|" + $0.id })
-        guard Set(spaces.map(\.id)).count == spaces.count, Set(tabs.map(\.id)).count == tabs.count, Set(panes.map(\.id)).count == panes.count,
+        guard Set(spaces.map(\.id)).count == spaces.count, Set(tabs.map(\.id)).count == tabs.count, Set(panes.map(\.id)).count == panes.count, Set(agents.map(\.id)).count == agents.count,
               tabs.allSatisfy({ spaceIDs.contains($0.workspace) }),
               panes.allSatisfy({ pane in tabKeys.contains(pane.workspace + "|" + pane.tab) }) else { throw Failure("Invalid session topology") }
     }

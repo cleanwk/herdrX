@@ -7,29 +7,49 @@ import HerdCore
 final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfaceOpenURLDelegate, TerminalSurfaceHoverLinkDelegate {
     static let controller = TerminalController(configSource: .none, theme: TerminalTheme(light: .alabaster, dark: TerminalConfiguration { $0.withBackground("101012"); $0.withForeground("E2E2E2") }))
     let process = ByteProcess()
+    let observation = TerminalObservation()
     let session: InMemoryTerminalSession
     let view = TerminalView(frame: .zero)
     var surface: TerminalSurface?
     var command: String
+    var takeoverCommand: String
+    var observationCommand: (UInt16, UInt16) -> String
     var onExit: ((Int32) -> Void)?
+    var onObservationEnded: (() -> Void)?
+    private(set) var attachmentID = UUID()
     private(set) var hoverURL: URL?
-    init(command: String) {
+    init(command: String, takeoverCommand: String, observationCommand: @escaping (UInt16, UInt16) -> String) {
         self.command = command
+        self.takeoverCommand = takeoverCommand
+        self.observationCommand = observationCommand
         let process = self.process
-        session = InMemoryTerminalSession(write: { process.write($0) }, resize: { process.resize($0.columns, $0.rows) }, suppressesPixelOnlyResizes: true)
+        let observation = self.observation
+        session = InMemoryTerminalSession(write: { process.write($0) }, resize: {
+            process.resize($0.columns, $0.rows)
+            let columns = $0.columns, rows = $0.rows
+            Task { @MainActor in observation.resize(columns, rows) }
+        }, suppressesPixelOnlyResizes: true)
         super.init()
         view.controller = Self.controller; view.delegate = self
         view.configuration = TerminalSurfaceOptions(backend: .inMemory(session))
         let session = self.session
         process.output = { session.receive($0) }
-        process.exited = { [weak self] status in self?.onExit?(status) }
+        observation.output = { session.receive($0) }
+        observation.ended = { [weak self] _ in self?.onObservationEnded?() }
+        process.exited = { [weak self] status in
+            guard let self else { return }
+            self.process.stop(); self.repair()
+            self.observation.start(self.observationCommand)
+            self.onExit?(status)
+        }
         view.onFocus = { [weak self] in self?.focused?() }
         process.start(command)
     }
     var focused: (() -> Void)?
-    func restart() { session.receive(Data("\u{1b}[<u\u{1b}[=0u".utf8)); process.start(command) }
-    func repair() { session.receive(Data("\u{1b}[<u\u{1b}[=0u".utf8)) }
-    func interruptAndRepair() { repair(); process.write(Data("\u{03}stty sane\n".utf8)) }
+    func restart(takeover: Bool = false) { attachmentID = UUID(); observation.stop(); repair(); process.start(takeover ? takeoverCommand : command) }
+    func repair() { view.cancelSelectionGesture(); session.receive(TerminalInputRecovery.bytes) }
+    func interrupt() { process.write(Data([3])) }
+    func stop() { attachmentID = UUID(); observation.stop(); process.stop() }
     func terminalDidAttachSurface(_ surface: TerminalSurface) { self.surface = surface; view.hostSurface = surface }
     func terminalDidDetachSurface() { surface = nil; view.hostSurface = nil }
     func terminalDidRequestOpenURL(_ url: String, kind: TerminalOpenURLKind) {

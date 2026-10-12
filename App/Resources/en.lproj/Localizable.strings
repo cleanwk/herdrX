@@ -182,7 +182,6 @@
 "Forget Connection" = "Forget Connection";
 "Only this connection is removed. Server sessions and processes continue." = "Only this connection is removed. Server sessions and processes continue.";
 "Interrupt the foreground task?" = "Interrupt the foreground task?";
-"Sends Ctrl-C followed by stty sane to this terminal." = "Sends Ctrl-C followed by stty sane to this terminal.";
 "Interrupt and Repair" = "Interrupt and Repair";
 
 "New Terminal Tab" = "New Terminal Tab";
@@ -433,3 +432,14 @@
 "Local Herdr theme" = "Local Herdr theme";
 
 "Reads the local Herdr theme family. Custom colors and remote themes are not synced." = "Reads the local Herdr theme family. Custom colors and remote themes are not synced.";
+
+// Terminal coexistence and input recovery
+"Viewing only. Another client may control this terminal." = "Viewing only. Another client may control this terminal.";
+"Take Control…" = "Take Control…";
+"Take Control" = "Take Control";
+"Take control of this terminal?" = "Take control of this terminal?";
+"No agents reported by Herdr." = "No agents reported by Herdr.";
+"Untitled Task" = "Untitled Task";
+"The foreground process has not returned to the shell. Input modes were left unchanged." = "The foreground process has not returned to the shell. Input modes were left unchanged.";
+"Could not verify the foreground shell. Input modes were left unchanged." = "Could not verify the foreground shell. Input modes were left unchanged.";
+"Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved." = "Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved.";

@@ -2,7 +2,7 @@
 
 A native macOS GUI for [Herdr](https://herdr.dev). Work with local and remote terminal spaces, tabs, split panes, and coding agents in one window.
 
-Herdr owns sessions, processes, layouts, and agent state. HerdrX presents them through the existing Herdr API, with SwiftUI, AppKit, and a Ghostty terminal surface. Closing the GUI leaves Herdr sessions running.
+Herdr owns sessions, processes, layouts, and agent state. HerdrX presents them through the existing Herdr API, with SwiftUI, AppKit, and a Ghostty terminal surface. Closing the GUI leaves Herdr sessions running. Opening a pane uses an ordinary attachment; if another client owns input, HerdrX observes it read-only. Reconnect retries without displacing that client; Take Control explicitly confirms a takeover. Restore Terminal Input checks that the foreground has returned to the shell before clearing stale keyboard and mouse reporting modes, preserving history.
 
 ![HerdrX workbench](docs/accm-fidelity/screenshots/workbench-tokyo-dark.png)
 

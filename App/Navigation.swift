@@ -21,7 +21,7 @@ extension Desk {
         let device = devices.first { $0.id == row.device }
         let context = [device?.displayName, device?.endpoint.socketPath, sessions[row.device]?.spaces.first { $0.id == row.pane.workspace }?.label, row.pane.cwd]
         let metadata = ["model", "account", "context", "quota"].compactMap { row.pane.tokens[$0]?.string }
-        return ([title(device: row.device, pane: row.pane)] + context.compactMap { $0 } + metadata).joined(separator: "\n")
+        return ([title(device: row.device, pane: row.pane)] + [row.pane.agent].compactMap { $0 } + context.compactMap { $0 } + metadata).joined(separator: "\n")
     }
     func valid(_ row: JumpRow) -> Bool {
         guard let device = row.device else { return false }
@@ -56,13 +56,15 @@ extension Desk {
         // Reserve the largest possible gutter inset as well as 24 columns × 6 rows.
         return CGSize(width: max(160, font * 0.65 * 24 + PaneMetrics.horizontalOverhead) + PaneMetrics.splitGap, height: max(100, font * 1.5 * 6 + PaneMetrics.verticalOverhead) + PaneMetrics.splitGap)
     }
-    func recoveryLabel(_ key: PaneKey) -> String { L("Attachment ended. The server pane may still be running.") }
-    func reconnect(_ key: PaneKey) {
+    func recoveryLabel(_ key: PaneKey) -> String {
+        L(terminals[key]?.observation.isRunning == true ? "Viewing only. Another client may control this terminal." : "Attachment ended. The server pane may still be running.")
+    }
+    func reconnect(_ key: PaneKey, takeover: Bool = false) {
         guard terminals[key] != nil, canWrite(key.device) && sessions[key.device]?.panes.contains(where: { $0.id == key.pane }) == true else { return }
-        do {
-            let alert = NSAlert(); alert.messageText = L("Reconnect to this pane?"); alert.informativeText = L("This takes attachment ownership from any other client. The server process keeps running.")
-            alert.addButton(withTitle: L("Reconnect")); alert.addButton(withTitle: L("Cancel")); guard alert.runModal() == .alertFirstButtonReturn else { return }
+        if takeover {
+            let alert = NSAlert(); alert.messageText = L("Take control of this terminal?"); alert.informativeText = L("This takes attachment ownership from any other client. The server process keeps running.")
+            alert.addButton(withTitle: L("Take Control")); alert.addButton(withTitle: L("Cancel")); guard alert.runModal() == .alertFirstButtonReturn else { return }
         }
-        ended.remove(key); exitStatus[key] = nil; terminals[key]?.restart(); requestFocus()
+        ended.remove(key); exitStatus[key] = nil; terminals[key]?.restart(takeover: takeover); requestFocus()
     }
 }

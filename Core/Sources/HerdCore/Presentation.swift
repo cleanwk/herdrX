@@ -23,7 +23,17 @@ public enum DisplayTitle {
             ?? meaningful(pane.terminalTitle, tool: pane.agent)
             ?? pane.agent ?? fallback
     }
+    public static func agentRow(_ pane: Item, tab: Item?, fallback: String) -> String {
+        authoredTask(pane.customLabel, tool: pane.agent) ?? meaningful(pane.agentTitle, tool: pane.agent)
+            ?? authoredTask(tab?.customLabel, tool: pane.agent) ?? meaningful(pane.sessionName, tool: pane.agent)
+            ?? meaningful(pane.terminalTitle, tool: pane.agent) ?? pane.cwd.map(directory) ?? fallback
+    }
     /// Shorten only a recognizable shell location, preserving authored labels and OSC tasks.
+    private static func authoredTask(_ value: String?, tool: String?) -> String? {
+        guard let value = clean(value) else { return nil }
+        let brands = [tool, "codex", "claude", "gemini", "opencode", "kimi", "grok", "cursor", "copilot", "pi", "omp"].compactMap { $0?.lowercased() }
+        return brands.contains(value.lowercased()) ? nil : value
+    }
     public static func terminal(_ pane: Item, fallback: String = "Terminal") -> String {
         if let label = pane.customLabel { return label }
         if let title = pane.terminalTitle {
