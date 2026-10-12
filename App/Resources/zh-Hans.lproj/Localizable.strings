@@ -464,3 +464,5 @@
 "Herdr Commands" = "Herdr 命令";
 "No popup commands configured" = "尚未配置弹出命令";
 "No matching spaces, terminals, agents or commands" = "没有匹配的空间、终端、智能体或命令";
+
+"Plugin terminal disconnected. Its Herdr tab is available to reconnect." = "插件终端已断开，可在对应的 Herdr 标签页中重新连接。";

@@ -464,3 +464,5 @@
 "Herdr Commands" = "Herdr Commands";
 "No popup commands configured" = "No popup commands configured";
 "No matching spaces, terminals, agents or commands" = "No matching spaces, terminals, agents or commands";
+
+"Plugin terminal disconnected. Its Herdr tab is available to reconnect." = "Plugin terminal disconnected. Its Herdr tab is available to reconnect.";

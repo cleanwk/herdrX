@@ -96,6 +96,9 @@ extension Desk {
                     let key = PaneKey(device: device.id, pane: paneID)
                     let attachment = TerminalAttachment.command(endpoint: device.endpoint, socket: socket, terminal: terminalID, mode: .control)
                     let window = FloatingTerminal(title: command.label + " · " + device.displayName, command: attachment)
+                    window.exited = { [weak self] status in
+                        if status != 0 { self?.message = L("Plugin terminal disconnected. Its Herdr tab is available to reconnect.") }
+                    }
                     window.userClosed = { [weak self] in
                         guard let self, transportIdentity(device.id) == transport, canWrite(device.id), (try? rpc(device.id).path) == client.path else { return }
                         Task {

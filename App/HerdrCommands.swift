@@ -66,6 +66,7 @@ extension Desk {
     }
     func present(_ terminal: FloatingTerminal, pane: PaneKey? = nil) {
         floatingTerminals[terminal.id] = terminal
+        terminal.focusChanged = { [weak self] in self?.objectWillChange.send() }
         if let pane { floatingPanes[pane] = terminal.id; terminals.removeValue(forKey: pane)?.stop(); objectWillChange.send() }
         terminal.didClose = { [weak self, weak terminal] in
             guard let self, let terminal else { return }

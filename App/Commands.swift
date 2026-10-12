@@ -19,7 +19,10 @@ struct WorkbenchCommands: Commands {
     }
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            button("Close", "close", "w")
+            Button(L("Close")) {
+                if let popup = NSApp.keyWindow?.windowController as? FloatingTerminal { popup.close() }
+                else { actions?.perform("close") }
+            }.keyboardShortcut("w").disabled(!(NSApp.keyWindow?.windowController is FloatingTerminal) && actions?.enabled("close") != true)
             Divider()
             button("New Terminal Tab", "terminal", "t")
             button("Quick New Space", "space", "n", [.command, .shift])

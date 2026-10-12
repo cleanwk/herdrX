@@ -5,13 +5,15 @@ import HerdCore
 /// Transient config commands and Herdr-owned plugin attachments use the same
 /// real Ghostty/PTY byte path, without creating a second shell sidebar model.
 @MainActor
-final class FloatingTerminal: NSWindowController, NSWindowDelegate, TerminalSurfaceLifecycleDelegate {
+final class FloatingTerminal: NSWindowController, NSWindowDelegate, TerminalSurfaceLifecycleDelegate, TerminalSurfaceCloseDelegate {
     let id = UUID()
     let process = ByteProcess()
     let session: InMemoryTerminalSession
-    let terminalView = InterruptTerminalView(frame: .zero)
+    let terminalView = PopupTerminalView(frame: .zero)
     var didClose: (() -> Void)?
     var userClosed: (() -> Void)?
+    var focusChanged: (() -> Void)?
+    var exited: ((Int32) -> Void)?
     private var finished = false
     private var automaticClose = false
     init(title: String, command: String, environment: [String: String]? = nil, width: JSON = .null, height: JSON = .null) {
@@ -23,7 +25,7 @@ final class FloatingTerminal: NSWindowController, NSWindowDelegate, TerminalSurf
             if let cells = value.int { result = Double(cells) * cell }
             else if let string = value.string, string.hasSuffix("%"), let percent = Double(string.dropLast()) { result = total * percent / 100 }
             else { result = fallback }
-            return max(minimum, min(total, result))
+            return max(minimum, min(total, result.isFinite ? result : fallback))
         }
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: size(width, total: available.width, cell: 8, fallback: 800, minimum: 320), height: size(height, total: available.height, cell: 17, fallback: 460, minimum: 180)), styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         window.title = title; window.isReleasedWhenClosed = false; window.level = .floating
@@ -38,7 +40,7 @@ final class FloatingTerminal: NSWindowController, NSWindowDelegate, TerminalSurf
         window.contentView?.addSubview(terminalView)
         let session = self.session
         process.output = { [weak session] in session?.receive($0) }
-        process.exited = { [weak self] _ in self?.finish() }
+        process.exited = { [weak self] status in self?.exited?(status); self?.finish() }
         window.center(); window.makeFirstResponder(terminalView)
         // Install owner callbacks before launch can finish (including exec errors).
         Task { [weak self] in guard let self, !finished else { return }; process.start(command, environment: environment) }
@@ -46,11 +48,26 @@ final class FloatingTerminal: NSWindowController, NSWindowDelegate, TerminalSurf
     required init?(coder: NSCoder) { fatalError() }
     func terminalDidAttachSurface(_ surface: TerminalSurface) { terminalView.hostSurface = surface }
     func terminalDidDetachSurface() { terminalView.hostSurface = nil }
+    func terminalDidClose(processAlive: Bool) { close() }
+    func windowDidBecomeKey(_ notification: Notification) { focusChanged?() }
+    func windowDidResignKey(_ notification: Notification) { focusChanged?() }
     func finish() { automaticClose = true; close() }
     func windowWillClose(_ notification: Notification) {
         guard !finished else { return }; finished = true
         process.stop()
         if !automaticClose { userClosed?() }
         didClose?()
+    }
+}
+
+@MainActor
+final class PopupTerminalView: InterruptTerminalView {
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.type == .keyDown, window?.firstResponder === self,
+           event.modifierFlags.intersection([.command, .control, .option, .shift]) == .command,
+           event.charactersIgnoringModifiers?.lowercased() == "w" {
+            window?.performClose(nil); return true
+        }
+        return super.performKeyEquivalent(with: event)
     }
 }

@@ -43,7 +43,7 @@ command = ["/bin/sh", "-c", "printf 'PLUGIN_OK'; exec sleep 60"]
             assert before["running"] is False
             cli("remote-client-bridge")
             after = json.loads(cli("status", "server", "--json"))
-            assert after["running"] and after["socket"].startswith(temp)
+            assert after["running"] and Path(after["socket"]).resolve().is_relative_to(root.resolve())
             path = after["socket"]
             def rpc(method, params=None):
                 with socket.socket(socket.AF_UNIX) as connection:

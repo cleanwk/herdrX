@@ -29,7 +29,10 @@ import Testing
         while !FileManager.default.fileExists(atPath: marker.path), Date() < start { try await Task.sleep(for: .milliseconds(30)) }
         let text = try String(contentsOf: marker, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
         let pid = try #require(Int32(text))
-        popup.window?.performClose(nil)
+        popup.window?.makeKeyAndOrderFront(nil)
+        popup.window?.makeFirstResponder(popup.terminalView)
+        let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command, timestamp: 0, windowNumber: popup.window!.windowNumber, context: nil, characters: "w", charactersIgnoringModifiers: "w", isARepeat: false, keyCode: 13))
+        #expect(popup.terminalView.performKeyEquivalent(with: event))
         let deadline = Date().addingTimeInterval(4)
         while kill(pid, 0) == 0, Date() < deadline { try await Task.sleep(for: .milliseconds(30)) }
         #expect(kill(pid, 0) != 0)
