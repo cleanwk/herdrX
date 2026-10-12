@@ -1,0 +1,24 @@
+# Herdr machine and command integration
+
+## Behavior
+
+- Connections → Follow Herdr machine directory defaults on in normal app launches. Startup, app activation and a 60-second loop read the local `herdr machine list --json`. Reads coalesce; disabling follow cancels the active read and keeps saved devices. An explicit import remains available with follow off.
+- Ownership is `source: "herdr-machine:<profileId>"`. Legacy `herdr-machine.` SSH IDs migrate only when reading records without a source key. New manual records encode `source: null`. Reconciliation never adopts/deletes manual devices, even on ID or endpoint collisions. Missing/disabled managed machines detach locally; remote sessions are not stopped. Invalid individual records retain their old device, and failed or ambiguous catalog reads produce no deletion plan.
+- Import does no SSH work. Each enabled valid record is saved immediately with its target and session, even if the remote machine/session is unavailable. Label updates preserve active transports; target/session changes clear cached sockets and attachments.
+- Named SSH endpoints resolve `herdr --session <name> status server --json` during connection. If stopped, `remote-client-bridge </dev/null` bootstraps Herdr, followed by readiness polling. SSH config/port are retained. Resolved sockets are cached for the current transport and used by terminal attachments; reconnects resolve again after container rebuilds. Explicit socket endpoints keep their previous behavior.
+- Local `~/.config/herdr/config.toml` is reloaded on startup/activation and every 60 seconds. TOMLKit 0.6.0 parses normal TOML, including inline arrays, comments and multiline/literal commands. `ui.tab_bar_right` command outputs appear in the sidebar footer; interval/timeout defaults match Herdr (5s/2s). Invalid edits stop old commands. Commands have deadlines/output limits and process-group cancellation. Nonzero/timeout results hide the status entry, as in Herdr.
+- `keys.command` popup entries appear in ⌘K and Herdr Commands. Each runs locally in a floating Ghostty terminal, using the selected local pane's cwd/context when available. When a remote device is selected, local commands use the local connection/home context. Only the documented available `HERDR_ACTIVE_*`, socket and binary values are injected. Exit closes the window; closing stops that transient PTY.
+- Enabled plugin actions/panes from every connected device appear in ⌘K and Plugins, without selecting Local or visiting Settings. Commands retain device/plugin identity, contexts and transport generation. RPC capability errors appear in the menu; Refresh Plugins retries discovery. Herdr executes plugins.
+- Herdr 0.9.3's popup placement returns no terminal ID. Floating plugin windows therefore use `plugin.pane.open` with tab placement, an explicit workspace, and `focus:false`. The server-owned tab remains discoverable. Selecting it raises its floating window without attaching a second controller. User-closing the window verifies pane/terminal identity and invokes `plugin.pane.close`. Disconnect/app quit only detach and leave the server pane intact.
+
+## Automated checks
+
+- `Core/Tests/HerdCoreTests/HerdrMachinesTests.swift`: local/offline import, source migration, manual collisions, delta application, disabled/missing deletion, failure safety, per-record tolerance, endpoint/draft validation.
+- `RemoteHerdrTests.swift`: running/stopped/malformed status, bootstrap order, fresh socket, explicit-socket compatibility and SSH options.
+- `HerdrConfigTests.swift`: ACC-style arrays, escaped/literal/multiline commands, inline tables, defaults, invalid TOML/intervals and bounded plain-text output.
+- `CommandProcessTests.swift`: cancellation, deadline, output bounds and stderr.
+- `Tests/FloatingTerminalTests.swift`: real Ghostty/PTY window closes on process exit; user close terminates its owned process and invokes the correct callback exactly once. Runs with the existing selection/Ctrl-C tests in the hostless native bundle.
+- `scripts/herdr-integration-fixture.py`: real Herdr 0.9.3 stopped-server bootstrap, status/socket resolution, plugin list/action, attachable tab pane, `pane.get`, targeted plugin close and preservation of the original workspace terminal. Uses disposable XDG state and a named session; runs on Linux and macOS CI.
+- Existing coexistence, pane geometry, PTY stress, tabs and native text input tests remain in CI, followed by a universal app build and package.
+
+Linux real-Herdr bootstrap/plugin integration and six Python regression tests passed locally. Full macOS CI result is recorded in PR #23. No production ACC host, SSH credentials or user config was changed. Live ACC stop/rebuild latency and the user's own config/plugin commands require verification on their machine; fixtures use the same public contracts but synthetic commands.

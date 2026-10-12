@@ -78,11 +78,11 @@ extension Desk {
         guard commandAvailable(id) else { return }
         if let popup = herdrConfig.popups.first(where: { $0.id == id }) { openConfigPopup(popup); return }
         guard let command = pluginCommands.first(where: { $0.id == id }), let device = devices.first(where: { $0.id == command.device }), let client = try? rpc(device.id) else { return }
-        let context = pluginContext(device.id), request = pluginRequests[device.id], socket = attachmentSocket(device)
+        let context = pluginContext(device.id), request = pluginRequests[device.id], socket = attachmentSocket(device), transport = transportIdentity(device.id)
         busy.insert(id)
         Task {
             defer { busy.remove(id) }
-            func current() -> Bool { canWrite(device.id) && (try? rpc(device.id).path) == client.path && devices.contains(where: { $0.id == device.id && $0.endpoint == device.endpoint }) }
+            @MainActor func current() -> Bool { transportIdentity(device.id) == transport && canWrite(device.id) && (try? rpc(device.id).path) == client.path && devices.contains(where: { $0.id == device.id && $0.endpoint == device.endpoint }) }
             do {
                 guard current() else { return }
                 if command.pane {
@@ -97,11 +97,11 @@ extension Desk {
                     let attachment = TerminalAttachment.command(endpoint: device.endpoint, socket: socket, terminal: terminalID, mode: .control)
                     let window = FloatingTerminal(title: command.label + " · " + device.displayName, command: attachment)
                     window.userClosed = { [weak self] in
-                        guard let self, canWrite(device.id), (try? rpc(device.id).path) == client.path else { return }
+                        guard let self, transportIdentity(device.id) == transport, canWrite(device.id), (try? rpc(device.id).path) == client.path else { return }
                         Task {
                             do {
                                 let existing = try await client.call("pane.get", ["pane_id": .string(paneID)])["pane"]
-                                guard existing["terminal_id"].string == terminalID, (try? self.rpc(device.id).path) == client.path else { return }
+                                guard self.transportIdentity(device.id) == transport, existing["terminal_id"].string == terminalID, (try? self.rpc(device.id).path) == client.path else { return }
                                 _ = try await client.call("plugin.pane.close", ["pane_id": .string(paneID)])
                             } catch { if (try? self.rpc(device.id).path) == client.path { self.message = error.localizedDescription } }
                         }

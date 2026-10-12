@@ -19,7 +19,8 @@ extension Desk {
                 statusTasks[entry.id] = Task { [weak self] in
                     while !Task.isCancelled {
                         do {
-                            let output = try await CommandProcess.run("/bin/zsh", ["-lc", entry.command], input: Data(), timeout: TimeInterval(entry.timeout), outputLimit: 64 * 1024)
+                            guard let context = self?.localCommandContext() else { return }
+                            let output = try await CommandProcess.run("/bin/zsh", ["-lc", "cd " + quote(context.cwd) + " && " + entry.command], input: Data(), timeout: TimeInterval(entry.timeout), outputLimit: 64 * 1024, environment: context.environment)
                             try Task.checkCancellation()
                             self?.statusOutputs[entry.id] = HerdrConfig.statusText(output)
                         } catch is CancellationError { return }
@@ -39,20 +40,27 @@ extension Desk {
         if device.endpoint.kind == "tailcat" { return (try? rpc(device.id).path) ?? device.endpoint.socketPath }
         return resolvedSockets[device.id] ?? device.endpoint.socketPath
     }
-    func openConfigPopup(_ entry: HerdrConfig.Popup) {
+    func localCommandContext() -> (environment: [String: String], cwd: String) {
         var environment = ProcessInfo.processInfo.environment
         for key in Array(environment.keys) where key.hasPrefix("HERDR_") { environment.removeValue(forKey: key) }
         var cwd = NSHomeDirectory()
+        let paths = [NSHomeDirectory() + "/.local/bin", "/opt/homebrew/bin", "/usr/local/bin"] + (environment["PATH"] ?? "").split(separator: ":").map(String.init)
+        environment["HERDR_BIN_PATH"] = paths.map { $0 + "/herdr" }.first { FileManager.default.isExecutableFile(atPath: $0) }
         let local = devices.first { $0.id == selectedDevice && $0.endpoint.kind == "local" } ?? devices.first { $0.endpoint.kind == "local" }
         if let local {
             environment["HERDR_SOCKET_PATH"] = local.endpoint.socketPath
             if selectedDevice == local.id {
-                environment["HERDR_WORKSPACE_ID"] = selectedSpace
-                environment["HERDR_TAB_ID"] = selectedTab
+                environment["HERDR_ACTIVE_WORKSPACE_ID"] = selectedSpace
+                environment["HERDR_ACTIVE_TAB_ID"] = selectedTab
                 environment["HERDR_ACTIVE_PANE_ID"] = currentPane?.id
+                environment["HERDR_ACTIVE_PANE_CWD"] = currentPane?.cwd
                 cwd = currentPane?.cwd ?? cwd
             }
         }
+        return (environment, cwd)
+    }
+    func openConfigPopup(_ entry: HerdrConfig.Popup) {
+        let (environment, cwd) = localCommandContext()
         let terminal = FloatingTerminal(title: entry.title, command: "cd " + quote(cwd) + " && " + entry.command, environment: environment, width: entry.width, height: entry.height)
         present(terminal)
     }

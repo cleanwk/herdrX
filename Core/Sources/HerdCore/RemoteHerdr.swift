@@ -26,7 +26,8 @@ public enum RemoteHerdr {
         if first.running { return first.socket }
         // Herdr bootstraps the named server through this bridge and exits on EOF.
         _ = try await run(arguments(endpoint, command: ["remote-client-bridge"]))
-        for _ in 0..<20 {
+        let deadline = Date().addingTimeInterval(10)
+        while Date() < deadline {
             try Task.checkCancellation()
             let next = try Status(await run(probe))
             if next.running { return next.socket }

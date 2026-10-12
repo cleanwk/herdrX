@@ -155,6 +155,8 @@ final class Desk: ObservableObject {
     private var tunnels: [String: Process] = [:]
     var resolvedSockets: [String: String] = [:]
     private var paths: [String: String] = [:]
+    private var transportIDs: [String: UUID] = [:]
+    func transportIdentity(_ id: String) -> UUID? { transportIDs[id] }
     private var connectionIDs: [String: UUID] = [:]
     private var polls: [String: Task<Void, Never>] = [:]
     private var remoteLayouts: [String: Layout] = [:]
@@ -251,7 +253,7 @@ final class Desk: ObservableObject {
     }
     func add(_ device: Device) { devices.append(device); save(); connect(device) }
     private func detach(_ id: String) {
-        resolvedSockets[id] = nil
+        resolvedSockets[id] = nil; transportIDs[id] = nil
         invalidatePlugins(id)
         localStarts.removeValue(forKey: id)?.cancel()
         connectionIDs[id] = nil; refreshIDs[id] = nil
@@ -283,7 +285,7 @@ final class Desk: ObservableObject {
                         tailcat?.stop()
                         if self.connectionIDs[device.id] == generation { self.tailcats[device.id] = nil }
                         if let tunnel, tunnel.isRunning { tunnel.terminate() }
-                        if self.connectionIDs[device.id] == generation, self.paths[device.id] == path { self.paths[device.id] = nil; self.tunnels[device.id] = nil }
+                        if self.connectionIDs[device.id] == generation, self.paths[device.id] == path { self.paths[device.id] = nil; self.tunnels[device.id] = nil; self.transportIDs[device.id] = nil }
                         if remote { try? FileManager.default.removeItem(atPath: path); try? FileManager.default.removeItem(at: diagnostic) }
                     }
                     if device.endpoint.kind == "tailcat" {
@@ -316,7 +318,7 @@ final class Desk: ObservableObject {
                             try await Task.sleep(for: .milliseconds(100))
                         }
                     }
-                    try Task.checkCancellation(); self.paths[device.id] = path
+                    try Task.checkCancellation(); self.paths[device.id] = path; self.transportIDs[device.id] = UUID()
                     while !Task.isCancelled {
                         if let tunnel, !tunnel.isRunning { throw Failure("SSH connection closed") }
                         try await self.refresh(device.id, client: RPC(path: path)); delay = 1

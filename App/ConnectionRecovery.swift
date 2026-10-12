@@ -39,12 +39,12 @@ struct ConnectionRecovery: View {
                     Text("Connection Details").font(.headline)
                     if let issue = state.issue { Text(L(issue.guidance)).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true) }
                     ScrollView {
-                        Text(DisplayTitle.detail([device.endpoint.target, device.endpoint.socketPath]) + "\n\n" + (state.issue?.detail ?? ""))
+                        Text(DisplayTitle.detail([device.endpoint.target, device.endpoint.session, device.endpoint.socketPath]) + "\n\n" + (state.issue?.detail ?? ""))
                             .font(.system(size: 11)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
                     }.frame(maxHeight: 180)
                     Button("Copy Details") {
                         NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(DisplayTitle.detail([device.displayName, device.endpoint.target, device.endpoint.socketPath]) + "\n" + (state.issue?.detail ?? ""), forType: .string)
+                        NSPasteboard.general.setString(DisplayTitle.detail([device.displayName, device.endpoint.target, device.endpoint.session, device.endpoint.socketPath]) + "\n" + (state.issue?.detail ?? ""), forType: .string)
                     }
                 }.padding(16).frame(width: 320)
             }

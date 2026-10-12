@@ -27,7 +27,12 @@ public struct HerdrConfig: Equatable, Sendable {
         let value = try JSONDecoder().decode(JSON.self, from: Data(table.convert(to: .json).utf8))
         separator = value["ui"]["tab_bar_right_separator"].string ?? " "
         for (index, row) in value["ui"]["tab_bar_right"].array.prefix(16).enumerated() where row["type"].string == "command" {
-            let interval = row["interval_seconds"].int ?? 5, timeout = row["timeout_seconds"].int ?? 2
+            func seconds(_ key: String, fallback: Int) -> Int {
+                if row[key] == .null { return fallback }
+                guard case .number(let n) = row[key], let value = row[key].int, Double(value) == n else { return 0 }
+                return value
+            }
+            let interval = seconds("interval_seconds", fallback: 5), timeout = seconds("timeout_seconds", fallback: 2)
             guard let command = row["command"].string, !command.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                   (1...31_536_000).contains(interval), (1...3600).contains(timeout) else { continue }
             status.append(StatusCommand(id: "status-\(index)", command: command, interval: interval, timeout: timeout))
