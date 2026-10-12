@@ -60,14 +60,16 @@ class SelectionTerminalView: AppTerminalView {
         restoresReporting = reporting && hostSurface?.performBindingAction("toggle_mouse_reporting") == true
         gesture = .local
         copyEligible = event.clickCount > 1 || event.modifierFlags.contains(.shift)
-        super.mouseDown(with: event)
         if event.modifierFlags.contains(.command), hostSurface?.isMouseCaptured == true {
             // Captured links require Shift for hover discovery in this engine.
-            // Add it only to hover after the fresh, unmodified anchor was set.
+            // Its embedded adapter drops same-position modifier changes, so
+            // refresh hover before pressing. No key or shifted press is sent.
             let point = convert(event.locationInWindow, from: nil)
+            hostSurface?.sendMousePos(x: -1, y: -1)
             hostSurface?.sendMousePos(x: point.x, y: bounds.height - point.y,
                 modifiers: TerminalInputModifiers(from: event.modifierFlags).union(.shift))
         }
+        super.mouseDown(with: event)
     }
 
     override func mouseDragged(with event: NSEvent) {

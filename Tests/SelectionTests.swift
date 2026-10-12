@@ -103,10 +103,15 @@ import Testing
         h.receive("\u{1b}[2J\u{1b}[H\u{1b}]8;;" + url + "\u{1b}\\LINK\u{1b}]8;;\u{1b}\\")
         try await Task.sleep(for: .milliseconds(550))
         let link = h.point(row: 0, column: 1.25)
-        h.view.mouseDown(with: h.event(.leftMouseDown, local: link, modifiers: .command))
-        h.view.mouseUp(with: h.event(.leftMouseUp, local: link, modifiers: .command))
-        try await Task.sleep(for: .milliseconds(80))
-        #expect(h.openedURLs == [url])
+        for _ in 0..<2 {
+            // A real pointer may already be on this cell before Command is
+            // pressed; the engine deduplicates repeated cursor coordinates.
+            h.view.mouseMoved(with: h.event(.mouseMoved, local: link))
+            h.view.mouseDown(with: h.event(.leftMouseDown, local: link, modifiers: .command))
+            h.view.mouseUp(with: h.event(.leftMouseUp, local: link, modifiers: .command))
+            try await Task.sleep(for: .milliseconds(550))
+        }
+        #expect(h.openedURLs == [url, url])
         try await Task.sleep(for: .milliseconds(80))
         #expect(h.output.data.isEmpty)
 
