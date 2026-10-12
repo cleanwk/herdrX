@@ -80,6 +80,7 @@ targets:
     platform: macOS
     sources:
       - App/SelectionTerminalView.swift
+      - App/InterruptTerminalView.swift
       - App/Theme.swift
       - App/ThemeColors.swift
       - App/Localization.swift

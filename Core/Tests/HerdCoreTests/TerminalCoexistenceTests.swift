@@ -69,4 +69,26 @@ final class TerminalCoexistenceTests: XCTestCase {
         fields["foreground_processes"] = .array([.object(["pid": .number(42), "name": .string("codex")])])
         XCTAssertFalse(TerminalInputRecovery.isIdleShell(.object(fields), pane: "p"), "exec-ed agent keeps the shell PID")
     }
+    func testKeyboardNegotiationIsDetectedAcrossEveryReadBoundary() {
+        for sequence in ["\u{1b}[>7u", "\u{1b}[>31u", "\u{1b}[=3u", "\u{1b}[=3;2u", "\u{1b}[>4;1m", "\u{1b}[>4;2m"] {
+            let bytes = Data(sequence.utf8)
+            for split in 0...bytes.count {
+                let monitor = TerminalKeyboardMonitor()
+                let first = monitor.append(bytes.prefix(split))
+                let second = monitor.append(bytes.dropFirst(split))
+                XCTAssertTrue(first || second, "Missed negotiation at boundary \(split): \(sequence.debugDescription)")
+                XCTAssertFalse(first && second, "One sequence should trigger once")
+            }
+        }
+        let monitor = TerminalKeyboardMonitor()
+        XCTAssertTrue(monitor.append(Data("frame\u{1b}[>7u\u{1b}[?1003h\u{1b}[?1006h".utf8)))
+        XCTAssertFalse(monitor.append(Data("next frame".utf8)))
+    }
+    func testKeyboardMonitorIgnoresResetsTextAndMalformedSequences() {
+        let monitor = TerminalKeyboardMonitor()
+        for text in ["99;5u99;5:3u", "[>7u", "\u{1b}[?u", "\u{1b}[>0u", "\u{1b}[=0u", "\u{1b}[=3;3u", "\u{1b}[<99u", "\u{1b}[>4;0m", "\u{1b}[?1003h", "\u{1b}[31m", "\u{1b}[>7\nu", "\u{1b}[>" + String(repeating: "1", count: 100) + "u"] {
+            XCTAssertFalse(monitor.append(Data(text.utf8)), text.debugDescription)
+        }
+        XCTAssertTrue(monitor.append(Data("\u{1b}[broken\u{1b}[>7u".utf8)), "A malformed sequence must not hide a later negotiation")
+    }
 }

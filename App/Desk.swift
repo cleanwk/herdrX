@@ -370,20 +370,25 @@ final class Desk: ObservableObject {
     }
     func rpc(_ id: String) throws -> RPC { guard let path = paths[id] else { throw Failure("Device is disconnected") }; return RPC(path: path) }
     func restoreInput(_ key: PaneKey, automatic: Bool = false, interrupt: Bool = false) {
-        let action = key.device + "|recovery|" + key.pane
-        guard canWrite(key.device), !ended.contains(key), !busy.contains(action),
+        guard canWrite(key.device), !ended.contains(key),
               let terminal = terminals[key], let client = try? rpc(key.device),
               let target = sessions[key.device]?.panes.first(where: { $0.id == key.pane })?.terminal else { return }
         let connection = connectionIDs[key.device], attachment = terminal.attachmentID
-        busy.insert(action)
+        // A probe for an older attachment must not suppress recovery after a
+        // rapid reconnect; each generation owns its own coalescing token.
+        let action = key.device + "|recovery|" + key.pane + "|" + (connection?.uuidString ?? "") + "|" + attachment.uuidString
+        // Repeated physical Ctrl-C must still reach a task while a shell probe
+        // is pending (some programs need a second interrupt to exit).
         if interrupt { terminal.interrupt() }
+        guard !busy.contains(action) else { return }
+        busy.insert(action)
         Task { [weak self, weak terminal] in
             guard let self, let terminal else { return }
             defer { busy.remove(action) }
             @MainActor func valid() -> Bool {
                 canWrite(key.device) && connectionIDs[key.device] == connection && paths[key.device] == client.path
                     && terminals[key] === terminal && terminal.attachmentID == attachment && !ended.contains(key)
-                    && sessions[key.device]?.panes.contains(where: { $0.id == key.pane && $0.terminal == target && (!automatic || $0.agent == nil) }) == true
+                    && sessions[key.device]?.panes.contains(where: { $0.id == key.pane && $0.terminal == target }) == true
             }
             do {
                 for attempt in 0..<((interrupt || automatic) ? 10 : 1) {
@@ -461,6 +466,13 @@ final class Desk: ObservableObject {
         terminal.focused = { [weak self] in if self?.focused != key { self?.focused = key } }
         terminal.onExit = { [weak self] status in self?.ended.insert(key); self?.exitStatus[key] = status }
         terminal.onObservationEnded = { [weak self] in self?.objectWillChange.send() }
+        terminal.onKeyboardModesEnabled = { [weak self] in self?.restoreInput(key, automatic: true) }
+        terminal.view.onInterrupt = { [weak self, weak terminal] in
+            guard let self, let terminal, self.terminals[key] === terminal,
+                  self.canWrite(key.device), !self.ended.contains(key) else { return false }
+            self.restoreInput(key, automatic: true, interrupt: true)
+            return true
+        }
         terminal.process.inputRejected = { [weak self] in self?.message = L("Terminal input is waiting for the process. Try a smaller paste when it responds.") }
         terminals[key] = terminal
     }
