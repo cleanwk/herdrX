@@ -1,0 +1,26 @@
+{
+  "full_bytes": 34200479,
+  "deltas": [
+    {
+      "from_build": "1791813979",
+      "bytes": 6658
+    },
+    {
+      "from_build": "1791813978",
+      "bytes": 6658
+    },
+    {
+      "from_build": "1791813977",
+      "bytes": 6654
+    }
+  ],
+  "verified_bases": 3,
+  "exact_bundle_reconstruction": true,
+  "signatures_verified": true,
+  "wrong_base_rejected": true,
+  "tampered_delta_rejected": true,
+  "full_only_feed_verified": true,
+  "ci_run": "https://github.com/cleanwk/herdrX/actions/runs/38259618750",
+  "commit": "5d4117910707ae81e464fff5bd9cc1cdbe129e38",
+  "fixture": "Four copies of the same built universal app, with changed Info.plist and a small resource; ephemeral signing key. Sizes do not predict real release savings."
+}

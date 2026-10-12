@@ -10,9 +10,10 @@ The app continues to use the unmodified Sparkle downloader/installer. Sparkle's 
 
 Validation for this change:
 
-- Python release tests cover stable version ordering/window, missing history, partial download failures, asset integrity/identity checks, source build validation, delta URLs/lengths/signatures and the existing Homebrew contract.
+- All 14 Python release tests passed locally and in macOS CI, covering stable version ordering/window, missing history, partial download failures, asset integrity/identity checks, source build validation, delta URLs/lengths/signatures and the existing Homebrew contract.
+- A live read-only history check downloaded and validated the published 0.1.15 (build 16), 0.1.14 (15) and 0.1.13 (14) archives. No production artifact was changed.
 - `scripts/check-delta-updates.py` runs after the universal build on macOS CI with ephemeral fixture keys and four copies of the built app. It generates signed full-only and three-base feeds, applies each real Sparkle delta, compares every bundle file, symlink and permission with the target, and verifies deep code signatures. It also rejects a modified base and a same-length tampered delta, checks that historical archives are not published, and records byte counts in `build/tests/delta-updates.json`.
-- macOS CI result pending. Fixture byte counts are not a prediction for a real version change. Live GUI download/install/fallback and a published production delta release have not been exercised by this change.
+- [macOS CI passed](https://github.com/cleanwk/herdrX/actions/runs/38259618750), including universal build/package, the existing Core/native/Herdr/PTY checks and all delta assertions above. The [saved fixture result](evidence/delta-updates.json) records a 34,200,479-byte full archive and three 6,654–6,658-byte patches. These fixtures change bundle metadata and a small resource while reusing the same compiled code; their byte counts do not predict real release savings. Live GUI download/install/fallback and a published production delta release have not been exercised by this change.
 
 The earlier updater acceptance below is historical and does not establish delta installation results.
 
