@@ -41,7 +41,7 @@ class SelectionTerminalView: AppTerminalView {
 
     override func scrollWheel(with event: NSEvent) {
         guard allowsRemoteScroll else {
-            showFeedback(L("Viewing only — reconnect to scroll."), color: Theme.secondary)
+            showFeedback(L("Viewing only — reconnect to scroll."), color: Theme.secondary, coalesce: true)
             return
         }
         guard case .idle = gesture, let surface = hostSurface else {
@@ -192,10 +192,10 @@ class SelectionTerminalView: AppTerminalView {
         }
         return super.performKeyEquivalent(with: event)
     }
-    private func showFeedback(_ message: String, color: NSColor) {
+    private func showFeedback(_ message: String, color: NSColor, coalesce: Bool = false) {
         // A trackpad gesture contains many events; announce the same visible
         // feedback once instead of flooding VoiceOver on every wheel sample.
-        guard feedback.isHidden || feedback.stringValue != message else { return }
+        guard !coalesce || feedback.isHidden || feedback.stringValue != message else { return }
         feedbackRevision += 1
         let revision = feedbackRevision
         feedback.stringValue = message
