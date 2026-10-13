@@ -8,14 +8,12 @@ struct BranchState {
     let detail: String
     var text: String {
         switch phase {
-        case .loading: L("Loading directory…")
-        case .branch: value
-        case .directory: L("Directory")
-        case .failed: L("Directory unavailable")
-        case .stale: value + " · " + L("stale")
+        case .branch, .stale: value
+        case .loading, .directory, .failed: L("Directory")
         }
     }
-    var symbol: String { phase == .branch || phase == .stale ? "arrow.triangle.branch" : phase == .failed ? "exclamationmark.triangle" : "folder" }
+    // Branch lookup is optional metadata, not a directory or session health check.
+    var symbol: String { phase == .branch || phase == .stale ? "arrow.triangle.branch" : "folder" }
 }
 extension Desk {
     func refreshBranches(_ device: Device, snapshot: Session) {
@@ -47,7 +45,7 @@ extension Desk {
                 } catch {
                     guard branchRequests[key] == token, branchContexts[key] == context else { return }
                     let previous = branches[key] ?? ""
-                    branchStates[key] = BranchState(phase: previous.isEmpty ? .failed : .stale, value: previous, detail: path + "\n" + error.localizedDescription)
+                    branchStates[key] = BranchState(phase: previous.isEmpty ? .failed : .stale, value: previous, detail: path + "\n" + L("Git branch information could not be refreshed.") + "\n" + error.localizedDescription)
                 }
             }
         }

@@ -9,6 +9,8 @@ related_targets: ["App/Terminal.swift","App/Sidebar.swift","App/Tabs.swift","App
 
 Mode: Operate. Native macOS 14+ with SwiftUI, AppKit and Ghostty. The user-authorized [ACCM direction](../../docs/accm-fidelity/DIRECTION.md) supersedes the earlier neutral grey visual direction. Preserve HerdrX identity, device connections and existing user preferences. This is source implementation against supplied native references, not a web composition or generated concept.
 
+Sidebar branch metadata: loading or failed Git lookup keeps the neutral folder/Directory row, or the last known branch name without an inline stale warning. Diagnostics stay in help and do not imply a failed directory/session. See [validation](../../docs/sidebar-metadata/VALIDATION.md).
+
 ## Direction contract
 
 THESIS: A compact Space workbench where task, state and device stay clear around real terminal output. Remove independent local Shells and their list/create entry points; retain ordinary sessions, detected Agents, tabs, splits and actions inside Spaces.

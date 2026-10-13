@@ -195,7 +195,7 @@
 "Cached session data · offline" = "Cached session data · offline";
 "Offline" = "Offline";
 "Loading directory…" = "Loading directory…";
-"Directory unavailable" = "Directory unavailable";
+"Git branch information could not be refreshed." = "Git branch information could not be refreshed.";
 "Directory is unavailable." = "Directory is unavailable.";
 "stale" = "stale";
 "Move Up" = "Move Up";
