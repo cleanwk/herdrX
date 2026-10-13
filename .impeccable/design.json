@@ -946,7 +946,7 @@
       "name": "Space Navigation",
       "kind": "nav",
       "refersTo": "space-row",
-      "description": "Two-line Space title and branch/directory; light accent fill with outline, persisted device groups and full identity help.",
+      "description": "Two-line Space title and branch/directory; light accent fill with outline, persisted device groups and full identity help. Optional branch lookup loading/failure keeps a neutral folder and Directory label, or retains the last branch without an inline stale warning. Refresh diagnostics remain in help; device connection status stays separate.",
       "nativeSource": "App/Workbench.swift: deviceGroup; App/Sidebar.swift: SidebarRow / SidebarGroup"
     },
     {

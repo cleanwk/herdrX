@@ -195,7 +195,7 @@
 "Cached session data · offline" = "离线 · 显示缓存的会话";
 "Offline" = "离线";
 "Loading directory…" = "正在读取目录…";
-"Directory unavailable" = "目录不可用";
+"Git branch information could not be refreshed." = "暂时无法更新 Git 分支信息。";
 "Directory is unavailable." = "目录暂不可用。";
 "stale" = "已过期";
 "Move Up" = "上移";
