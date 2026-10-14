@@ -1,0 +1,25 @@
+Source: 535ef1189c8b1a22b148a5b41b2182641689680f
+Run: https://github.com/cleanwk/herdrX/actions/runs/38527987630
+Result: success (macOS)
+
+2026-10-14T07:24:24.7650790Z PASS: stale Kitty mode detected on initial attach with a verified shell; raw Ctrl-C remains usable; production PTY attach refuses takeover; observer streams/resizes/restarts without stealing input or resizing owner; up/down wheel scrolls real server history and reaches alternate-screen TUI; stale shell mouse capture scrolls through pane.scroll without changing history; explicit takeover; detach preserves shell PID; actual foreground shell guard
+2026-10-14T07:24:26.4698620Z PASS: stopped named server bootstrap, socket resolution, plugin discovery/action, attachable pane and targeted close preserve original terminal
+2026-10-14T07:24:33.3930690Z PASS: Herdr 0.8.2 single: area={'x': 26, 'y': 1, 'width': 94, 'height': 39}
+2026-10-14T07:24:33.3931720Z PASS: Herdr 0.8.2 columns: area={'x': 26, 'y': 1, 'width': 94, 'height': 39}
+2026-10-14T07:24:33.3932500Z PASS: Herdr 0.8.2 nested: area={'x': 26, 'y': 1, 'width': 94, 'height': 39}
+2026-10-14T07:24:33.3933140Z PASS: Herdr 0.9.3 single: area={'x': 0, 'y': 0, 'width': 120, 'height': 40}
+2026-10-14T07:24:33.3933890Z PASS: Herdr 0.9.3 columns: area={'x': 0, 'y': 0, 'width': 120, 'height': 40}
+2026-10-14T07:24:33.3934650Z PASS: Herdr 0.9.3 nested: area={'x': 0, 'y': 0, 'width': 120, 'height': 40}
+2026-10-14T07:24:33.4163180Z PASS: real Herdr 0.8.2 and 0.9.3 snapshots keep single/column/nested panes inside narrow/wide 1×/2× canvases
+2026-10-14T07:24:33.4164980Z PASS: translated Herdr origins at narrow/wide canvas sizes, 1pt inside borders, 6pt horizontal / 13pt vertical border gaps, 7pt top offset, nested/stacked/grid layouts, resize, 1×/2× pixel alignment, outer canvas edges, selective continuous corners and concentric terminal masks
+2026-10-14T07:25:58.9539280Z ✔ Test run with 14 tests in 2 suites passed after 24.307 seconds.
+2026-10-14T07:25:59.2869550Z ** TEST SUCCEEDED **
+2026-10-14T07:26:43.3310180Z 	 Executed 65 tests, with 0 failures (0 unexpected) in 1.154 (1.162) seconds
+2026-10-14T07:26:43.3311180Z 	 Executed 65 tests, with 0 failures (0 unexpected) in 1.154 (1.163) seconds
+2026-10-14T07:26:43.3313030Z ✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+2026-10-14T07:28:32.8036540Z ** BUILD SUCCEEDED **
+2026-10-14T07:28:41.4037710Z PASS: idle shell / foreground child / interrupt / exec-ed task classification
+2026-10-14T07:28:41.4038830Z PASS: 20 actual PTY restart/output/write generations; no previous-run bytes after restart
+2026-10-14T07:28:49.6580410Z PASS: tab scroll containment, stable selection geometry, clicked context target, grouped/conditional/offline menus, bidirectional drag/drop, cancellation and edge scrolling; 28pt bar / 22pt pills / 3pt insets
+2026-10-14T07:28:50.9836120Z PASS: rename/search leave marked-text Enter, Escape and arrows to IME; committed text and ordinary commands still work
+

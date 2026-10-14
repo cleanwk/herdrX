@@ -1,5 +1,19 @@
 # Pane scrolling — 0.1.15
 
+## 2026-10-14: stale mouse capture after program exit
+
+The reported `64;41;27M` / `65;39;27M` fragments are SGR wheel reports, not malformed Chinese encoding. A Linux fixture using the official Herdr 0.9.3 binary, an independent `mouse` session, a separate client state directory and a disposable shell reproduced the complete reports at the shell after leaving DEC 1000/1006 enabled. Herdr's `apply_scroll` follows its cached terminal mouse mode and forwards those reports even when the foreground process has returned to a shell. Local keyboard recovery alone cannot change that server-side state.
+
+Attached wheel gestures now wait for `pane.process_info`. A verified idle shell scrolls through the existing `pane.get` / `pane.scroll` absolute-offset API; its wheel gesture never becomes PTY input. A verified running foreground program retains Ghostty's native wheel encoding, precision, direction and modifiers. Requests serialize per terminal, trackpad fractions survive batches, and offsets clamp to server history. Device, connection, pane/terminal and attachment identities are checked after asynchronous work. Hidden/restarted terminals cancel pending gestures; observers and failed/missing process verification never replay a wheel. This uses no new protocol, reset command, takeover or screen/history clearing.
+
+The same isolated fixture confirmed offsets 0 → 3 → 0 under stale mouse capture. The production coexistence fixture now checks that this path preserves retained output. Core cases cover fractional/reversed motion and offset limits; native Ghostty cases cover the wheel gate, explicit TUI forwarding and observer rejection. Local Linux Python checks passed (14), the real coexistence fixture passed, and syntax/whitespace checks passed. The full [macOS workflow](https://github.com/cleanwk/herdrX/actions/runs/38527987630) passed at `535ef1189c8b1a22b148a5b41b2182641689680f`, including all terminal changes. See [current-head checks](https://github.com/cleanwk/herdrX/pull/28/checks) for the final PR gate.
+
+The official Codex CLI 0.162.1 was also installed locally and launched inside disposable zsh/Herdr panes (`--no-daemon`, read-only sandbox, separate Codex state, an unused local model-provider fixture; no user credentials or model request). In its default alternate-screen mode, SIGTERM followed by two wheel events reproduced the exact visible `64;41;27M65;39;27M` fragments at the zsh prompt and left the partially drawn Codex input region. This is a real Codex reproduction, separate from the explicitly seeded mode fixture. The comparison with `--no-alt-screen` left partial prompt output but did not leak the wheel reports.
+
+The wheel gate addresses new report leakage in both cases. Recovery of the server's stale alternate screen remains an upstream capability gap: Herdr 0.9.3 exposes no non-destructive terminal-mode reset API. Its `pane.clear` implementation explicitly does nothing on the alternate screen and otherwise erases history, so it cannot safely restore this case. No automatic clear, restart, shell-command injection or local alternate-screen toggle was added. The macOS application and the user's exact prior version remain outside the Linux reproduction; residual full-screen rendering is not claimed fixed.
+
+The earlier validation below records the original attach-wheel behavior; the verified-shell routing above supersedes it for shells only.
+
 2026-10-12 (Asia/Shanghai). Fix normal up/down scrolling in Agent panes without changing text selection, client ownership or authoritative Herdr history.
 
 ## Findings and contracts

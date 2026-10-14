@@ -801,7 +801,8 @@
         "minimumRatio": 4.5,
         "surfaces": [
           "Normal: canvas, chrome and 0.04 foreground hover",
-          "Selected: accentWash 0.10 light / 0.14 dark, accentStrongWash 0.14 light / 0.19 dark, tabWash 0.10 light / 0.14 dark over chrome"
+          "Selected: accentWash 0.10 light / 0.14 dark, accentStrongWash 0.14 light / 0.19 dark, tabWash 0.16 light / 0.22 dark over tabInactiveWash",
+          "Tab text: tabInactiveWash mixes chrome/foreground at 0.08 light / 0.10 dark; tabHoverWash at 0.12 light / 0.14 dark"
         ],
         "method": "WCAG sRGB contrast, 4.5 for normal text on normal surfaces and selected text on selected surfaces independently; raw stroke/wash and decorative roles are not body text.",
         "foregroundSeedTokens": {
@@ -960,7 +961,7 @@
       "name": "Terminal Tab",
       "kind": "nav",
       "refersTo": "tab",
-      "description": "22pt native tabs in a shared 28pt bar; 3pt vertical / 8pt leading insets, 4pt gaps, 9pt text padding. 10% light / 14% dark selected accent wash and 2% inactive neutral wash (4% on hover). Horizontal overflow only; zero vertical offset across input, selection and resize; no elastic bounce.",
+      "description": "22pt native tabs in a shared 28pt bar; 3pt vertical / 8pt leading insets, 4pt gaps, 9pt text padding. Inactive chrome/foreground fill 8% light / 10% dark, hover 12% / 14%; selected accent blends 16% / 22% over inactive fill. All pills have 1pt outlines. Dragged pills follow horizontally above their neighbours with a shadow and stronger outline; neighbours and drops animate for 180ms ease-out, respecting Reduce Motion. Dashed destination, 28pt edge-scroll zone, Escape and stale-target cancellation. Horizontal overflow only; no vertical offset or elastic bounce.",
       "nativeSource": "App/Tabs.swift: Tabs.Strip"
     },
     {

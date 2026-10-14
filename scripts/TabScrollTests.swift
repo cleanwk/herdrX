@@ -1,12 +1,23 @@
 import AppKit
 import SwiftUI
 
-// The production tab view is compiled directly; only app-wide presentation dependencies are stubbed.
+// Compile the production view and color derivation; only app-wide dependencies are stubbed.
 func L(_ value: String) -> String { value }
 func LF(_ value: String, _ count: Int) -> String { String(format: value, count) }
 enum Theme {
-    static let selectedText = NSColor.labelColor, selectedSecondary = NSColor.secondaryLabelColor, tabWash = NSColor.windowBackgroundColor, accentWashBorder = NSColor.systemBlue, accentStroke = NSColor.systemBlue
-    static let foreground = NSColor.labelColor, secondary = NSColor.secondaryLabelColor, accent = NSColor.systemBlue
+    private static func color(_ hex: UInt32) -> NSColor {
+        NSColor(srgbRed: CGFloat((hex >> 16) & 255) / 255, green: CGFloat((hex >> 8) & 255) / 255, blue: CGFloat(hex & 255) / 255, alpha: 1)
+    }
+    private static func role(_ path: KeyPath<ThemeColors, NSColor>) -> NSColor {
+        NSColor(name: nil) { appearance in
+            let dark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            return ThemeColors(background: color(dark ? 0x1e1e2e : 0xeff1f5), foreground: color(dark ? 0xcdd6f4 : 0x4c4f69), accent: color(dark ? 0x82aaff : 0x2463eb), dark: dark,
+                chrome: color(dark ? 0x181825 : 0xe6e9ef), secondary: color(dark ? 0xa6adc8 : 0x676b80))[keyPath: path]
+        }
+    }
+    static let selectedText = role(\.selectedText), selectedSecondary = role(\.selectedSecondary)
+    static let tabWash = role(\.tabWash), accentStroke = role(\.accentStroke), foreground = role(\.foreground)
+    static let tabInactiveWash = role(\.tabInactiveWash), tabHoverWash = role(\.tabHoverWash), tabText = role(\.tabText), chrome = role(\.chrome)
 }
 final class ActionMenuItem: NSMenuItem {
     let invoke: () -> Void
@@ -14,7 +25,7 @@ final class ActionMenuItem: NSMenuItem {
     required init(coder: NSCoder) { fatalError() }
 }
 final class TabSnapshotBackground: NSView {
-    override func draw(_ dirtyRect: NSRect) { NSColor.windowBackgroundColor.setFill(); dirtyRect.fill() }
+    override func draw(_ dirtyRect: NSRect) { Theme.chrome.setFill(); dirtyRect.fill() }
 }
 
 @main struct TabScrollTests {
@@ -109,6 +120,87 @@ final class TabSnapshotBackground: NSView {
                 try! bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "build/tests/tab-chrome-\(name).png"))
             }
         }
-        print("PASS: tab scroll containment, stable selection geometry, clicked context target, grouped/conditional/offline menus; 28pt bar / 22pt pills / 3pt insets")
+        testDragging()
+        print("PASS: tab scroll containment, stable selection geometry, clicked context target, grouped/conditional/offline menus, bidirectional drag/drop, cancellation and edge scrolling; 28pt bar / 22pt pills / 3pt insets")
+    }
+
+    @MainActor static func testDragging() {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 28), styleMask: .borderless, backing: .buffered, defer: false)
+        let scroll = Tabs.HorizontalScrollView(frame: NSRect(x: 0, y: 0, width: 600, height: 28))
+        let strip = Tabs.Strip(); scroll.documentView = strip; window.contentView = scroll
+        let initial = [TabEntry(id: "wide", title: "A very wide tab that must reach both ends", count: 12), TabEntry(id: "b", title: "B", count: 1), TabEntry(id: "c", title: "C", count: 1)]
+        var moves: [(String, Int)] = []
+        strip.select = { strip.selected = $0 }
+        strip.move = { id, insertion in
+            moves.append((id, insertion))
+            let old = strip.entries.firstIndex { $0.id == id }!
+            let entry = strip.entries.remove(at: old)
+            strip.entries.insert(entry, at: insertion > old ? insertion - 1 : insertion)
+            strip.syncButtons(); scroll.fitDocument()
+        }
+        func settle() { RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.24)) }
+        func reset() {
+            strip.stopDrag(); strip.writable = true; strip.entries = initial; strip.selected = "b"
+            strip.syncButtons(); scroll.fitDocument(); scroll.scrollHorizontally(to: 0); settle(); moves = []
+        }
+        func event(_ type: NSEvent.EventType, x: CGFloat) -> NSEvent {
+            NSEvent.mouseEvent(with: type, location: strip.convert(NSPoint(x: x, y: 14), to: nil), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1)!
+        }
+        reset()
+        let wide = strip.buttons[0], start = wide.frame.midX, end = strip.contentWidth + 50
+        strip.mouseDown(with: event(.leftMouseDown, x: start))
+        strip.mouseDragged(with: event(.leftMouseDragged, x: end))
+        precondition(strip.dragged && wide.lifted && wide.frame.minY == 3, "Dragged pill did not lift or left the horizontal track")
+        precondition(strip.buttons[1].targetFrame.minX == TabMetrics.inset, "Neighbours did not make room")
+        precondition(strip.entries.map(\.id) == initial.map(\.id) && moves.isEmpty, "Drag preview committed before release")
+        strip.mouseUp(with: event(.leftMouseUp, x: end)); settle()
+        precondition(moves.count == 1 && moves[0].0 == "wide" && moves[0].1 == 3, "Wide tab cannot move past short tabs")
+        precondition(strip.entries.map(\.id) == ["b", "c", "wide"] && strip.buttons[2] === wide, "Drop lost tab identity/order")
+        precondition(strip.selected == "b" && !wide.lifted, "Reordering changed selection or left the drag appearance active")
+        strip.mouseDown(with: event(.leftMouseDown, x: wide.frame.midX))
+        strip.mouseDragged(with: event(.leftMouseDragged, x: -50))
+        strip.mouseUp(with: event(.leftMouseUp, x: -50)); settle()
+        precondition(moves.count == 2 && moves[1].1 == 0 && strip.buttons[0] === wide, "Cannot drag back to the first slot")
+
+        reset()
+        strip.mouseDown(with: event(.leftMouseDown, x: start))
+        strip.mouseDragged(with: event(.leftMouseDragged, x: start + 2))
+        strip.mouseUp(with: event(.leftMouseUp, x: start + 2))
+        precondition(moves.isEmpty && strip.selected == "wide", "Click jitter became a reorder")
+        strip.mouseDown(with: event(.leftMouseDown, x: start))
+        strip.mouseDragged(with: event(.leftMouseDragged, x: end))
+        strip.mouseUp(with: event(.leftMouseUp, x: start)); settle()
+        precondition(moves.isEmpty && strip.buttons[0].frame.minX == TabMetrics.inset, "Returning to the original slot emitted a move")
+
+        reset(); strip.writable = false
+        strip.mouseDown(with: event(.leftMouseDown, x: start)); strip.syncButtons()
+        strip.mouseUp(with: event(.leftMouseUp, x: start))
+        precondition(strip.selected == "wide" && moves.isEmpty, "Read-only tabs lost ordinary selection")
+
+        for cancellation in ["escape", "offline", "removed", "changed-order", "window"] {
+            reset()
+            strip.mouseDown(with: event(.leftMouseDown, x: start))
+            strip.mouseDragged(with: event(.leftMouseDragged, x: end))
+            switch cancellation {
+            case "escape": strip.cancelOperation(nil)
+            case "offline": strip.writable = false; strip.syncButtons()
+            case "removed": strip.entries.removeFirst(); strip.syncButtons()
+            case "changed-order": strip.entries.swapAt(1, 2); strip.syncButtons()
+            default: NotificationCenter.default.post(name: NSWindow.didResignKeyNotification, object: window)
+            }
+            strip.mouseUp(with: event(.leftMouseUp, x: end)); settle()
+            precondition(moves.isEmpty && strip.source == nil && !strip.dragged, "Cancelled drag committed: " + cancellation)
+            precondition(strip.buttons.allSatisfy { !$0.lifted }, "Cancelled drag retained a lifted tab")
+        }
+
+        reset()
+        strip.entries = (0..<20).map { TabEntry(id: String($0), title: "Overflow tab \($0)", count: 1) }
+        strip.syncButtons(); window.setContentSize(NSSize(width: 260, height: 28)); scroll.frame.size.width = 260; scroll.layout(); settle()
+        strip.mouseDown(with: event(.leftMouseDown, x: strip.buttons[0].frame.midX))
+        strip.mouseDragged(with: event(.leftMouseDragged, x: scroll.contentView.bounds.maxX - 2)); settle()
+        precondition(scroll.contentView.bounds.minX > 0 && scroll.contentView.bounds.minY == 0, "Edge drag did not scroll horizontally")
+        strip.cancelOperation(nil)
+        let offset = scroll.contentView.bounds.minX; settle()
+        precondition(scroll.contentView.bounds.minX == offset && moves.isEmpty, "Cancelled edge drag kept scrolling")
     }
 }

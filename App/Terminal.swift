@@ -17,6 +17,13 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
     var onExit: ((Int32) -> Void)?
     var onObservationEnded: (() -> Void)?
     var onKeyboardModesEnabled: (() -> Void)?
+    var onScroll: (([NSEvent]) async -> Void)?
+    var historyScroll = TerminalScroll()
+    private var wheelEvents: [NSEvent] = []
+    private var wheelTask: Task<Void, Never>?
+    private var wheelID = UUID()
+    private var cellHeightPixels: Double = 18
+    var scrollLineHeight: Double { max(1, Double(cellHeightPixels) / Double(view.window?.backingScaleFactor ?? 1)) }
     private(set) var attachmentID = UUID()
     private(set) var hoverURL: URL?
     init(command: String, takeoverCommand: String, observationCommand: @escaping (UInt16, UInt16) -> String) {
@@ -44,6 +51,7 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
             self.onExit?(status)
         }
         view.onFocus = { [weak self] in self?.focused?() }
+        view.onRemoteScroll = { [weak self] in self?.enqueueScroll($0) }
         start(command)
     }
     var focused: (() -> Void)?
@@ -65,9 +73,28 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
     // The live `herdr terminal attach` owns mouse capture, independently of the
     // child Agent. Clearing it on Agent exit disables shell/history scrolling.
     func repair() { view.cancelSelectionGesture(); session.receive(TerminalInputRecovery.keyboardBytes) }
-    private func resetInput() { view.cancelSelectionGesture(); session.receive(TerminalInputRecovery.bytes) }
+    private func resetInput() { cancelScrolling(); view.cancelSelectionGesture(); session.receive(TerminalInputRecovery.bytes) }
     func interrupt() { process.write(Data([3])) }
-    func stop() { attachmentID = UUID(); view.allowsRemoteScroll = false; observation.stop(); process.stop() }
+    func stop() { attachmentID = UUID(); cancelScrolling(); view.allowsRemoteScroll = false; observation.stop(); process.stop() }
+    private func enqueueScroll(_ event: NSEvent) {
+        guard view.allowsRemoteScroll else { return }
+        wheelEvents.append(event)
+        guard wheelTask == nil else { return }
+        let id = UUID(); wheelID = id
+        wheelTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { if self.wheelID == id { self.wheelTask = nil } }
+            while !Task.isCancelled, self.wheelID == id, !self.wheelEvents.isEmpty {
+                let events = self.wheelEvents; self.wheelEvents.removeAll(keepingCapacity: true)
+                await self.onScroll?(events)
+            }
+        }
+    }
+    private func cancelScrolling() {
+        wheelID = UUID(); wheelTask?.cancel(); wheelTask = nil
+        wheelEvents.removeAll(); historyScroll = TerminalScroll()
+    }
+    func terminalDidResize(_ size: TerminalGridMetrics) { cellHeightPixels = Double(size.cellHeightPixels) }
     func terminalDidAttachSurface(_ surface: TerminalSurface) { self.surface = surface; view.hostSurface = surface }
     func terminalDidDetachSurface() { surface = nil; view.hostSurface = nil }
     func terminalDidRequestOpenURL(_ url: String, kind: TerminalOpenURLKind) {
@@ -77,7 +104,7 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
     func terminalDidUpdateHoverLink(_ value: String?) {
         hoverURL = value.flatMap(URL.init(string:)).flatMap { ["http", "https"].contains($0.scheme?.lowercased() ?? "") ? $0 : nil }
     }
-    func visible(_ visible: Bool) { view.visible = visible }
+    func visible(_ visible: Bool) { if !visible { cancelScrolling() }; view.visible = visible }
 }
 
 final class TerminalView: InterruptTerminalView {

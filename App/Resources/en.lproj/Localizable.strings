@@ -445,6 +445,7 @@
 "Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved." = "Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved.";
 
 "Viewing only — reconnect to scroll." = "Viewing only — reconnect to scroll.";
+"Could not verify terminal state. Try scrolling again." = "Could not verify terminal state. Try scrolling again.";
 
 "Herdr machines" = "Herdr machines";
 "Follow Herdr machine directory" = "Follow Herdr machine directory";

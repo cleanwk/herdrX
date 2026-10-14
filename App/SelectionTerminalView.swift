@@ -18,6 +18,7 @@ class SelectionTerminalView: AppTerminalView {
     private var feedbackRevision = 0
     private let feedback = CopyFeedback(labelWithString: "")
     var allowsRemoteScroll = true
+    var onRemoteScroll: ((NSEvent) -> Void)?
 
     override init(frame: NSRect) {
         super.init(frame: frame)
@@ -44,11 +45,18 @@ class SelectionTerminalView: AppTerminalView {
             showFeedback(L("Viewing only — reconnect to scroll."), color: Theme.secondary, coalesce: true)
             return
         }
-        guard case .idle = gesture, let surface = hostSurface else {
+        guard case .idle = gesture, hostSurface != nil else {
             // A selection drag retains the engine's local scroll/anchor behavior.
             super.scrollWheel(with: event)
             return
         }
+        if let onRemoteScroll { onRemoteScroll(event); return }
+        forwardRemoteScroll(with: event)
+    }
+
+    /// Called only after the owner has chosen live-TUI routing. Do not re-enter the gate.
+    func forwardRemoteScroll(with event: NSEvent) {
+        guard allowsRemoteScroll, case .idle = gesture, let surface = hostSurface else { return }
         // Herdr renders a viewport into our surface. Its history and the Agent's
         // TUI scrolling live upstream, so wheel reports must reach `terminal
         // attach` even when the user prefers local clicks and text selection.
@@ -64,6 +72,9 @@ class SelectionTerminalView: AppTerminalView {
         // Keep native precision, direction and momentum; Ghostty accumulates
         // small trackpad deltas and encodes the requested mouse protocol.
         super.scrollWheel(with: event)
+    }
+    func scrollFailed() {
+        showFeedback(L("Could not verify terminal state. Try scrolling again."), color: Theme.secondary, coalesce: true)
     }
 
     override func mouseDown(with event: NSEvent) {

@@ -54,7 +54,7 @@ struct Tabs: NSViewRepresentable {
         }
         func fitDocument() {
             guard let strip = documentView as? Strip else { return }
-            let size = NSSize(width: max(contentSize.width, (strip.buttons.last?.frame.maxX ?? 0) + TabMetrics.inset), height: contentSize.height)
+            let size = NSSize(width: max(contentSize.width, strip.contentWidth), height: contentSize.height)
             if strip.frame.size != size { strip.setFrameSize(size); strip.syncButtons() }
             scrollHorizontally(to: contentView.bounds.minX)
         }
@@ -83,11 +83,18 @@ struct Tabs: NSViewRepresentable {
         var scope = ""
         var entries: [TabEntry] = []; var selected = ""; var writable = true
         private var edgeTimer: Timer?
+        private var escapeMonitor: Any?
+        private var windowObserver: NSObjectProtocol?
         private var pointer: CGPoint = .zero
+        private var grabOffset: CGFloat = 0
+        private var dragOrder: [String] = []
+        private var layoutFrames: [NSRect] = []
+        private var dropFrame: NSRect?
         private var renaming = false
         var select: ((String) -> Void)?; var move: ((String, Int) -> Void)?; var rename: ((String) -> Void)?; var close: ((String) -> Void)?
         var source: String?; var origin: CGFloat = 0; var dragged = false; var insertion: Int?
         var buttons: [TabButton] = []
+        var contentWidth: CGFloat { (layoutFrames.last?.maxX ?? TabMetrics.inset) + TabMetrics.inset }
         private var hover: Int?
         private var tracking: NSTrackingArea?
         override func updateTrackingAreas() {
@@ -99,25 +106,68 @@ struct Tabs: NSViewRepresentable {
         override func mouseMoved(with event: NSEvent) {
             let point = convert(event.locationInWindow, from: nil)
             let next = buttons.firstIndex { $0.frame.contains(point) }
-            if next != hover { hover = next; needsDisplay = true }
+            if next != hover { hover = next; updateHover() }
         }
-        override func mouseExited(with event: NSEvent) { hover = nil; needsDisplay = true }
+        override func mouseExited(with event: NSEvent) { hover = nil; updateHover() }
+        private func updateHover() {
+            for (index, button) in buttons.enumerated() { button.hovered = !dragged && hover == index }
+        }
         func syncButtons() {
-            while buttons.count > entries.count { buttons.removeLast().removeFromSuperview() }
-            while buttons.count < entries.count { let button = TabButton(); button.title = ""; button.isBordered = false; button.focusRingType = .exterior; button.bezelStyle = .regularSquare; button.target = self; button.action = #selector(pressed(_:)); button.lineBreakMode = .byTruncatingTail; addSubview(button); buttons.append(button) }
+            let ids = entries.map(\.id)
+            if source != nil, dragOrder != ids || (dragged && !writable) { stopDrag() }
+            // Preserve view identity so the background and label animate together on reorder/rollback.
+            let previous = Dictionary(uniqueKeysWithValues: buttons.map { ($0.entryID, $0) })
+            let reordered = !buttons.isEmpty && buttons.map(\.entryID) != ids
+            for button in buttons where !ids.contains(button.entryID) { button.removeFromSuperview() }
+            buttons = entries.map { entry in
+                if let button = previous[entry.id] { return button }
+                let button = TabButton(); button.entryID = entry.id; button.title = ""; button.isBordered = false; button.focusRingType = .exterior; button.bezelStyle = .regularSquare; button.target = self; button.action = #selector(pressed(_:)); button.lineBreakMode = .byTruncatingTail; button.wantsLayer = true; addSubview(button)
+                return button
+            }
+            setAccessibilityChildren(buttons)
+            layoutFrames = []
             var x = TabMetrics.inset
             for (index, button) in buttons.enumerated() {
                 button.state = selected == entries[index].id ? .on : .off; button.tag = index; button.displayTitle = entries[index].title; button.paneCount = entries[index].count
                 button.font = .systemFont(ofSize: 12, weight: selected == entries[index].id ? .semibold : .regular)
-                button.contentTintColor = selected == entries[index].id ? Theme.selectedText : Theme.secondary
+                button.contentTintColor = selected == entries[index].id ? Theme.selectedText : Theme.tabText
                 // Reserve the selected weight so changing tabs does not move its neighbours.
                 let width = min(200, max(40, (button.displayTitle as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: .semibold)]).width + 18 + button.countWidth + (button.paneCount > 1 ? 8 : 0)))
-                button.frame = NSRect(x: x, y: max(0, (bounds.height - TabMetrics.height) / 2), width: width, height: TabMetrics.height); x += width + TabMetrics.gap
+                let frame = NSRect(x: x, y: max(0, (bounds.height - TabMetrics.height) / 2), width: width, height: TabMetrics.height)
+                layoutFrames.append(frame); x += width + TabMetrics.gap
+                if previous[button.entryID] == nil { button.frame = frame }
                 button.setAccessibilityRole(.radioButton); button.setAccessibilityLabel(entries[index].title); button.setAccessibilityValue(selected == entries[index].id ? 1 : 0); button.setAccessibilityHelp(LF("%d panes", entries[index].count)); button.toolTip = entries[index].title + "\n" + LF("%d panes", entries[index].count); button.needsDisplay = true
+            }
+            updateHover()
+            if dragged { updateDragPreview() }
+            else { positionButtons(layoutFrames, animated: reordered) }
+        }
+        private func positionButtons(_ frames: [NSRect], animated: Bool, excluding: String? = nil) {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = animated && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0.18 : 0
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                for (button, frame) in zip(buttons, frames) where button.entryID != excluding {
+                    guard button.targetFrame != frame else { continue }
+                    button.targetFrame = frame
+                    if context.duration > 0 { button.animator().frame = frame }
+                    else { button.layer?.removeAllAnimations(); button.frame = frame }
+                }
             }
         }
         @objc func pressed(_ sender: NSButton) { if entries.indices.contains(sender.tag) { select?(entries[sender.tag].id) } }
         final class TabButton: NSButton {
+            var entryID = ""
+            var targetFrame: NSRect = .zero
+            var hovered = false { didSet { if hovered != oldValue { needsDisplay = true } } }
+            var lifted = false { didSet {
+                guard lifted != oldValue else { return }
+                layer?.zPosition = lifted ? 1 : 0
+                layer?.shadowColor = NSColor.black.cgColor
+                layer?.shadowOpacity = lifted ? 0.20 : 0
+                layer?.shadowRadius = 2
+                layer?.shadowOffset = CGSize(width: 0, height: -1)
+                needsDisplay = true
+            } }
             var displayTitle = ""
             var paneCount = 1
             private var countFont: NSFont { .monospacedDigitSystemFont(ofSize: 10, weight: .regular) }
@@ -127,11 +177,16 @@ struct Tabs: NSViewRepresentable {
             override var focusRingMaskBounds: NSRect { bounds.insetBy(dx: 0.5, dy: 0.5) }
             override func drawFocusRingMask() { NSBezierPath(roundedRect: focusRingMaskBounds, xRadius: TabMetrics.radius, yRadius: TabMetrics.radius).fill() }
             override func draw(_ dirtyRect: NSRect) {
+                let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: TabMetrics.radius, yRadius: TabMetrics.radius)
+                (state == .on ? Theme.tabWash : hovered || lifted ? Theme.tabHoverWash : Theme.tabInactiveWash).setFill()
+                path.fill()
+                (lifted ? Theme.accentStroke.withAlphaComponent(0.75) : state == .on ? Theme.accentStroke.withAlphaComponent(0.40) : Theme.foreground.withAlphaComponent(hovered ? 0.18 : 0.12)).setStroke()
+                path.lineWidth = 1; path.stroke()
                 // Let the native button draw focus/pressed treatment; text has separate slots.
                 super.draw(dirtyRect)
                 let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingTail
                 (displayTitle as NSString).draw(in: labelRect, withAttributes: [.font: font ?? NSFont.systemFont(ofSize: 12), .foregroundColor: contentTintColor ?? Theme.foreground, .paragraphStyle: style])
-                if paneCount > 1 { (String(paneCount) as NSString).draw(in: countRect, withAttributes: [.font: countFont, .foregroundColor: state == .on ? Theme.selectedSecondary : Theme.secondary]) }
+                if paneCount > 1 { (String(paneCount) as NSString).draw(in: countRect, withAttributes: [.font: countFont, .foregroundColor: state == .on ? Theme.selectedSecondary : Theme.tabText]) }
             }
             override func mouseDown(with event: NSEvent) { (superview as? Strip)?.mouseDown(with: event) }
             override func mouseDragged(with event: NSEvent) { (superview as? Strip)?.mouseDragged(with: event) }
@@ -154,50 +209,105 @@ struct Tabs: NSViewRepresentable {
             return menu
         }
         func revealSelection() {
-            guard let scroll = enclosingScrollView as? HorizontalScrollView,
-                  let index = entries.firstIndex(where: { $0.id == selected }), buttons.indices.contains(index) else { return }
-            let rect = buttons[index].frame.insetBy(dx: -TabMetrics.inset, dy: 0), visible = scroll.contentView.bounds
+            guard !dragged, let scroll = enclosingScrollView as? HorizontalScrollView,
+                  let index = entries.firstIndex(where: { $0.id == selected }), layoutFrames.indices.contains(index) else { return }
+            let rect = layoutFrames[index].insetBy(dx: -TabMetrics.inset, dy: 0), visible = scroll.contentView.bounds
             if rect.minX < visible.minX { scroll.scrollHorizontally(to: rect.minX) }
             else if rect.maxX > visible.maxX { scroll.scrollHorizontally(to: rect.maxX - visible.width) }
         }
-        func stopDrag() { source = nil; insertion = nil; edgeTimer?.invalidate(); edgeTimer = nil; needsDisplay = true }
+        func stopDrag(restore: Bool = true, animated: Bool = false) {
+            source = nil; insertion = nil; dropFrame = nil; dragged = false; dragOrder = []
+            edgeTimer?.invalidate(); edgeTimer = nil
+            if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor); self.escapeMonitor = nil }
+            if let windowObserver { NotificationCenter.default.removeObserver(windowObserver); self.windowObserver = nil }
+            for button in buttons { button.lifted = false }
+            if restore { positionButtons(layoutFrames, animated: animated) }
+            updateHover(); needsDisplay = true
+        }
+        override func cancelOperation(_ sender: Any?) { stopDrag(animated: true) }
         override func viewWillMove(toWindow newWindow: NSWindow?) { if newWindow == nil { stopDrag() }; super.viewWillMove(toWindow: newWindow) }
         private func scrollEdge() {
-            guard dragged, let scroll = enclosingScrollView, let source, entries.contains(where: { $0.id == source }) else { return }
+            guard dragged, writable, let scroll = enclosingScrollView as? HorizontalScrollView, let source, entries.contains(where: { $0.id == source }) else { return }
             let point = convert(pointer, from: nil), visible = visibleRect
-            let delta: CGFloat = point.x < visible.minX + 24 ? -18 : point.x > visible.maxX - 24 ? 18 : 0
+            let edge: CGFloat = 28
+            let delta: CGFloat = point.x < visible.minX + edge ? -8 * min(1, (visible.minX + edge - point.x) / edge) : point.x > visible.maxX - edge ? 8 * min(1, (point.x - visible.maxX + edge) / edge) : 0
             guard delta != 0 else { return }
-            let x = min(max(0, scroll.contentView.bounds.minX + delta), max(0, bounds.width - scroll.contentView.bounds.width))
-            scroll.contentView.scroll(to: NSPoint(x: x, y: 0)); scroll.reflectScrolledClipView(scroll.contentView)
-            insertion = buttons.firstIndex { convert(pointer, from: nil).x < $0.frame.midX } ?? entries.count; needsDisplay = true
+            scroll.scrollHorizontally(to: scroll.contentView.bounds.minX + delta)
+            updateDragPreview()
+        }
+        private func updateDragPreview() {
+            guard dragged, let source, let old = entries.firstIndex(where: { $0.id == source }), layoutFrames.count == buttons.count else { return }
+            var frame = layoutFrames[old]
+            frame.origin.x = min(max(TabMetrics.inset, convert(pointer, from: nil).x - grabOffset), max(TabMetrics.inset, contentWidth - TabMetrics.inset - frame.width))
+            let others = entries.indices.filter { $0 != old }
+            // Compare the leading edge with the remaining tabs' midpoints. Removing
+            // the source width first lets a wide tab reach either end beside short tabs.
+            var destination = 0, remainingX = TabMetrics.inset
+            for index in others {
+                if frame.minX > remainingX + layoutFrames[index].width / 2 { destination += 1 }
+                remainingX += layoutFrames[index].width + TabMetrics.gap
+            }
+            insertion = destination > old ? destination + 1 : destination
+            var order = others; order.insert(old, at: destination)
+            var frames = layoutFrames, x = TabMetrics.inset
+            for index in order {
+                frames[index].origin.x = x
+                x += frames[index].width + TabMetrics.gap
+            }
+            dropFrame = frames[old]
+            positionButtons(frames, animated: true, excluding: source)
+            let button = buttons[old]
+            button.layer?.removeAllAnimations(); button.frame = frame; button.targetFrame = frame
+            needsDisplay = true
         }
         override func draw(_ dirtyRect: NSRect) {
-            for (index, entry) in entries.enumerated() where buttons.indices.contains(index) {
-                let active = selected == entry.id
-                let path = NSBezierPath(roundedRect: buttons[index].frame.insetBy(dx: 0.5, dy: 0.5), xRadius: TabMetrics.radius, yRadius: TabMetrics.radius)
-                (active ? Theme.tabWash : Theme.foreground.withAlphaComponent(hover == index ? 0.04 : 0.02)).setFill()
-                path.fill()
-                if active { Theme.accentWashBorder.setStroke(); path.lineWidth = 1; path.stroke() }
-            }
-            if let insertion {
-                let x = insertion < buttons.count ? buttons[insertion].frame.minX - TabMetrics.gap / 2 : (buttons.last?.frame.maxX ?? 0) + TabMetrics.gap / 2
-                Theme.accentStroke.setFill()
-                NSRect(x: x - 1, y: max(0, (bounds.height - TabMetrics.height) / 2), width: 2, height: TabMetrics.height).fill()
+            if let dropFrame {
+                let path = NSBezierPath(roundedRect: dropFrame.insetBy(dx: 0.5, dy: 0.5), xRadius: TabMetrics.radius, yRadius: TabMetrics.radius)
+                Theme.tabInactiveWash.setFill(); path.fill()
+                Theme.accentStroke.withAlphaComponent(0.40).setStroke()
+                path.lineWidth = 1; path.setLineDash([3, 2], count: 2, phase: 0); path.stroke()
             }
         }
-        override func mouseDown(with event: NSEvent) { renaming = event.clickCount == 2; origin = convert(event.locationInWindow, from: nil).x; source = buttons.firstIndex { $0.frame.minX <= origin && origin <= $0.frame.maxX }.map { entries[$0].id }; dragged = false; if renaming, writable, let source { rename?(source); stopDrag() } }
+        override func mouseDown(with event: NSEvent) {
+            stopDrag()
+            renaming = event.clickCount == 2
+            let point = convert(event.locationInWindow, from: nil)
+            origin = point.x; pointer = event.locationInWindow
+            guard let index = buttons.firstIndex(where: { $0.frame.contains(point) }) else { return }
+            source = entries[index].id; grabOffset = point.x - buttons[index].frame.minX; dragOrder = entries.map(\.id)
+            if renaming, writable, let source { rename?(source); stopDrag() }
+        }
         override func mouseDragged(with event: NSEvent) {
-            guard writable, !renaming, source != nil else { return }
-            let x = convert(event.locationInWindow, from: nil).x; guard abs(x - origin) > 4 || dragged else { return }; dragged = true; pointer = event.locationInWindow
-            if edgeTimer == nil { let timer = Timer(timeInterval: 0.06, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.scrollEdge() } }; edgeTimer = timer; RunLoop.main.add(timer, forMode: .common) }
-            scrollEdge()
-            insertion = buttons.firstIndex { x < $0.frame.midX } ?? entries.count; needsDisplay = true
+            guard writable, !renaming, let source else { return }
+            let x = convert(event.locationInWindow, from: nil).x
+            guard abs(x - origin) > 4 || dragged else { return }
+            pointer = event.locationInWindow
+            if !dragged {
+                dragged = true; hover = nil; updateHover()
+                buttons.first { $0.entryID == source }?.lifted = true
+                escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                    guard let self, event.window === self.window, event.keyCode == 53 else { return event }
+                    self.cancelOperation(nil); return nil
+                }
+                windowObserver = NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: window, queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.stopDrag(animated: true) }
+                }
+                let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.scrollEdge() } }
+                edgeTimer = timer; RunLoop.main.add(timer, forMode: .common)
+            }
+            updateDragPreview()
         }
         override func mouseUp(with event: NSEvent) {
-            defer { stopDrag(); renaming = false }
-            guard !renaming else { return }
-            guard let source, entries.contains(where: { $0.id == source }) else { return }
-            if dragged, let insertion { move?(source, insertion) } else { select?(source) }
+            defer { renaming = false }
+            guard !renaming, let source, let old = entries.firstIndex(where: { $0.id == source }) else { stopDrag(); return }
+            guard dragged else { stopDrag(); select?(source); return }
+            guard writable, dragOrder == entries.map(\.id) else { stopDrag(animated: true); return }
+            pointer = event.locationInWindow; updateDragPreview()
+            guard let insertion, insertion != old, insertion != old + 1, let dropFrame else { stopDrag(animated: true); return }
+            var frames = buttons.map(\.targetFrame); frames[old] = dropFrame
+            positionButtons(frames, animated: true)
+            stopDrag(restore: false)
+            move?(source, insertion)
         }
     }
 }
