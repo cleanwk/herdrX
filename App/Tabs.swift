@@ -114,7 +114,7 @@ struct Tabs: NSViewRepresentable {
         }
         func syncButtons() {
             let ids = entries.map(\.id)
-            if source != nil, !writable || dragOrder != ids { stopDrag() }
+            if source != nil, dragOrder != ids || (dragged && !writable) { stopDrag() }
             // Preserve view identity so the background and label animate together on reorder/rollback.
             let previous = Dictionary(uniqueKeysWithValues: buttons.map { ($0.entryID, $0) })
             let reordered = !buttons.isEmpty && buttons.map(\.entryID) != ids

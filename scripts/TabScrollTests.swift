@@ -172,6 +172,11 @@ final class TabSnapshotBackground: NSView {
         strip.mouseUp(with: event(.leftMouseUp, x: start)); settle()
         precondition(moves.isEmpty && strip.buttons[0].frame.minX == TabMetrics.inset, "Returning to the original slot emitted a move")
 
+        reset(); strip.writable = false
+        strip.mouseDown(with: event(.leftMouseDown, x: start)); strip.syncButtons()
+        strip.mouseUp(with: event(.leftMouseUp, x: start))
+        precondition(strip.selected == "wide" && moves.isEmpty, "Read-only tabs lost ordinary selection")
+
         for cancellation in ["escape", "offline", "removed", "changed-order", "window"] {
             reset()
             strip.mouseDown(with: event(.leftMouseDown, x: start))
