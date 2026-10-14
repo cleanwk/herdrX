@@ -143,6 +143,9 @@ enum Theme {
     static var accent: NSColor { dynamic { roles(dark: $0).accentText } }
     static var accentWash: NSColor { dynamic { roles(dark: $0).accentWash } }
     static var accentStrongWash: NSColor { dynamic { roles(dark: $0).accentStrongWash } }
+    static var tabInactiveWash: NSColor { dynamic { roles(dark: $0).tabInactiveWash } }
+    static var tabHoverWash: NSColor { dynamic { roles(dark: $0).tabHoverWash } }
+    static var tabText: NSColor { dynamic { roles(dark: $0).tabText } }
     static var tabWash: NSColor { dynamic { roles(dark: $0).tabWash } }
     static var accentWashBorder: NSColor { dynamic { roles(dark: $0).accentWashBorder } }
     static var onAccent: NSColor { dynamic { roles(dark: $0).onAccent } }

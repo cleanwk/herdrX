@@ -14,6 +14,9 @@ struct ThemeColors {
     let accentText: NSColor
     let accentWash: NSColor
     let accentStrongWash: NSColor
+    let tabInactiveWash: NSColor
+    let tabHoverWash: NSColor
+    let tabText: NSColor
     let tabWash: NSColor
     let accentWashBorder: NSColor
     let onAccent: NSColor
@@ -32,7 +35,11 @@ struct ThemeColors {
         accentStroke = accent
         accentWash = Self.mix(background, accent, dark ? 0.14 : 0.10)
         accentStrongWash = Self.mix(background, accent, dark ? 0.19 : 0.14)
-        tabWash = Self.mix(self.chrome, accent, dark ? 0.14 : 0.10)
+        // Give every tab a visible surface, then layer selection over that base.
+        tabInactiveWash = Self.mix(self.chrome, self.foreground, dark ? 0.10 : 0.08)
+        tabHoverWash = Self.mix(self.chrome, self.foreground, dark ? 0.14 : 0.12)
+        tabText = Self.readable(self.secondary, on: [tabInactiveWash, tabHoverWash])
+        tabWash = Self.mix(tabInactiveWash, accent, dark ? 0.22 : 0.16)
         accentWashBorder = accent.withAlphaComponent(0.24)
         selectedSurfaces = [accentWash, accentStrongWash, tabWash]
         selectedText = Self.readable(self.foreground, on: selectedSurfaces)

@@ -121,6 +121,19 @@ private final class ByteCapture: @unchecked Sendable {
         try await wait("shell after synthetic TUI") {
             TerminalInputRecovery.isIdleShell(try await client.call("pane.process_info", ["pane_id": .string(pane)])["process_info"], pane: pane)
         }
+        // Reproduce an unclean TUI exit: mouse capture remains enabled at the
+        // shell. The history API must scroll without injecting reports as input.
+        let staleMouse = directory + "/stale-mouse-ready"
+        first.write(Data(("printf '\\033[?1000h\\033[?1006h'; printf OK > " + quote(staleMouse) + "\n").utf8))
+        try await wait("stale mouse fixture") { FileManager.default.fileExists(atPath: staleMouse) }
+        guard TerminalInputRecovery.isIdleShell(try await client.call("pane.process_info", ["pane_id": .string(pane)])["process_info"], pane: pane) else { throw Failure("Stale mouse fixture did not return to shell") }
+        let historyBefore = try await client.call("pane.read", ["pane_id": .string(pane), "source": .string("recent"), "format": .string("text"), "lines": .number(250)])["read"]["text"]
+        let scrolled = try await client.call("pane.scroll", ["pane_id": .string(pane), "offset_from_bottom": .number(3)])["pane"]["scroll"]
+        guard scrolled["offset_from_bottom"].int == 3 else { throw Failure("Verified-shell history failed with stale mouse modes") }
+        _ = try await client.call("pane.scroll", ["pane_id": .string(pane), "offset_from_bottom": .number(0)])
+        let historyAfter = try await client.call("pane.read", ["pane_id": .string(pane), "source": .string("recent"), "format": .string("text"), "lines": .number(250)])["read"]["text"]
+        guard historyBefore == historyAfter else { throw Failure("History scrolling injected text or damaged retained output") }
+        first.write(Data("printf '\\033[?1000l\\033[?1006l'\n".utf8))
         first.write(Data("sleep 15\n".utf8))
         try await wait("foreground process") {
             let info = try await client.call("pane.process_info", ["pane_id": .string(pane)])["process_info"]
@@ -144,6 +157,6 @@ private final class ByteCapture: @unchecked Sendable {
         try await wait("observer never owns input") { FileManager.default.fileExists(atPath: thirdMarker) }
         let after = try await client.call("pane.process_info", ["pane_id": .string(pane)])["process_info"]
         guard before["shell_pid"] == after["shell_pid"] else { throw Failure("Server shell changed") }
-        print("PASS: stale Kitty mode detected on initial attach with a verified shell; raw Ctrl-C remains usable; production PTY attach refuses takeover; observer streams/resizes/restarts without stealing input or resizing owner; up/down wheel scrolls real server history and reaches alternate-screen TUI; explicit takeover; detach preserves shell PID; actual foreground shell guard")
+        print("PASS: stale Kitty mode detected on initial attach with a verified shell; raw Ctrl-C remains usable; production PTY attach refuses takeover; observer streams/resizes/restarts without stealing input or resizing owner; up/down wheel scrolls real server history and reaches alternate-screen TUI; stale shell mouse capture scrolls through pane.scroll without changing history; explicit takeover; detach preserves shell PID; actual foreground shell guard")
     }
 }

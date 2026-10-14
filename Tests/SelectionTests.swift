@@ -122,6 +122,30 @@ import HerdCore
         }
     }
 
+    @Test func wheelGatePreventsStaleMouseReportsUntilRoutingIsVerified() async throws {
+        let h = try await Harness()
+        defer { h.close() }
+        h.preferences(copy: false, reporting: false)
+        h.receive("\u{1b}[?1049h\u{1b}[?1003h\u{1b}[?1006h" + Harness.text)
+        var events: [NSEvent] = []
+        h.view.onRemoteScroll = { events.append($0) }
+        h.output.clear()
+        h.wheel(y: 1, unit: .line)
+        h.wheel(y: -1, unit: .line)
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(events.count == 2 && h.output.data.isEmpty, "Unverified wheel reached the shell")
+        // A verified running TUI retains Ghostty's native encoding and modifiers.
+        h.view.forwardRemoteScroll(with: events[0])
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(String(decoding: h.output.data, as: UTF8.self).contains("\u{1b}[<64;"))
+        #expect(events.count == 2, "Forwarding re-entered the asynchronous gate")
+        h.view.allowsRemoteScroll = false; h.output.clear()
+        h.view.forwardRemoteScroll(with: events[1])
+        h.wheel(y: 1, unit: .line)
+        try await Task.sleep(for: .milliseconds(80))
+        #expect(h.output.data.isEmpty && events.count == 2, "Observer replayed pending wheel input")
+    }
+
     @Test func wheelRespectsLocalHistoryRecoveryAndObservation() async throws {
         let h = try await Harness()
         defer { h.close() }
@@ -347,6 +371,9 @@ import HerdCore
                     for surface in r.selectedSurfaces {
                         #expect(ThemeColors.contrast(r.selectedText, surface) >= 4.499)
                         #expect(ThemeColors.contrast(r.selectedSecondary, surface) >= 4.499)
+                    }
+                    for surface in [r.tabInactiveWash, r.tabHoverWash] {
+                        #expect(ThemeColors.contrast(r.tabText, surface) >= 4.499)
                     }
                     if let normal { #expect(normal == [r.foreground, r.secondary, r.decoration]) }
                     normal = [r.foreground, r.secondary, r.decoration]

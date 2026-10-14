@@ -445,6 +445,7 @@
 "Sends Ctrl-C, then restores input modes only after the foreground returns to the shell. Terminal history is preserved." = "发送 Ctrl-C，确认前台返回 Shell 后才恢复输入模式，并保留终端历史。";
 
 "Viewing only — reconnect to scroll." = "只读观察，请重新连接后滚动。";
+"Could not verify terminal state. Try scrolling again." = "无法确认终端状态，请重试滚动。";
 
 "Herdr machines" = "Herdr 机器";
 "Follow Herdr machine directory" = "持续跟随 Herdr 机器目录";

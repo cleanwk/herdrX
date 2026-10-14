@@ -434,6 +434,49 @@ final class Desk: ObservableObject {
         }
     }
     private var refreshIDs: [String: UUID] = [:]
+    private func scrollTerminal(_ key: PaneKey, terminal: Terminal, events: [NSEvent]) async {
+        guard canWrite(key.device), !ended.contains(key), terminals[key] === terminal,
+              let client = try? rpc(key.device),
+              let target = sessions[key.device]?.panes.first(where: { $0.id == key.pane })?.terminal else { return }
+        let connection = connectionIDs[key.device], attachment = terminal.attachmentID
+        func valid() -> Bool {
+            !Task.isCancelled && canWrite(key.device) && connectionIDs[key.device] == connection
+                && paths[key.device] == client.path && terminals[key] === terminal
+                && terminal.attachmentID == attachment && !ended.contains(key) && terminal.view.allowsRemoteScroll
+                && sessions[key.device]?.panes.contains(where: { $0.id == key.pane && $0.terminal == target }) == true
+        }
+        do {
+            let info = try await client.call("pane.process_info", ["pane_id": .string(key.pane)], timeout: 3)["process_info"]
+            guard valid() else { return }
+            guard info["pane_id"].string == key.pane, (info["shell_pid"].int ?? 0) > 0,
+                  (info["foreground_process_group_id"].int ?? 0) > 0, !info["foreground_processes"].array.isEmpty else {
+                throw Failure("Missing foreground process information")
+            }
+            guard TerminalInputRecovery.isIdleShell(info, pane: key.pane) else {
+                terminal.historyScroll = TerminalScroll()
+                for event in events { terminal.view.forwardRemoteScroll(with: event) }
+                return
+            }
+            // A killed TUI can leave server-side mouse capture enabled. At a
+            // verified shell, use history directly instead of sending mouse input.
+            let pane = try await client.call("pane.get", ["pane_id": .string(key.pane)], timeout: 3)["pane"]
+            guard valid() else { return }
+            guard pane["terminal_id"].string == target,
+                  var offset = pane["scroll"]["offset_from_bottom"].int,
+                  let maximum = pane["scroll"]["max_offset_from_bottom"].int else {
+                throw Failure("Missing terminal scroll information")
+            }
+            let original = offset
+            for event in events {
+                let lines = terminal.historyScroll.lines(delta: Double(event.scrollingDeltaY), precise: event.hasPreciseScrollingDeltas, lineHeight: terminal.scrollLineHeight)
+                offset = TerminalScroll.offset(current: offset, maximum: maximum, lines: lines)
+            }
+            guard offset != original, valid() else { return }
+            _ = try await client.call("pane.scroll", ["pane_id": .string(key.pane), "offset_from_bottom": .number(Double(offset))], timeout: 3)
+        } catch {
+            if valid() { terminal.view.scrollFailed() }
+        }
+    }
     func refresh(_ id: String, client: RPC) async throws {
         guard paths[id] == client.path else { throw CancellationError() }
         let connection = connectionIDs[id]
@@ -498,6 +541,10 @@ final class Desk: ObservableObject {
         terminal.onExit = { [weak self] status in self?.ended.insert(key); self?.exitStatus[key] = status }
         terminal.onObservationEnded = { [weak self] in self?.objectWillChange.send() }
         terminal.onKeyboardModesEnabled = { [weak self] in self?.restoreInput(key, automatic: true) }
+        terminal.onScroll = { [weak self, weak terminal] events in
+            guard let self, let terminal else { return }
+            await self.scrollTerminal(key, terminal: terminal, events: events)
+        }
         terminal.view.onInterrupt = { [weak self, weak terminal] in
             guard let self, let terminal, self.terminals[key] === terminal,
                   self.canWrite(key.device), !self.ended.contains(key) else { return false }
