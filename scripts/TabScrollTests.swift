@@ -1,13 +1,23 @@
 import AppKit
 import SwiftUI
 
-// The production tab view is compiled directly; only app-wide presentation dependencies are stubbed.
+// Compile the production view and color derivation; only app-wide dependencies are stubbed.
 func L(_ value: String) -> String { value }
 func LF(_ value: String, _ count: Int) -> String { String(format: value, count) }
 enum Theme {
-    static let selectedText = NSColor.labelColor, selectedSecondary = NSColor.secondaryLabelColor, tabWash = NSColor.windowBackgroundColor, accentWashBorder = NSColor.systemBlue, accentStroke = NSColor.systemBlue
-    static let foreground = NSColor.labelColor, secondary = NSColor.secondaryLabelColor, accent = NSColor.systemBlue
-    static let tabInactiveWash = NSColor.controlBackgroundColor, tabHoverWash = NSColor.quaternaryLabelColor, tabText = NSColor.secondaryLabelColor
+    private static func color(_ hex: UInt32) -> NSColor {
+        NSColor(srgbRed: CGFloat((hex >> 16) & 255) / 255, green: CGFloat((hex >> 8) & 255) / 255, blue: CGFloat(hex & 255) / 255, alpha: 1)
+    }
+    private static func role(_ path: KeyPath<ThemeColors, NSColor>) -> NSColor {
+        NSColor(name: nil) { appearance in
+            let dark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            return ThemeColors(background: color(dark ? 0x1e1e2e : 0xeff1f5), foreground: color(dark ? 0xcdd6f4 : 0x4c4f69), accent: color(dark ? 0x82aaff : 0x2463eb), dark: dark,
+                chrome: color(dark ? 0x181825 : 0xe6e9ef), secondary: color(dark ? 0xa6adc8 : 0x676b80))[keyPath: path]
+        }
+    }
+    static let selectedText = role(\.selectedText), selectedSecondary = role(\.selectedSecondary)
+    static let tabWash = role(\.tabWash), accentStroke = role(\.accentStroke), foreground = role(\.foreground)
+    static let tabInactiveWash = role(\.tabInactiveWash), tabHoverWash = role(\.tabHoverWash), tabText = role(\.tabText), chrome = role(\.chrome)
 }
 final class ActionMenuItem: NSMenuItem {
     let invoke: () -> Void
@@ -15,7 +25,7 @@ final class ActionMenuItem: NSMenuItem {
     required init(coder: NSCoder) { fatalError() }
 }
 final class TabSnapshotBackground: NSView {
-    override func draw(_ dirtyRect: NSRect) { NSColor.windowBackgroundColor.setFill(); dirtyRect.fill() }
+    override func draw(_ dirtyRect: NSRect) { Theme.chrome.setFill(); dirtyRect.fill() }
 }
 
 @main struct TabScrollTests {
