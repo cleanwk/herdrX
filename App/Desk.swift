@@ -664,6 +664,13 @@ final class Desk: ObservableObject {
         for key in Array(terminals.keys) where key.device == device && !valid.contains(key.pane) { terminals.removeValue(forKey: key)?.stop(); ended.remove(key) }
     }
     private func rank(_ status: String) -> Int { Attention.rank(status) }
+    var sidebarAgents: [AgentRow] {
+        agents.enumerated().sorted {
+            let left = attentionState.sidebarRank($0.element.id, status: $0.element.pane.status)
+            let right = attentionState.sidebarRank($1.element.id, status: $1.element.pane.status)
+            return (left, $0.offset) < (right, $1.offset)
+        }.map(\.element)
+    }
     func reindex() {
         let ordered = devices.flatMap { device -> [AgentRow] in
             guard let session = sessions[device.id] else { return [] }

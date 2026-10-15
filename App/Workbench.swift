@@ -123,7 +123,7 @@ struct Workbench: View {
         ScrollViewReader { reader in ScrollView {
             LazyVStack(alignment: .leading, spacing: 2, pinnedViews: [.sectionHeaders]) {
                 ForEach(desk.devices.filter { desk.deviceFilter.isEmpty || $0.id == desk.deviceFilter }) { device in deviceGroup(device) }
-                let agents = desk.agents.filter { desk.deviceFilter.isEmpty || $0.device == desk.deviceFilter }
+                let agents = desk.sidebarAgents.filter { desk.deviceFilter.isEmpty || $0.device == desk.deviceFilter }
                 SidebarGroup(title: L("Agents"), id: "agents", empty: false) {
                     ForEach(agents) { row in agentRow(row) }
                     if agents.isEmpty { Text("No agents reported by Herdr.").font(.system(size: 11)).foregroundStyle(Color(nsColor: Theme.secondary)).padding(.horizontal, 18).padding(.vertical, 8) }

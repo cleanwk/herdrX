@@ -2,6 +2,23 @@ import XCTest
 @testable import HerdCore
 
 final class AttentionTests: XCTestCase {
+    func testSidebarRanksUnreadBeforeReadResultsAndUpdatesWhenRead() throws {
+        var state = Attention()
+        let old = try snapshot([("read", "done"), ("unread", "working"), ("working", "working"), ("blocked", "blocked")])
+        let new = try snapshot([("read", "done"), ("unread", "done"), ("working", "working"), ("blocked", "blocked")])
+        state.update(device: "a", old: old, new: new)
+        func ordered() -> [String] {
+            new.panes.enumerated().sorted {
+                let left = state.sidebarRank(PaneKey(device: "a", pane: $0.element.id), status: $0.element.status)
+                let right = state.sidebarRank(PaneKey(device: "a", pane: $1.element.id), status: $1.element.status)
+                return (left, $0.offset) < (right, $1.offset)
+            }.map(\.element.id)
+        }
+        XCTAssertEqual(ordered(), ["blocked", "working", "unread", "read"])
+        XCTAssertEqual(state.sidebarRank(PaneKey(device: "b", pane: "unread"), status: "done"), 3)
+        state.leave(PaneKey(device: "a", pane: "unread"))
+        XCTAssertEqual(ordered(), ["blocked", "working", "read", "unread"])
+    }
     func snapshot(_ statuses: [(String, String)]) throws -> Session {
         try Session(.object([
             "workspaces": .array([.object(["workspace_id": .string("w1")])]),
