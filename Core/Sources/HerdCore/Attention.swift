@@ -18,6 +18,11 @@ public struct Attention: Sendable {
     public static func rank(_ status: String) -> Int {
         switch status { case "blocked": return 0; case "working": return 1; case "done": return 2; case "idle": return 3; default: return 4 }
     }
+    public func sidebarRank(_ key: PaneKey, status: String) -> Int {
+        if status == "done" && unread.contains(key) { return 2 }
+        let rank = Self.rank(status)
+        return rank >= 2 ? rank + 1 : rank
+    }
     public func needsAttention(_ key: PaneKey, status: String) -> Bool { status == "blocked" || (status == "done" && unread.contains(key)) }
     public func summary(device: String, panes: [Item]) -> String? {
         let agents = panes.filter { $0.agent != nil }

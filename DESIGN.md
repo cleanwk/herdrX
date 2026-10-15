@@ -449,6 +449,8 @@ The completed follow-up gives tab pane counts their own trailing text slot, with
 
 ### Selection and color roles — 0.1.13
 
+The Agent sidebar sorts waiting-for-input rows first, then working, completed unread, completed read, idle and unknown. Rows within each status retain their existing device/Space/tab/pane order. Reading a result updates its position through the existing attention state. See [Agent ordering validation](docs/agent-ordering/VALIDATION.md).
+
 The [selection and theme validation](docs/selection-theme/VALIDATION.md) supersedes the earlier global contrast contract. Normal foreground/secondary/decoration are accent-independent. Selected text is checked on its own washes; accent stroke keeps the chosen hue, accent text is contrast-adjusted only for normal surfaces, and accent wash/border/on-accent have separate roles. Catppuccin chrome uses Latte mantle / Mocha crust; terminal backgrounds retain their established palette values. Working/unread use stable blue, done uses success, idle/unknown use neutral text. All statuses retain shapes and labels.
 
 A captured left press waits for click versus a 4pt drag. Local gestures temporarily use Ghostty's supported reporting toggle, preserving actual modifiers without a synthetic Shift anchor. The engine's copy-on-select is off; the host commits a nonempty completed local selection once through copy_to_clipboard:plain. Selection clears on copy; a verified pasteboard write shows one noninteractive “Copied” label and an accessibility announcement. Cancellation releases the engine and restores reporting without copying. The upper/lower 12pt map to out-of-bounds coordinates for Ghostty's own selection-scroll timer.
