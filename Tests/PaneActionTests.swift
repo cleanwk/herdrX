@@ -40,9 +40,9 @@ import Testing
         let closeStart = Date()
         desk.objectAction(device: device.id, method: "pane.close", params: ["pane_id": .string("right")])
         try await wait { desk.sessions[device.id]?.panes.contains(where: { $0.id == "right" }) == false }
+        render()
         let closeTime = Date().timeIntervalSince(closeStart)
         #expect(closeTime < 0.75, "Close waited for the two-second background read")
-        render()
         #expect(desk.terminals[right] == nil)
         #expect(removed.view.superview == nil, "Closed native surface remained mounted")
         #expect(desk.terminals[left] === survivor)
@@ -53,9 +53,9 @@ import Testing
         let splitStart = Date()
         desk.split(horizontal: true, target: left)
         try await wait { desk.sessions[device.id]?.panes.contains(where: { $0.id == "new-3" }) == true }
+        render()
         let splitTime = Date().timeIntervalSince(splitStart)
         #expect(splitTime < 0.75, "Split waited for unrelated metadata")
-        render()
         #expect(desk.terminals[left] === survivor)
         #expect(survivor.view.frame.width < oldWidth * 1.1)
         #expect(desk.focused?.pane == "new-3")
