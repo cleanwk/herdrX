@@ -10,11 +10,18 @@ final class PaneActionWire: @unchecked Sendable {
     private var reads = 0
     private var invalidLayout = false
     private var workspaceError: String?
+    private var timings: [(String, Date, TimeInterval)] = []
     let stopEvents = DispatchSemaphore(value: 0)
     var fullReads: Int { lock.lock(); defer { lock.unlock() }; return reads }
     func breakLayout(_ broken: Bool) { lock.lock(); invalidLayout = broken; lock.unlock() }
     func rejectWorkspace(_ code: String?) { lock.lock(); workspaceError = code; lock.unlock() }
     var snapshot: JSON { lock.lock(); defer { lock.unlock() }; return makeSnapshot() }
+    func trace(since start: Date) {
+        lock.lock(); let records = timings; lock.unlock()
+        for (method, date, elapsed) in records where date >= start {
+            print("ACTION WIRE \(method): start=\(date.timeIntervalSince(start))s handler=\(elapsed)s")
+        }
+    }
     private func makeSnapshot() -> JSON {
         let area: JSON = .object(["x": .number(0), "y": .number(0), "width": .number(120), "height": .number(40)])
         func pane(_ id: String, space: String, tab: String) -> JSON {
@@ -34,6 +41,8 @@ final class PaneActionWire: @unchecked Sendable {
     }
     func respond(_ request: JSON) -> Data {
         let method = request["method"].string!, params = request["params"]
+        let start = Date()
+        defer { lock.lock(); timings.append((method, start, Date().timeIntervalSince(start))); lock.unlock() }
         lock.lock()
         if method == "pane.close" { ids.removeAll { $0 == params["pane_id"].string } }
         if method == "pane.split" { ids.append("new-\(next)"); next += 1 }

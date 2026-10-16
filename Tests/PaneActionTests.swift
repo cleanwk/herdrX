@@ -41,6 +41,14 @@ import Testing
         let previousReads = wire.fullReads
         let background = Task { try await desk.refresh(device.id, client: RPC(path: server.path)) }
         try await wait { wire.fullReads > previousReads }
+        var closePublication: Date?, splitPublication: Date?
+        let publications = desk.$sessions.sink { sessions in
+            if let panes = sessions[device.id]?.panes {
+                if !panes.contains(where: { $0.id == "right" }), closePublication == nil { closePublication = Date() }
+                if panes.contains(where: { $0.id == "new-3" }), splitPublication == nil { splitPublication = Date() }
+            }
+        }
+        defer { withExtendedLifetime(publications) {} }
 
         let closeStart = Date()
         desk.objectAction(device: device.id, method: "pane.close", params: ["pane_id": .string("right")])
@@ -49,6 +57,8 @@ import Testing
         render()
         let closeTime = Date().timeIntervalSince(closeStart)
         print("NATIVE CLOSE STAGES: state=\(closeStateTime)s layout=\(closeTime - closeStateTime)s total=\(closeTime)s")
+        print("NATIVE CLOSE PUBLICATION: \(closePublication?.timeIntervalSince(closeStart) ?? -1)s")
+        wire.trace(since: closeStart)
         #expect(closeTime < 0.75, "Close waited for the two-second background read")
         #expect(desk.terminals[right] == nil)
         #expect(removed.view.superview == nil, "Closed native surface remained mounted")
@@ -64,6 +74,8 @@ import Testing
         render()
         let splitTime = Date().timeIntervalSince(splitStart)
         print("NATIVE SPLIT STAGES: state=\(splitStateTime)s layout=\(splitTime - splitStateTime)s total=\(splitTime)s")
+        print("NATIVE SPLIT PUBLICATION: \(splitPublication?.timeIntervalSince(splitStart) ?? -1)s")
+        wire.trace(since: splitStart)
         #expect(splitTime < 0.75, "Split waited for unrelated metadata")
         #expect(desk.terminals[left] === survivor)
         #expect(survivor.view.frame.width < oldWidth * 1.1)
