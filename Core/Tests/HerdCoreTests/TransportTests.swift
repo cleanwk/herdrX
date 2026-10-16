@@ -5,21 +5,32 @@ import Darwin
 /// A real Unix socket exercises framing, snapshot validation and event recovery.
 final class TestRPCServer {
     let path = "/tmp/hxt-" + UUID().uuidString.prefix(10) + ".sock"
-    let fd: Int32
+    private final class Listener: @unchecked Sendable {
+        let fd: Int32
+        private let lock = NSLock()
+        private var closed = false
+        init(_ fd: Int32) { self.fd = fd }
+        func stop() { lock.lock(); defer { lock.unlock() }; if !closed { shutdown(fd, SHUT_RDWR) } }
+        func finish() { lock.lock(); defer { lock.unlock() }; if !closed { closed = true; close(fd) } }
+    }
+    private let listener: Listener
     convenience init(requests: Int, handler: @escaping @Sendable (JSON) -> [JSON]) throws {
         try self.init(requests: requests, rawHandler: { request in
             handler(request).compactMap { try? JSONEncoder().encode($0) }.reduce(into: Data()) { $0 += $1 + Data([10]) }
         })
     }
     init(requests: Int, concurrent: Bool = false, rawHandler: @escaping @Sendable (JSON) -> Data) throws {
-        fd = socket(AF_UNIX, SOCK_STREAM, 0)
+        let fd = socket(AF_UNIX, SOCK_STREAM, 0)
         var address = sockaddr_un(); address.sun_family = sa_family_t(AF_UNIX)
         let bytes = Array(path.utf8)
         withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: bytes) }
         let bound = withUnsafePointer(to: &address) { p in p.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) } }
         guard bound == 0, listen(fd, 8) == 0 else { close(fd); throw Failure("Test socket failed") }
-        let fd = self.fd
+        let listener = Listener(fd); self.listener = listener
         DispatchQueue.global().async {
+            // The accept loop owns close. Closing from deinit can let this loop
+            // accept on a reused descriptor belonging to the next fixture.
+            defer { listener.finish() }
             for _ in 0..<requests {
                 let peer = accept(fd, nil, nil); guard peer >= 0 else { break }
                 let respond: @Sendable () -> Void = {
@@ -38,7 +49,7 @@ final class TestRPCServer {
             }
         }
     }
-    deinit { shutdown(fd, SHUT_RDWR); close(fd); try? FileManager.default.removeItem(atPath: path) }
+    deinit { listener.stop(); try? FileManager.default.removeItem(atPath: path) }
 }
 
 final class TransportTests: XCTestCase {

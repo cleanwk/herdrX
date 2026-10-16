@@ -90,3 +90,11 @@ Local validation: 14 Python release/update tests and `git diff --check` passed.
 This Linux executor cannot run AppKit or the Darwin Core tests; the current PR
 head must pass the complete macOS workflow before merge/tag. User-device mouse
 acceptance and live-session latency remain distinct from the synthetic benchmark.
+
+The first [macOS run](https://github.com/cleanwk/herdrX/actions/runs/38873698614)
+passed native tab dispatch, real Herdr integration, pane geometry and the Ghostty
+suite, then exposed a SIGPIPE in the new delayed-socket stress fixture. The fixture
+now explicitly retains its servers across async waits, and the accept loop owns
+listener closure so a reused descriptor cannot be touched by an old loop.
+The complete [PR #31 head checks](https://github.com/cleanwk/herdrX/pull/31/checks)
+remain the release gate; this failed run is not a pass for the stress test.

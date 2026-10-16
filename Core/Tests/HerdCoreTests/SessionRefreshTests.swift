@@ -80,6 +80,7 @@ final class SessionRefreshTests: XCTestCase {
         let serialWire = LargeSessionWire(), parallelWire = LargeSessionWire()
         let serialServer = try TestRPCServer(requests: 200, concurrent: true, rawHandler: serialWire.respond)
         let parallelServer = try TestRPCServer(requests: 300, concurrent: true, rawHandler: parallelWire.respond)
+        defer { withExtendedLifetime(serialServer) {}; withExtendedLifetime(parallelServer) {} }
         let start = Date()
         let serial = try await SessionReader(concurrency: 1).load(RPC(path: serialServer.path))
         let serialTime = Date().timeIntervalSince(start)
@@ -106,7 +107,7 @@ final class SessionRefreshTests: XCTestCase {
     func testRefreshBurstKeepsCompletedResultAndReadsAgainAfterMutation() async throws {
         let wire = RefreshWire(), reader = SessionReader()
         let server = try TestRPCServer(requests: 50, rawHandler: wire.respond), rpc = RPC(path: server.path)
-        defer { wire.first.signal(); wire.second.signal() }
+        defer { wire.first.signal(); wire.second.signal(); withExtendedLifetime(server) {} }
         let first = Task { try await reader.loadSnapshot(rpc) }
         try await waitForRequests(1, wire: wire)
         // These callers arrived after the first read started (including a
