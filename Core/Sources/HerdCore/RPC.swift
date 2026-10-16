@@ -9,53 +9,61 @@ public struct RPC: Sendable {
     }
     public let path: String
     public init(path: String) { self.path = path }
+    // Socket reads can wait for a remote round trip. Keep them off Swift's
+    // cooperative executor so concurrent reads cannot starve unrelated tasks.
+    private static let controlQueue = DispatchQueue(label: "herdrx.control-rpc", qos: .userInitiated, attributes: .concurrent)
     public func call(_ method: String, _ params: [String: JSON] = [:], timeout: Int = 15) async throws -> JSON {
         let path = path
-        return try await Task.detached {
-            let fd = socket(AF_UNIX, SOCK_STREAM, 0)
-            guard fd >= 0 else { throw Failure("Cannot open socket") }
-            defer { close(fd) }
-            _ = fcntl(fd, F_SETFD, FD_CLOEXEC)
-            var noPipe: Int32 = 1
-            setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &noPipe, 4)
-            var timeout = timeval(tv_sec: min(300, max(1, timeout)), tv_usec: 0)
-            setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
-            setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
-            var address = sockaddr_un(); address.sun_family = sa_family_t(AF_UNIX)
-            let bytes = Array(path.utf8)
-            guard bytes.count < MemoryLayout.size(ofValue: address.sun_path) else { throw Failure("Socket path is too long") }
-            withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: bytes) }
-            let result = withUnsafePointer(to: &address) { p in
-                p.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
+        return try await withCheckedThrowingContinuation { continuation in
+            Self.controlQueue.async {
+                continuation.resume(with: Result { try Self.request(path: path, method: method, params: params, timeout: timeout) })
             }
-            guard result == 0 else { throw SocketConnectionError(path: path, code: errno) }
-            let id = UUID().uuidString
-            let request = try JSONEncoder().encode(JSON.object(["id": .string(id), "method": .string(method), "params": .object(params)])) + Data([10])
-            try request.withUnsafeBytes { raw in
-                var offset = 0
-                while offset < raw.count {
-                    let n = write(fd, raw.baseAddress!.advanced(by: offset), raw.count - offset)
-                    if n < 0 && errno == EINTR { continue }
-                    guard n > 0 else { throw Failure("Socket write failed") }; offset += n
-                }
-            }
-            var framer = LineBuffer(limit: 16 * 1024 * 1024)
-            var chunk = [UInt8](repeating: 0, count: 65536)
-            while true {
-                let n = read(fd, &chunk, chunk.count)
+        }
+    }
+    private static func request(path: String, method: String, params: [String: JSON], timeout: Int) throws -> JSON {
+        let fd = socket(AF_UNIX, SOCK_STREAM, 0)
+        guard fd >= 0 else { throw Failure("Cannot open socket") }
+        defer { close(fd) }
+        _ = fcntl(fd, F_SETFD, FD_CLOEXEC)
+        var noPipe: Int32 = 1
+        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &noPipe, 4)
+        var timeout = timeval(tv_sec: min(300, max(1, timeout)), tv_usec: 0)
+        setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
+        setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
+        var address = sockaddr_un(); address.sun_family = sa_family_t(AF_UNIX)
+        let bytes = Array(path.utf8)
+        guard bytes.count < MemoryLayout.size(ofValue: address.sun_path) else { throw Failure("Socket path is too long") }
+        withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: bytes) }
+        let result = withUnsafePointer(to: &address) { p in
+            p.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
+        }
+        guard result == 0 else { throw SocketConnectionError(path: path, code: errno) }
+        let id = UUID().uuidString
+        let request = try JSONEncoder().encode(JSON.object(["id": .string(id), "method": .string(method), "params": .object(params)])) + Data([10])
+        try request.withUnsafeBytes { raw in
+            var offset = 0
+            while offset < raw.count {
+                let n = write(fd, raw.baseAddress!.advanced(by: offset), raw.count - offset)
                 if n < 0 && errno == EINTR { continue }
-                if n == 0 { throw TruncatedResponse() }
-                guard n > 0 else { throw Failure("RPC read timed out or failed") }
-                let lines = try framer.append(Data(chunk.prefix(n)))
-                if let line = lines.first {
-                    let response = try JSONDecoder().decode(JSON.self, from: line)
-                    guard response["id"].string == id else { throw Failure("Mismatched RPC response") }
-                    if response["error"] != .null { throw Failure(response["error"]["message"].string ?? "RPC error") }
-                    guard response["result"] != .null else { throw Failure("Missing RPC result") }
-                    return response["result"]
-                }
+                guard n > 0 else { throw Failure("Socket write failed") }; offset += n
             }
-        }.value
+        }
+        var framer = LineBuffer(limit: 16 * 1024 * 1024)
+        var chunk = [UInt8](repeating: 0, count: 65536)
+        while true {
+            let n = read(fd, &chunk, chunk.count)
+            if n < 0 && errno == EINTR { continue }
+            if n == 0 { throw TruncatedResponse() }
+            guard n > 0 else { throw Failure("RPC read timed out or failed") }
+            let lines = try framer.append(Data(chunk.prefix(n)))
+            if let line = lines.first {
+                let response = try JSONDecoder().decode(JSON.self, from: line)
+                guard response["id"].string == id else { throw Failure("Mismatched RPC response") }
+                if response["error"] != .null { throw Failure(response["error"]["message"].string ?? "RPC error") }
+                guard response["result"] != .null else { throw Failure("Missing RPC result") }
+                return response["result"]
+            }
+        }
     }
 }
 

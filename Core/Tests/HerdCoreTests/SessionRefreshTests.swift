@@ -81,9 +81,11 @@ final class SessionRefreshTests: XCTestCase {
         let serialServer = try TestRPCServer(requests: 200, concurrent: true, rawHandler: serialWire.respond)
         let parallelServer = try TestRPCServer(requests: 300, concurrent: true, rawHandler: parallelWire.respond)
         defer { withExtendedLifetime(serialServer) {}; withExtendedLifetime(parallelServer) {} }
+        FileHandle.standardError.write(Data("Starting serial large-session wire read\n".utf8))
         let start = Date()
         let serial = try await SessionReader(concurrency: 1).load(RPC(path: serialServer.path))
         let serialTime = Date().timeIntervalSince(start)
+        FileHandle.standardError.write(Data("Starting concurrent large-session wire read\n".utf8))
         let parallelStart = Date(), reader = SessionReader()
         var published = try await reader.load(RPC(path: parallelServer.path))
         let parallelTime = Date().timeIntervalSince(parallelStart)

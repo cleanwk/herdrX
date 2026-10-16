@@ -27,14 +27,17 @@ final class TestRPCServer {
         let bound = withUnsafePointer(to: &address) { p in p.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) } }
         guard bound == 0, listen(fd, 8) == 0 else { close(fd); throw Failure("Test socket failed") }
         let listener = Listener(fd); self.listener = listener
-        DispatchQueue.global().async {
+        Thread.detachNewThread {
             // The accept loop owns close. Closing from deinit can let this loop
             // accept on a reused descriptor belonging to the next fixture.
             defer { listener.finish() }
             for _ in 0..<requests {
                 let peer = accept(fd, nil, nil); guard peer >= 0 else { break }
                 let respond: @Sendable () -> Void = {
-                    var noPipe: Int32 = 1; setsockopt(peer, SOL_SOCKET, SO_NOSIGPIPE, &noPipe, 4)
+                    var noPipe: Int32 = 1
+                    guard setsockopt(peer, SOL_SOCKET, SO_NOSIGPIPE, &noPipe, 4) == 0 else {
+                        XCTFail("Cannot protect fixture socket from SIGPIPE: \(errno)"); close(peer); return
+                    }
                     var data = Data(), bytes = [UInt8](repeating: 0, count: 4096)
                     while !data.contains(10) { let count = read(peer, &bytes, bytes.count); if count <= 0 { break }; data.append(contentsOf: bytes.prefix(count)) }
                     if let end = data.firstIndex(of: 10), let request = try? JSONDecoder().decode(JSON.self, from: data[..<end]) {
@@ -45,7 +48,7 @@ final class TestRPCServer {
                     }
                     close(peer)
                 }
-                if concurrent { DispatchQueue.global().async(execute: respond) } else { respond() }
+                if concurrent { Thread.detachNewThread(respond) } else { respond() }
             }
         }
     }

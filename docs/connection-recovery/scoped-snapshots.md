@@ -91,10 +91,13 @@ This Linux executor cannot run AppKit or the Darwin Core tests; the current PR
 head must pass the complete macOS workflow before merge/tag. User-device mouse
 acceptance and live-session latency remain distinct from the synthetic benchmark.
 
-The first [macOS run](https://github.com/cleanwk/herdrX/actions/runs/38873698614)
-passed native tab dispatch, real Herdr integration, pane geometry and the Ghostty
-suite, then exposed a SIGPIPE in the new delayed-socket stress fixture. The fixture
-now explicitly retains its servers across async waits, and the accept loop owns
-listener closure so a reused descriptor cannot be touched by an old loop.
+The initial [macOS run](https://github.com/cleanwk/herdrX/actions/runs/38873698614)
+and [follow-up](https://github.com/cleanwk/herdrX/actions/runs/38874525678) passed
+native tab dispatch, real Herdr integration, pane geometry and the Ghostty suite,
+but the delayed-socket stress fixture exited with SIGPIPE. Those runs are not
+passes for the stress test. The fixture now retains servers across async waits,
+closes listeners in their accept loop and uses dedicated blocking I/O threads.
+Production control RPC reads also run on a dedicated dispatch queue instead of
+blocking Swift's cooperative executor while waiting for remote responses.
 The complete [PR #31 head checks](https://github.com/cleanwk/herdrX/pull/31/checks)
-remain the release gate; this failed run is not a pass for the stress test.
+remain the release gate.
