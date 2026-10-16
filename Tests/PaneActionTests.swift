@@ -28,7 +28,7 @@ import Testing
         window.isReleasedWhenClosed = false; window.contentView = canvas; window.orderFront(nil)
         defer { window.close() }
         func render() {
-            canvas.entries = desk.canvas; canvas.focused = desk.focused; canvas.titles = desk.paneTitles
+            canvas.entries = desk.canvas; canvas.focused = desk.focused; canvas.focusRevision = desk.focusRevision; canvas.titles = desk.paneTitles
             canvas.needsLayout = true; canvas.layoutSubtreeIfNeeded()
         }
         render()

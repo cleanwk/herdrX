@@ -2,6 +2,25 @@ import XCTest
 @testable import HerdCore
 
 final class PaneActionTests: XCTestCase {
+    func testScopedRenameUpdatesAgentRowAndUnchangedPaneKeepsEnrichment() throws {
+        func snapshot(label: String, enriched: Bool) -> JSON {
+            let pane: JSON = .object(["pane_id": .string("p"), "workspace_id": .string("w"), "tab_id": .string("t"), "terminal_id": .string("term"), "label": .string(label), "agent": .string("codex")])
+            var fields: [String: JSON] = [
+                "workspaces": .array([.object(["workspace_id": .string("w")])]),
+                "tabs": .array([.object(["workspace_id": .string("w"), "tab_id": .string("t")])]),
+                "panes": .array([pane]), "layouts": .array([])
+            ]
+            if enriched { var agent = pane.object; agent["title"] = .string("Enriched task"); fields["agents"] = .array([.object(agent)]) }
+            return .object(fields)
+        }
+        let baseline = try Session(snapshot(label: "Before", enriched: true))
+        let unchanged = try baseline.replacingWorkspace("w", with: Session(snapshot(label: "Before", enriched: false)))
+        XCTAssertEqual(unchanged.agents, baseline.agents)
+        let renamed = try baseline.replacingWorkspace("w", with: Session(snapshot(label: "After", enriched: false)))
+        XCTAssertEqual(renamed.panes.first?.label, "After")
+        XCTAssertEqual(renamed.agents.first?.label, "After")
+    }
+
     func testCloseAndSplitPublishBeforeTwoSecondFullReadAndCannotBeRolledBack() async throws {
         let wire = PaneActionWire(), reader = SessionReader()
         let server = try TestRPCServer(requests: 100, concurrent: true, rawHandler: wire.respond)

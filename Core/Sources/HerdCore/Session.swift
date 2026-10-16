@@ -82,19 +82,22 @@ public struct Session: Equatable, Sendable {
               scoped.layouts.array.allSatisfy({ $0["workspace_id"].string == id }) else {
             throw Failure("Mismatched scoped workspace")
         }
-        func replace(_ old: [Item], _ new: [Item], matches: (Item) -> Bool) -> [Item] {
+        func replace<Value>(_ old: [Value], _ new: [Value], matches: (Value) -> Bool) -> [Value] {
             let index = old.firstIndex(where: matches) ?? old.count
             return Array(old[..<index]) + new + old[index...].filter { !matches($0) }
         }
         let scopedAgents = scoped.agents.map { pane in
-            agents.first { $0.id == pane.id && $0.terminal == pane.terminal && $0.workspace == pane.workspace && $0.tab == pane.tab && $0.agent == pane.agent && $0.status == pane.status } ?? pane
+            // Keep enrichment only when its underlying pane is unchanged.
+            // A rename/status/cwd update must be visible in Agent rows as well.
+            guard panes.first(where: { $0.id == pane.id }) == pane else { return pane }
+            return agents.first { $0.id == pane.id && $0.terminal == pane.terminal && $0.workspace == pane.workspace && $0.tab == pane.tab && $0.agent == pane.agent && $0.status == pane.status } ?? pane
         }
         return try Session(
             spaces: replace(spaces, scoped.spaces, matches: { $0.id == id }),
             tabs: replace(tabs, scoped.tabs, matches: { $0.workspace == id }),
             panes: replace(panes, scoped.panes, matches: { $0.workspace == id }),
             agents: replace(agents, scopedAgents, matches: { $0.workspace == id }),
-            layouts: .array(layouts.array.filter { $0["workspace_id"].string != id } + scoped.layouts.array))
+            layouts: .array(replace(layouts.array, scoped.layouts.array, matches: { $0["workspace_id"].string == id })))
     }
     public static func load(_ rpc: RPC) async throws -> Session {
         try await SessionReader().load(rpc)

@@ -608,7 +608,8 @@ final class Desk: ObservableObject {
             Task { defer { busy.remove(action) }; do {
                 let rpc = try rpc(key.device)
                 let pane = try await rpc.call("pane.get", ["pane_id": .string(key.pane)])["pane"]
-                guard let cwd = pane["foreground_cwd"].string ?? pane["cwd"].string else { throw Failure("Cannot read current directory; split cancelled") }
+                guard pane["pane_id"].string == key.pane, pane["workspace_id"].string == workspace, pane["tab_id"].string == tab,
+                      let cwd = pane["foreground_cwd"].string ?? pane["cwd"].string else { throw Failure("Cannot read current directory; split cancelled") }
                 guard canWrite(key.device), devices.first(where: { $0.id == key.device })?.endpoint == endpoint,
                       sessions[key.device]?.panes.contains(where: { $0.id == key.pane && $0.tab == tab }) == true else { throw Failure(L("The creation target changed. Try again.")) }
                 let result = try await rpc.call("pane.split", ["target_pane_id": .string(key.pane), "direction": .string(horizontal ? "right" : "down"), "cwd": .string(cwd), "focus": .bool(false)])

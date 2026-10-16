@@ -113,8 +113,7 @@ final class SessionRefreshTests: XCTestCase {
         let scoped = try await reader.loadWorkspace("w1", RPC(path: parallelServer.path))
         let actionTime = Date().timeIntervalSince(actionStart)
         let patched = try published.replacingWorkspace("w1", with: scoped.session)
-        XCTAssertEqual(patched.spaces, published.spaces); XCTAssertEqual(patched.tabs, published.tabs)
-        XCTAssertEqual(patched.panes, published.panes); XCTAssertEqual(patched.agents, published.agents)
+        XCTAssertEqual(patched, published)
         XCTAssertLessThan(actionTime, parallelTime * 0.25, "Mutation still pays for every Space and Agent")
         print("ACTION PERF synthetic 9/37/23: full=\(parallelTime)s scoped=\(actionTime)s")
         let previous = published
