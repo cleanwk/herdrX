@@ -8,6 +8,7 @@ xcodegen generate
 if xcodebuild test -project HerdrX.xcodeproj -scheme SelectionTests -configuration Debug \
   -derivedDataPath build/release -destination 'platform=macOS' \
   -parallel-testing-enabled NO -resultBundlePath build/tests/selection.xcresult; then
+  cat build/tests/pane-actions.json
   exit 0
 else
   status=$?

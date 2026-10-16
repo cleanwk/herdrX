@@ -3,6 +3,11 @@ import Darwin
 
 /// Short-lived control connections. Terminal bytes never enter this channel.
 public struct RPC: Sendable {
+    public struct RemoteError: Error, LocalizedError, Sendable {
+        public let code: String?
+        public let message: String
+        public var errorDescription: String? { message }
+    }
     /// EOF before a complete NDJSON response, distinct from RPC/JSON/timeout errors.
     public struct TruncatedResponse: Error, LocalizedError, Sendable {
         public var errorDescription: String? { "Truncated RPC response" }
@@ -59,7 +64,7 @@ public struct RPC: Sendable {
             if let line = lines.first {
                 let response = try JSONDecoder().decode(JSON.self, from: line)
                 guard response["id"].string == id else { throw Failure("Mismatched RPC response") }
-                if response["error"] != .null { throw Failure(response["error"]["message"].string ?? "RPC error") }
+                if response["error"] != .null { throw RemoteError(code: response["error"]["code"].string, message: response["error"]["message"].string ?? "RPC error") }
                 guard response["result"] != .null else { throw Failure("Missing RPC result") }
                 return response["result"]
             }

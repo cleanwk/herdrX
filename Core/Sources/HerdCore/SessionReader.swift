@@ -58,16 +58,19 @@ public actor SessionReader {
             await previous?.value
             self.revision += 1
             let revision = self.revision
-            let before = try Self.records(try await rpc.call("workspace.list", timeout: timeout), "workspaces")
-            _ = try Self.topology(before)
-            guard let space = before.first(where: { $0["workspace_id"].string == id }) else {
+            let params = ["workspace_id": JSON.string(id)]
+            let space: JSON
+            do { space = try await rpc.call("workspace.get", params, timeout: timeout)["workspace"] }
+            catch let error as RPC.RemoteError where error.code == "workspace_not_found" {
                 return Snapshot(revision: revision, session: try Session(.object([
                     "workspaces": .array([]), "tabs": .array([]), "panes": .array([]), "layouts": .array([])
                 ])))
             }
-            let contents = try await Self.workspace(space, rpc: rpc, timeout: timeout)
-            let after = try Self.records(try await rpc.call("workspace.list", timeout: timeout), "workspaces")
-            guard try Self.topology(before)[id] == Self.topology(after)[id] else {
+            guard space["workspace_id"].string == id else { throw Failure("Mismatched scoped workspace") }
+            let before = try Self.topology([space])
+            let contents = try await Self.workspace(space, rpc: rpc, timeout: timeout, concurrency: 4)
+            let after = try await rpc.call("workspace.get", params, timeout: timeout)["workspace"]
+            guard after["workspace_id"].string == id, before == (try Self.topology([after])) else {
                 throw Failure("Session topology changed during scoped read")
             }
             return Snapshot(revision: revision, session: try Session(.object([
@@ -82,7 +85,7 @@ public actor SessionReader {
     }
 
     /// Bound socket pressure and preserve server order, regardless of reply order.
-    private func batch<Input: Sendable, Output: Sendable>(_ inputs: [Input],
+    private static func batch<Input: Sendable, Output: Sendable>(_ inputs: [Input], concurrency: Int,
         operation: @escaping @Sendable (Input) async throws -> Output) async throws -> [Output] {
         try await withThrowingTaskGroup(of: (Int, Output).self) { group in
             var next = 0
@@ -108,24 +111,31 @@ public actor SessionReader {
         let panes: [JSON]
         let layouts: [JSON]
     }
-    private static func workspace(_ space: JSON, rpc: RPC, timeout: Int) async throws -> Workspace {
-        func call(_ method: String, _ params: [String: JSON]) async throws -> JSON {
+    private static func workspace(_ space: JSON, rpc: RPC, timeout: Int, concurrency: Int = 1) async throws -> Workspace {
+        @Sendable func call(_ method: String, _ params: [String: JSON]) async throws -> JSON {
             try Task.checkCancellation()
             let value = try await rpc.call(method, params, timeout: timeout)
             try Task.checkCancellation()
             return value
         }
         let params = ["workspace_id": space["workspace_id"]]
-        let tabs = try records(try await call("tab.list", params), "tabs")
-        let panes = try records(try await call("pane.list", params), "panes")
+        let tabs: [JSON], panes: [JSON]
+        if concurrency > 1 {
+            async let tabList = call("tab.list", params)
+            async let paneList = call("pane.list", params)
+            let lists = try await (tabList, paneList)
+            tabs = try records(lists.0, "tabs"); panes = try records(lists.1, "panes")
+        } else {
+            tabs = try records(try await call("tab.list", params), "tabs")
+            panes = try records(try await call("pane.list", params), "panes")
+        }
         guard tabs.allSatisfy({ $0["workspace_id"] == space["workspace_id"] }),
               panes.allSatisfy({ $0["workspace_id"] == space["workspace_id"] }),
               space["tab_count"] == .number(Double(tabs.count)),
               space["pane_count"] == .number(Double(panes.count)) else {
             throw Failure("Session topology changed during scoped read")
         }
-        var layouts: [JSON] = []
-        for tab in tabs {
+        let layouts = try await batch(tabs, concurrency: concurrency) { tab in
             let members = panes.filter { $0["tab_id"] == tab["tab_id"] }
             guard tab["pane_count"] == .number(Double(members.count)), let first = members.first else {
                 throw Failure("Incomplete scoped tab")
@@ -137,7 +147,7 @@ public actor SessionReader {
                   Set(rectangles.map { $0["pane_id"] }) == Set(members.map { $0["pane_id"] }) else {
                 throw Failure("Session layout changed during scoped read")
             }
-            layouts.append(layout)
+            return layout
         }
         return Workspace(tabs: tabs, panes: panes, layouts: layouts)
     }
@@ -157,7 +167,7 @@ public actor SessionReader {
         let ping = try await call("ping")
         let spaces = try Self.records(try await call("workspace.list"), "workspaces")
         let before = try Self.topology(spaces)
-        let workspaces = try await batch(spaces) { space in
+        let workspaces = try await Self.batch(spaces, concurrency: concurrency) { space in
             try await Self.workspace(space, rpc: rpc, timeout: timeout)
         }
         let tabs = workspaces.flatMap(\.tabs), panes = workspaces.flatMap(\.panes), layouts = workspaces.flatMap(\.layouts)
@@ -176,7 +186,7 @@ public actor SessionReader {
             catch is RPC.TruncatedResponse { scopedAgents = true }
         }
         if scopedAgents {
-            agents = try await batch(panes.filter { $0["agent"].string != nil }) { pane in
+            agents = try await Self.batch(panes.filter { $0["agent"].string != nil }, concurrency: concurrency) { pane in
                 let agent = try await rpc.call("agent.get", ["target": pane["pane_id"]], timeout: timeout)["agent"]
                 guard Self.samePane(pane, agent) else { throw Failure("Agent changed during scoped read") }
                 return agent

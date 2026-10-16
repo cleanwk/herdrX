@@ -9,9 +9,11 @@ final class PaneActionWire: @unchecked Sendable {
     private var next = 3
     private var reads = 0
     private var invalidLayout = false
+    private var workspaceError: String?
     let stopEvents = DispatchSemaphore(value: 0)
     var fullReads: Int { lock.lock(); defer { lock.unlock() }; return reads }
     func breakLayout(_ broken: Bool) { lock.lock(); invalidLayout = broken; lock.unlock() }
+    func rejectWorkspace(_ code: String?) { lock.lock(); workspaceError = code; lock.unlock() }
     var snapshot: JSON { lock.lock(); defer { lock.unlock() }; return makeSnapshot() }
     private func makeSnapshot() -> JSON {
         let area: JSON = .object(["x": .number(0), "y": .number(0), "width": .number(120), "height": .number(40)])
@@ -36,7 +38,7 @@ final class PaneActionWire: @unchecked Sendable {
         if method == "pane.close" { ids.removeAll { $0 == params["pane_id"].string } }
         if method == "pane.split" { ids.append("new-\(next)"); next += 1 }
         if method == "session.snapshot" { reads += 1 }
-        let snapshot = makeSnapshot(), created = ids.last
+        let snapshot = makeSnapshot(), created = ids.last, workspaceError = workspaceError
         lock.unlock()
         if method == "events.subscribe" { _ = stopEvents.wait(timeout: .now() + 15) }
         Thread.sleep(forTimeInterval: method == "session.snapshot" ? 2 : 0.02)
@@ -44,6 +46,14 @@ final class PaneActionWire: @unchecked Sendable {
         switch method {
         case "session.snapshot": result = .object(["snapshot": snapshot])
         case "workspace.list": result = .object(["workspaces": snapshot["workspaces"]])
+        case "workspace.get":
+            if let workspaceError {
+                return try! JSONEncoder().encode(JSON.object(["id": request["id"], "error": .object(["code": .string(workspaceError), "message": .string("workspace not found")])])) + Data([10])
+            }
+            guard let space = snapshot["workspaces"].array.first(where: { $0["workspace_id"] == params["workspace_id"] }) else {
+                return try! JSONEncoder().encode(JSON.object(["id": request["id"], "error": .object(["code": .string("workspace_not_found"), "message": .string("workspace not found")])])) + Data([10])
+            }
+            result = .object(["workspace": space])
         case "tab.list": result = .object(["tabs": .array(snapshot["tabs"].array.filter { $0["workspace_id"] == params["workspace_id"] })])
         case "pane.list": result = .object(["panes": .array(snapshot["panes"].array.filter { $0["workspace_id"] == params["workspace_id"] })])
         case "pane.layout":

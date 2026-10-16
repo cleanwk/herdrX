@@ -61,6 +61,10 @@ final class PaneActionTests: XCTestCase {
         defer { withExtendedLifetime(server) {} }
         let rpc = RPC(path: server.path), baseline = try Session(wire.snapshot)
         var current = baseline, publication = SessionPublication()
+        wire.rejectWorkspace("permission_denied")
+        do { _ = try await reader.loadWorkspace("w", rpc); XCTFail("Error text was mistaken for an authoritative deletion") }
+        catch let error as RPC.RemoteError { XCTAssertEqual(error.code, "permission_denied") }
+        wire.rejectWorkspace(nil)
         wire.breakLayout(true)
         do {
             let broken = try await reader.loadWorkspace("w", rpc)

@@ -7,10 +7,11 @@ changes reduced full-refresh latency, but every action still awaited that full
 refresh. Its 2.526s synthetic result was not an acceptable interaction target.
 
 `SessionReader.loadWorkspace` now has a separate short-read queue. It uses existing
-`workspace.list`, workspace-scoped `tab.list`/`pane.list`, and `pane.layout` RPCs.
+`workspace.get`, workspace-scoped `tab.list`/`pane.list`, and `pane.layout` RPCs.
 It validates scope/counts/layout membership and the target Space's before/after
-topology. An absent Space from the authoritative list removes that Space after its
-last pane closes. Other Spaces are not re-read and Agent enrichment is not on this
+topology. Only the server's `workspace_not_found` error removes that Space after
+its last pane closes; other errors retain the cache. Independent tab/pane lists
+run concurrently, as do up to four tab layouts. Other Spaces are not re-read and Agent enrichment is not on this
 critical path. No pane identities or split geometry are predicted locally.
 
 `Session.replacingWorkspace` updates the affected Space and retains the other
@@ -43,6 +44,11 @@ Validation:
   0.8.2/0.9.3 fixtures cover split/close geometry and survivor identity.
 - Local Python release/update tests and Swift syntax checks pass. The complete
   macOS workflow for the current PR head remains required before merge/release.
+- The initial macOS run passed the native interaction test but failed strict
+  Core latency thresholds (0.495s close, 0.632s split, 0.804s large-session scope).
+  It is not a successful release gate. The follow-up replaces global workspace
+  lists with individual workspace reads and parallelizes independent lists and
+  layouts without increasing the four-socket ceiling of full background reads.
 
 These fixtures establish latency under controlled backend delays and actual
 native reconciliation. User-device timing, live SSH/Tailcat RTT and a Space whose

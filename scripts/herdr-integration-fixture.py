@@ -69,6 +69,9 @@ command = ["/bin/sh", "-c", "printf 'PLUGIN_OK'; exec sleep 60"]
             all_panes = []
             for space in before_spaces:
                 params = dict(workspace_id=space["workspace_id"])
+                fetched_space = rpc("workspace.get", params)["workspace"]
+                assert fetched_space["workspace_id"] == space["workspace_id"]
+                assert (fetched_space["tab_count"], fetched_space["pane_count"]) == (space["tab_count"], space["pane_count"])
                 tabs = rpc("tab.list", params)["tabs"]
                 panes = rpc("pane.list", params)["panes"]
                 all_panes.extend(panes)

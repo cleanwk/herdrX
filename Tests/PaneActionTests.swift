@@ -64,6 +64,11 @@ import Testing
         #expect(desk.terminals[right] == nil, "Late full snapshot resurrected closed native surface")
         #expect(desk.sessions[device.id]?.panes.contains(where: { $0.id == "new-3" }) == true)
         print("NATIVE ACTION PERF: close=\(closeTime)s split=\(splitTime)s with two-second full snapshots; survivor surface preserved")
+        let evidence = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("build/tests/pane-actions.json")
+        try FileManager.default.createDirectory(at: evidence.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try JSONSerialization.data(withJSONObject: ["full_snapshot_delay_seconds": 2, "scoped_rpc_delay_seconds": 0.02,
+            "native_close_seconds": closeTime, "native_split_seconds": splitTime,
+            "includes_native_layout": true], options: [.prettyPrinted, .sortedKeys]).write(to: evidence, options: .atomic)
     }
 
     private func wait(_ condition: () -> Bool) async throws {

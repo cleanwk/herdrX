@@ -43,4 +43,5 @@ jobs:
             build/tests/*.png
             build/tests/delta-updates.json
             build/tests/layout-origins.json
+            build/tests/pane-actions.json
           retention-days: 14

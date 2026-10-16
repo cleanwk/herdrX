@@ -42,6 +42,7 @@ private final class LargeSessionWire: @unchecked Sendable {
         case "session.snapshot", "agent.list": return Data(String(repeating: "x", count: 8192).utf8)
         case "ping": result = .object([:])
         case "workspace.list": result = .object(["workspaces": .array(spaces)])
+        case "workspace.get": result = .object(["workspace": spaces.first { $0["workspace_id"] == params["workspace_id"] }!])
         case "tab.list": result = .object(["tabs": .array(tabs.filter { $0["workspace_id"] == params["workspace_id"] })])
         case "pane.list": result = .object(["panes": .array(panes.filter { $0["workspace_id"] == params["workspace_id"] })])
         case "pane.layout":
