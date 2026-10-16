@@ -264,7 +264,7 @@ final class Desk: ObservableObject {
         resolvedSockets[id] = nil; transportIDs[id] = nil
         invalidatePlugins(id)
         localStarts.removeValue(forKey: id)?.cancel()
-        connectionIDs[id] = nil; refreshIDs[id] = nil
+        connectionIDs[id] = nil; publishedRefreshes[id] = nil
         polls.removeValue(forKey: id)?.cancel(); tailcats.removeValue(forKey: id)?.stop()
         if let tunnel = tunnels.removeValue(forKey: id), tunnel.isRunning { tunnel.terminate() }
         if let path = paths.removeValue(forKey: id), path.hasPrefix("/tmp/hx-") { try? FileManager.default.removeItem(atPath: path) }
@@ -441,7 +441,7 @@ final class Desk: ObservableObject {
             }
         }
     }
-    private var refreshIDs: [String: UUID] = [:]
+    private var publishedRefreshes: [String: UInt64] = [:]
     private func scrollTerminal(_ key: PaneKey, terminal: Terminal, events: [NSEvent]) async {
         guard canWrite(key.device), !ended.contains(key), terminals[key] === terminal,
               let client = try? rpc(key.device),
@@ -488,10 +488,15 @@ final class Desk: ObservableObject {
     func refresh(_ id: String, client: RPC) async throws {
         guard paths[id] == client.path, let device = devices.first(where: { $0.id == id }) else { throw CancellationError() }
         let connection = connectionIDs[id]
-        let token = UUID(); refreshIDs[id] = token
-        let snapshot = try await sessionReader(for: device).load(client)
+        let result = try await sessionReader(for: device).loadSnapshot(client)
         try Task.checkCancellation()
-        guard connectionIDs[id] == connection, paths[id] == client.path, refreshIDs[id] == token, devices.contains(where: { $0.id == id }) else { return }
+        guard connectionIDs[id] == connection, paths[id] == client.path,
+              devices.contains(where: { $0.id == id && $0.endpoint == device.endpoint }) else { throw CancellationError() }
+        // A later *request* must not discard this completed snapshot. Only a
+        // newer published result can supersede it; action callers need the cache now.
+        guard result.revision >= publishedRefreshes[id, default: 0] else { return }
+        publishedRefreshes[id] = result.revision
+        let snapshot = result.session
         let reconnected = connections[id] != .connected
         if reconnected { connections[id] = .connected; refreshPluginCatalog(id) }
         if sessions[id] != snapshot { let old = sessions[id]; attentionState.update(device: id, old: old, new: snapshot); notifyChanges(device: id, old: old, new: snapshot); sessions[id] = snapshot; reconcile(id, previous: old); reindex() }
@@ -612,11 +617,10 @@ final class Desk: ObservableObject {
         guard let id = selectedDevice, let space = selectedSpace else { return }
         let key = creationID(id, space)
         guard begin(key, device: id) else { return }
-        let pane = focused, origin = focusRevision
+        let pane = focused, origin = focusRevision, endpoint = devices.first { $0.id == id }?.endpoint
         Task {
             defer { busy.remove(key) }
             do {
-                let endpoint = devices.first { $0.id == id }?.endpoint
                 let client = try rpc(id)
                 guard let pane, pane.device == id else { throw Failure(L("Select a pane before creating a terminal tab.")) }
                 let value = try await client.call("pane.get", ["pane_id": .string(pane.pane)])["pane"]

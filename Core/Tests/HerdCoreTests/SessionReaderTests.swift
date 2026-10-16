@@ -103,10 +103,12 @@ private struct ReadFixture {
 
 final class SessionReaderTests: XCTestCase {
     func testConcurrentRefreshesShareTheFirstTruncationProbe() async throws {
-        let fixture = ReadFixture(), reader = SessionReader()
+        let fixture = ReadFixture(), reader = SessionReader(concurrency: 1)
         let script = ReadScript([ReadFixture.truncated("session.snapshot")] + fixture.scoped() + fixture.scoped())
         let server = try script.server(), rpc = RPC(path: server.path)
         async let first = reader.load(rpc)
+        let deadline = Date().addingTimeInterval(3)
+        while script.methods.isEmpty, Date() < deadline { try await Task.sleep(for: .milliseconds(5)) }
         async let second = reader.load(rpc)
         let values = try await [first, second]
         XCTAssertEqual(values, [try Session(fixture.snapshot), try Session(fixture.snapshot)])
@@ -117,7 +119,7 @@ final class SessionReaderTests: XCTestCase {
     func testCompleteSnapshotKeepsFastPath() async throws {
         let fixture = ReadFixture()
         let script = ReadScript(Array(repeating: .init(method: "session.snapshot", result: .object(["snapshot": fixture.snapshot])), count: 2))
-        let server = try script.server(), reader = SessionReader()
+        let server = try script.server(), reader = SessionReader(concurrency: 1)
         for _ in 0..<2 {
             let value = try await reader.load(RPC(path: server.path))
             XCTAssertEqual(value, try Session(fixture.snapshot))
@@ -126,7 +128,7 @@ final class SessionReaderTests: XCTestCase {
     }
 
     func testTruncatedSnapshotAndAgentsUseStickyScopedReadsAcrossTransportChanges() async throws {
-        let fixture = ReadFixture(), reader = SessionReader()
+        let fixture = ReadFixture(), reader = SessionReader(concurrency: 1)
         let first = ReadScript([ReadFixture.truncated("session.snapshot")] + fixture.scoped(agentReads: true, truncateAgents: true))
         let firstServer = try first.server()
         let value = try await reader.load(RPC(path: firstServer.path))
@@ -143,7 +145,7 @@ final class SessionReaderTests: XCTestCase {
         // An independent endpoint starts with its own aggregate probe.
         let independent = ReadScript([.init(method: "session.snapshot", result: .object(["snapshot": fixture.snapshot]))])
         let independentServer = try independent.server()
-        _ = try await SessionReader().load(RPC(path: independentServer.path))
+        _ = try await SessionReader(concurrency: 1).load(RPC(path: independentServer.path))
         XCTAssertTrue(independent.isComplete)
     }
 
@@ -155,7 +157,7 @@ final class SessionReaderTests: XCTestCase {
             .init(method: "session.snapshot", result: .object(["snapshot": .object([:])]))
         ] {
             let script = ReadScript([step]), server = try script.server()
-            do { _ = try await SessionReader().load(RPC(path: server.path)); XCTFail("Invalid response accepted") }
+            do { _ = try await SessionReader(concurrency: 1).load(RPC(path: server.path)); XCTFail("Invalid response accepted") }
             catch { XCTAssertFalse(error is RPC.TruncatedResponse) }
             XCTAssertEqual(script.methods, ["session.snapshot"])
         }
@@ -163,7 +165,7 @@ final class SessionReaderTests: XCTestCase {
         let fixture = ReadFixture()
         let script = ReadScript([.init(method: "session.snapshot", raw: Data("{}".utf8))] + fixture.scoped())
         let server = try script.server()
-        let value = try await Session.load(RPC(path: server.path))
+        let value = try await SessionReader(concurrency: 1).load(RPC(path: server.path))
         XCTAssertEqual(value, try Session(fixture.snapshot))
         XCTAssertTrue(script.isComplete)
     }
@@ -176,7 +178,7 @@ final class SessionReaderTests: XCTestCase {
             var failing = fixture.scoped()
             failing[failing.count - 1].result = .object(["workspaces": .array([.object(changed), fixture.spaces[1]])])
             let script = ReadScript([ReadFixture.truncated("session.snapshot")] + fixture.scoped() + failing + fixture.scoped())
-            let server = try script.server(), reader = SessionReader()
+            let server = try script.server(), reader = SessionReader(concurrency: 1)
             var published = try await reader.load(RPC(path: server.path))
             let previous = published
             do { published = try await reader.load(RPC(path: server.path)); XCTFail("Mixed topology published") }
@@ -198,7 +200,7 @@ final class SessionReaderTests: XCTestCase {
             failing = Array(failing.prefix(index + 1))
             failing[index].error = "Scoped read failed"
             let script = ReadScript([ReadFixture.truncated("session.snapshot")] + failing + fixture.scoped(agentReads: agentReads))
-            let server = try script.server(), reader = SessionReader()
+            let server = try script.server(), reader = SessionReader(concurrency: 1)
             do { _ = try await reader.load(RPC(path: server.path)); XCTFail("Partial session published") }
             catch { XCTAssertEqual(error.localizedDescription, "Scoped read failed") }
             let recovered = try await reader.load(RPC(path: server.path))
@@ -225,7 +227,7 @@ final class SessionReaderTests: XCTestCase {
             steps[index].result = .object(value)
             let script = ReadScript([ReadFixture.truncated("session.snapshot")] + Array(steps.prefix(index + (method == "tab.list" ? 2 : 1))))
             let server = try script.server()
-            do { _ = try await SessionReader().load(RPC(path: server.path)); XCTFail("Mismatched \(method) accepted") }
+            do { _ = try await SessionReader(concurrency: 1).load(RPC(path: server.path)); XCTFail("Mismatched \(method) accepted") }
             catch { XCTAssertTrue(error.localizedDescription.contains("scoped")) }
             XCTAssertTrue(script.isComplete)
         }
@@ -240,7 +242,7 @@ final class SessionReaderTests: XCTestCase {
             .init(method: "workspace.list", result: .object(["workspaces": .array([])]))
         ])
         let server = try script.server()
-        let value = try await SessionReader().load(RPC(path: server.path))
+        let value = try await SessionReader(concurrency: 1).load(RPC(path: server.path))
         XCTAssertEqual(value, try Session(empty))
         XCTAssertTrue(script.isComplete)
     }
@@ -252,7 +254,7 @@ final class SessionReaderTests: XCTestCase {
             steps[2].result = result
             let script = ReadScript([ReadFixture.truncated("session.snapshot")] + Array(steps.prefix(result["tabs"] == .null ? 3 : 4)))
             let server = try script.server()
-            do { _ = try await SessionReader().load(RPC(path: server.path)); XCTFail("Incomplete list accepted") }
+            do { _ = try await SessionReader(concurrency: 1).load(RPC(path: server.path)); XCTFail("Incomplete list accepted") }
             catch { XCTAssertTrue(error.localizedDescription.contains("scoped")) }
             XCTAssertTrue(script.isComplete)
         }

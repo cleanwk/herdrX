@@ -19,7 +19,7 @@ import CoreGraphics
         }
         if CommandLine.arguments.count > 1 {
             let captures = try! JSONDecoder().decode(JSON.self, from: Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1])))
-            precondition(captures.array.count == 6, "Missing legacy/current single/column/nested fixtures")
+            precondition(captures.array.count == 10, "Missing legacy/current single/column/nested/close fixtures")
             for capture in captures.array {
                 let layout = capture["layout"], area = layout["area"]
                 let rects = layout["panes"].array.map { PaneLayoutGeometry.normalizedRect($0["rect"], in: area)! }
@@ -38,7 +38,7 @@ import CoreGraphics
                     }
                 }
             }
-            print("PASS: real Herdr 0.8.2 and 0.9.3 snapshots keep single/column/nested panes inside narrow/wide 1×/2× canvases")
+            print("PASS: real Herdr 0.8.2 and 0.9.3 snapshots keep single/column/nested panes inside narrow/wide 1×/2× canvases; closing splits removes their rectangles and expands the surviving pane to fill the canvas")
         }
         let layouts: [[CGRect]] = [
             [CGRect(x: 0, y: 0, width: 1, height: 1)],
