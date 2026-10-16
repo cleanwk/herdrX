@@ -1,0 +1,13 @@
+Source: f46966d850c2cda0d30455a5c47562fc5404543e
+Run: https://github.com/cleanwk/herdrX/actions/runs/38863191033
+Result: expected failure of the old selectedRange implementation (4 issues in 2 new tests; 14 existing tests passed).
+
+2026-10-16T06:49:52.9114470Z ✘ Test markedTextKeepsStableInsertionRange() recorded an issue at SelectionTests.swift:21:13: Expectation failed: h.view.selectedRange() == empty
+2026-10-16T06:49:52.9525350Z ✘ Test markedTextKeepsStableInsertionRange() recorded an issue at SelectionTests.swift:21:13: Expectation failed: h.view.selectedRange() == empty
+2026-10-16T06:49:52.9549380Z ✘ Test markedTextKeepsStableInsertionRange() failed after 0.384 seconds with 2 issues.
+2026-10-16T06:49:53.3270150Z ✘ Test asynchronousDictationCommitsThroughTerminalView() recorded an issue at SelectionTests.swift:43:9: Expectation failed: h.view.selectedRange() == initialSelection
+2026-10-16T06:49:53.4185440Z ✘ Test asynchronousDictationCommitsThroughTerminalView() recorded an issue at SelectionTests.swift:49:9: Expectation failed: h.view.selectedRange() == initialSelection
+2026-10-16T06:49:53.5402500Z ✘ Test asynchronousDictationCommitsThroughTerminalView() failed after 0.477 seconds with 2 issues.
+2026-10-16T06:50:16.2769950Z ✘ Test run with 16 tests in 2 suites failed after 25.161 seconds with 4 issues.
+2026-10-16T06:50:23.4004340Z       "failureText" : "Expectation failed: h.view.selectedRange() == initialSelection\nh.view.selectedRange() → {2, 0}\ninitialSelection → {0, 0}",
+2026-10-16T06:50:23.4028500Z       "failureText" : "Expectation failed: h.view.selectedRange() == empty\nh.view.selectedRange() → {2, 0}\nempty → {0, 0}: Preedit caret must not move the host insertion point",

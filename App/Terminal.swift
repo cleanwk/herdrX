@@ -117,7 +117,10 @@ final class TerminalView: InterruptTerminalView {
     var visible = true {
         didSet { guard oldValue != visible else { return }; isHidden = !visible; if !visible { cancelSelectionGesture(); layer?.contents = nil }; setSurfaceVisible(visible) }
     }
-    override func selectedRange() -> NSRange { hasMarkedText() ? super.selectedRange() : NSRange(location: 0, length: 0) }
+    // Asynchronous input methods (including Doubao dictation) compare this host
+    // insertion point across composition updates. Ghostty's preedit caret is
+    // not a document selection and must not move that insertion point.
+    override func selectedRange() -> NSRange { NSRange(location: 0, length: 0) }
     override func markedRange() -> NSRange { hasMarkedText() ? super.markedRange() : NSRange(location: 0, length: 0) }
     override func setFrameSize(_ size: NSSize) { if visible { super.setFrameSize(size) } }
     override func layout() { if visible { super.layout() } }

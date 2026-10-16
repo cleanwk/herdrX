@@ -375,6 +375,8 @@ Physical Ctrl-C in a writable terminal sends a single ETX per press and consumes
 
 Attached wheel events also verify the actual foreground process. Idle shells use Herdr's history scroll API, preventing stale TUI mouse modes from injecting report text at the prompt. Running programs keep native wheel reporting. Per-terminal serialization, fractional trackpad accumulation and attachment identity checks preserve direction and reject stale events; observers and verification failures never forward a wheel. See [scrolling validation](docs/terminal-scrolling/VALIDATION.md), including the distinction between a reproduced stale-mode leak and residual output after forcibly terminating Codex.
 
+Terminal input exposes a stable `{0,0}` insertion range before, during and after IME composition, including asynchronous Doubao dictation. Marked ranges retain Ghostty’s UTF-16 preedit length; commit, cancellation and candidate positioning stay on its existing input path. See [terminal input validation](docs/terminal-input/VALIDATION.md).
+
 ### Search and forms
 
 Search uses a borderless native AppKit field, stable result identities, two-line context and shared hover/keyboard selection. Arrow keys select, Return opens and Escape cancels; marked text is respected by the source implementation. New Space captures the intended device/name/directory through submission, shows validation/error/busy state and restores focus appropriately on cancel. Object context menus and destructive confirmations identify the affected Space, Tab or Pane.

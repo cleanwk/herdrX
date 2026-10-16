@@ -46,3 +46,5 @@ Validation for this change:
   earlier source revisions.
 
 No installed application, Herdr session or release was changed.
+
+The 0.1.19 release also runs this harness on macOS through [PR #30 checks](https://github.com/cleanwk/herdrX/pull/30/checks); the current head must pass before merging and tagging. The Linux limitation above describes the initial local pass, not a waiver of native CI. Physical mouse/trackpad acceptance remains separate.
