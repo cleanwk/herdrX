@@ -357,7 +357,7 @@ Use the component-specific frontmatter radii for rows, tabs, preview, search and
 
 ### Workbench actions and navigation
 
-Compact borderless native buttons use SF Symbols with localized labels/help. New Space offers quick creation and a named-directory option. The tab plus creates a terminal tab within the selected Space; Pane Layout contains right/down splits and zoom/restore with capability-aware disabled states. Sidebar content comprises device Spaces and automatically detected Agents. Search also reaches the ordinary terminals within Spaces. The empty canvas says Choose a Space and offers New Space. Agent launch and independent Shell entry points do not return.
+Compact borderless native buttons use SF Symbols with localized labels/help. New Space offers quick creation and a named-directory option. The tab plus creates a terminal tab within the selected Space; its completed server refresh must be published before selecting the new tab, even when a later background refresh is queued. Rename and split use the same completed-snapshot ordering. Pane Layout contains right/down splits and zoom/restore with capability-aware disabled states. Sidebar content comprises device Spaces and automatically detected Agents. Search also reaches the ordinary terminals within Spaces. The empty canvas says Choose a Space and offers New Space. Agent launch and independent Shell entry points do not return.
 
 ### Agent rows and device status
 

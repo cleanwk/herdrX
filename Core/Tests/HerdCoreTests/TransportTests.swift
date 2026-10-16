@@ -11,7 +11,7 @@ final class TestRPCServer {
             handler(request).compactMap { try? JSONEncoder().encode($0) }.reduce(into: Data()) { $0 += $1 + Data([10]) }
         })
     }
-    init(requests: Int, rawHandler: @escaping @Sendable (JSON) -> Data) throws {
+    init(requests: Int, concurrent: Bool = false, rawHandler: @escaping @Sendable (JSON) -> Data) throws {
         fd = socket(AF_UNIX, SOCK_STREAM, 0)
         var address = sockaddr_un(); address.sun_family = sa_family_t(AF_UNIX)
         let bytes = Array(path.utf8)
@@ -22,16 +22,19 @@ final class TestRPCServer {
         DispatchQueue.global().async {
             for _ in 0..<requests {
                 let peer = accept(fd, nil, nil); guard peer >= 0 else { break }
-                var noPipe: Int32 = 1; setsockopt(peer, SOL_SOCKET, SO_NOSIGPIPE, &noPipe, 4)
-                var data = Data(), bytes = [UInt8](repeating: 0, count: 4096)
-                while !data.contains(10) { let count = read(peer, &bytes, bytes.count); if count <= 0 { break }; data.append(contentsOf: bytes.prefix(count)) }
-                if let end = data.firstIndex(of: 10), let request = try? JSONDecoder().decode(JSON.self, from: data[..<end]) {
-                    rawHandler(request).withUnsafeBytes { raw in
-                        var offset = 0
-                        while offset < raw.count { let count = write(peer, raw.baseAddress!.advanced(by: offset), min(17, raw.count - offset)); if count <= 0 { break }; offset += count }
+                let respond: @Sendable () -> Void = {
+                    var noPipe: Int32 = 1; setsockopt(peer, SOL_SOCKET, SO_NOSIGPIPE, &noPipe, 4)
+                    var data = Data(), bytes = [UInt8](repeating: 0, count: 4096)
+                    while !data.contains(10) { let count = read(peer, &bytes, bytes.count); if count <= 0 { break }; data.append(contentsOf: bytes.prefix(count)) }
+                    if let end = data.firstIndex(of: 10), let request = try? JSONDecoder().decode(JSON.self, from: data[..<end]) {
+                        rawHandler(request).withUnsafeBytes { raw in
+                            var offset = 0
+                            while offset < raw.count { let count = write(peer, raw.baseAddress!.advanced(by: offset), min(17, raw.count - offset)); if count <= 0 { break }; offset += count }
+                        }
                     }
+                    close(peer)
                 }
-                close(peer)
+                if concurrent { DispatchQueue.global().async(execute: respond) } else { respond() }
             }
         }
     }

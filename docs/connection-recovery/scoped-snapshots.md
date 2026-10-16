@@ -49,3 +49,44 @@ Validation is included in [PR #30 checks](https://github.com/cleanwk/herdrX/pull
   synthetic agent metadata. It stops only that fixture.
 - The user's 9-workspace/37-pane/23-agent live session is not available here;
   physical-device acceptance remains untested.
+
+## Action latency and completed snapshot publication — 0.1.20
+
+The 0.1.19 reader serialized every scope and every caller. With a large session,
+rename/split/create waited for both earlier background reads and their own full
+read. Worse, Desk marked a new request as authoritative before it completed: a
+later event refresh could discard the mutation's successful read. `create()` then
+looked for the new pane in the old cache and skipped selecting it, making the plus
+appear ineffective. Rename retained the old label until the later refresh, and
+split could focus a pane before its layout was visible.
+
+Each reader now numbers reads and Desk compares completed revisions, preserving
+connection, socket and endpoint guards. Starting another request cannot suppress
+a completed result; an older result cannot overwrite a newer published one.
+Requests can share a pending read only before it starts, with identical socket
+path and timeout. A request after a mutation therefore cannot join a read that
+started before that mutation. Cancellation affects only that waiter. Queued work
+continues after failure and the established sticky truncation fallback remains.
+
+Workspace reads and per-pane Agent fallback use at most four concurrent sockets.
+Each workspace retains its tab/pane/layout validation; results are assembled in
+server order, independent of completion order. Final workspace topology checking
+and complete-Session validation remain mandatory. No partial snapshot is published.
+
+Regression coverage:
+
+- Existing wire framing, topology/identity mismatch, intermediate failure,
+  transport-change and empty-session cases use the same reader with a concurrency
+  limit of one for deterministic fault placement.
+- Production concurrency is tested over real Unix sockets with a synthetic
+  9-Space / 37-pane / 23-Agent session and 20–40ms injected response latency.
+  It compares serial/parallel timing, checks the four-socket ceiling and stable
+  ordering, rejects a bad layout, preserves the previous cache and recovers.
+- A gated socket test verifies a completed result remains available while a
+  later read is blocked, twelve queued callers share one subsequent read, a
+  cancelled waiter does not cancel its peers, and later requests get fresh data.
+
+Local validation: 14 Python release/update tests and `git diff --check` passed.
+This Linux executor cannot run AppKit or the Darwin Core tests; the current PR
+head must pass the complete macOS workflow before merge/tag. User-device mouse
+acceptance and live-session latency remain distinct from the synthetic benchmark.
