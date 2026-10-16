@@ -200,8 +200,6 @@
 "stale" = "stale";
 "Move Up" = "Move Up";
 "Move Down" = "Move Down";
-"Move Left" = "Move Left";
-"Move Right" = "Move Right";
 "Collapsed" = "Collapsed";
 "Expanded" = "Expanded";
 "Expand group" = "Expand group";

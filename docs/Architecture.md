@@ -33,7 +33,7 @@ RPC 连通、attach 存活、表面可见及 Agent 状态分别保存。断线�
 
 ## 快照与扩展
 
-`session.snapshot` 的工作区、Tab、Pane 关系完整验证后才能发布。只支持当前 `session.snapshot` 契约，缺失或非法快照直接报告错误，不隐藏错误或请求旧版接口。
+`session.snapshot` 的工作区、Tab、Pane 关系完整验证后才能发布。仅当 EOF 前没有完整 NDJSON 行时，按设备端点保留的 `SessionReader` 切换为分范围读取；`agent.list` 同类截断后改用逐 Pane 的 `agent.get`。分范围读取核对前后工作区 ID、Pane/Tab 数量、布局与终端身份，全部成功后一次性发布；失败保留旧缓存。普通 RPC 错误、非法 JSON 和无效快照仍直接报错。重连保留降级模式，编辑端点或重启 GUI 后重新探测。契约和验证见 [大快照恢复](connection-recovery/scoped-snapshots.md)。
 
 插件使用 Herdr 的 `plugin.list`、`plugin.enable/disable`、`plugin.action.invoke`、`plugin.log.list` 和 `plugin.pane.open`。GUI 不执行插件命令。Herdr 的弹出面板不提供可 attach 的 Pane ID，因此 GUI 明确提供 Open in Tab，并通过原生支持的 placement 覆盖打开。
 

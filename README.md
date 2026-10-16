@@ -36,6 +36,8 @@ Use **Settings → Connections** to add SSH devices or discover local named sess
 
 Stopped local sessions show a start action. Custom socket paths show connection settings instead of guessing which server to launch. Temporary disconnections reconnect automatically; the info button exposes diagnostics when needed.
 
+If Herdr truncates a large session response, HerdrX automatically reads smaller workspace, pane, layout and agent responses. It checks topology before updating the display and keeps the last complete snapshot if any read fails. Existing terminal attachments continue independently.
+
 Space rows show Git branches when available. If Git is missing or a branch refresh fails, the row keeps a neutral Directory label or its last known branch; hover for details. This metadata does not indicate whether the terminal or device is connected.
 
 ## Everyday controls
@@ -53,6 +55,8 @@ Space rows show Git branches when available. If Git is missing or a branch refre
 | ⌘⇧J | Jump to an agent needing attention |
 | ⌘⇧W / ⌘⌥W | Close pane / tab |
 | ⌘, | Settings |
+
+Drag tabs horizontally to reorder them. Right-click a tab to rename or close it.
 
 Drag terminal text to select it; **Copy on Select** copies once when you release and briefly shows “Copied”. Turn it off to retain a selection for ⌘C or the pane's Copy menu. Hold a drag at the top or bottom edge to extend through available terminal scrollback. With mouse reporting enabled, a click goes to the terminal app while a drag selects locally. Alternate-screen apps can only expose the history they render. Mouse wheel and trackpad scrolling reach the attached session even with click reporting turned off. In read-only observation, Herdr currently exposes only the live viewport; use Reconnect when control is free, or explicitly Take Control, to scroll history.
 

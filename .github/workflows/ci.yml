@@ -16,13 +16,22 @@ jobs:
           cache-dependency-path: Tools/Tailcat/go.sum
       - run: brew install xcodegen
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - run: scripts/test-tabs.sh
       - run: scripts/test-coexistence.sh
       - run: python3 scripts/herdr-integration-fixture.py build/coexistence-tests/herdr
       - run: scripts/test-panes.sh
       - run: scripts/test-selection.sh
+      - name: Preserve native test failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-test-failure
+          path: |
+            build/tests/selection.xcresult
+            build/tests/selection-diagnostics
+          retention-days: 7
       - run: scripts/build.sh
       - run: scripts/test-pty.sh
-      - run: scripts/test-tabs.sh
       - run: scripts/test-inputs.sh
       - run: scripts/package.sh
       - run: python3 scripts/check-delta-updates.py

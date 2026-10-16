@@ -21,3 +21,45 @@ The native terminal view routes plain physical Ctrl-C to ETX and consumes the co
 ## Limits
 
 The user's physical Mac and exact prior shell state are unavailable here. These tests do not establish physical keyboard/trackpad, live Claude/Codex, SSH/Tailcat or third-party GUI acceptance. Historical screen corruption and shell termios settings are not rewritten by local keyboard-mode recovery. A code change, a packaged CI preview and an installed release are distinct outcomes.
+
+## Doubao asynchronous composition — 0.1.19
+
+2026-10-16 (Asia/Shanghai). Affected baseline: 0.1.18 / build 19,
+`a4c08fb7ee63166bd9605f0a0fc950f97c4b0598`.
+
+`TerminalView.selectedRange()` now always returns `{0,0}`. Previously the host
+returned Ghostty's preedit caret while composing, causing the insertion point to
+change from `{0,0}` to `{2,0}` for `你好` and back. An asynchronous dictation client
+comparing those ranges could abandon its final commit. `markedRange()` still
+delegates to Ghostty during composition and returns `{0,0}` otherwise.
+
+The adapter stays in `App/Terminal.swift`. No libghostty-spm source, version or
+fork changes are involved. `setMarkedText`, `unmarkText`, `insertText`, `firstRect`,
+shortcut dispatch and Ghostty surface lifecycle remain unchanged.
+
+The hostless native test target now compiles the production App sources except
+the application entry point and resources. It does not launch HerdrX, the updater
+or a Herdr service. The existing fixture uses the real `TerminalView`, controller,
+Ghostty surface and `InMemoryTerminalSession` write callback. New cases cover:
+
+- No composition: no marked text and both ranges `{0,0}`.
+- `setMarkedText("你好", selectedRange: {2,0}, replacementRange: {NSNotFound,0})`:
+  selected range `{0,0}`, marked range `{0,2}` and no committed session bytes.
+- `unmarkText()`: no marked text and both ranges `{0,0}` again.
+- A supplementary-plane character (`你好🌏`): marked range uses four UTF-16 units.
+- After an asynchronous delay, `insertText("你好世界", replacementRange:
+  {NSNotFound,0})` clears preedit, preserves the insertion point and sends exactly
+  the final UTF-8 bytes through the session callback without replacing the surface.
+
+The async test establishes `NSApp.currentEvent` using an `applicationDefined`
+event posted to and retrieved from AppKit's event queue. It does not fake keyDown,
+call `session.sendInput` for the expected text, or bypass the adapter's event guard.
+
+Validation:
+
+- The [old-implementation run](https://github.com/cleanwk/herdrX/actions/runs/38863191033) at `f46966d850c2cda0d30455a5c47562fc5404543e` failed exactly four insertion-range assertions in the two new tests; the 14 existing native tests passed. The reported range was `{2,0}` instead of `{0,0}`. [Baseline excerpts](evidence/dictation-baseline.txt) preserve the failure evidence. The marked-range, cancellation, current-event, committed-byte and surface assertions did not fail.
+- Local Swift syntax parsing, release-version consistency, unchanged Ghostty pin, `git diff --check`, shell syntax and all 14 Python release/appcast tests passed.
+- The corrected implementation and tab fix must pass all [current PR #30 checks](https://github.com/cleanwk/herdrX/pull/30/checks) before merge/release, including native tests, Core, Herdr fixtures, universal build and packaging.
+- Physical Doubao speech input remains NOT_RUN here.
+
+The combined tab/dictation implementation passed the complete [macOS run 38864629582](https://github.com/cleanwk/herdrX/actions/runs/38864629582) at `b89aa758b30bc91ffb5334324ddc096d4a21e11d`, including native tab dispatch, 16 Ghostty tests, 66 Core tests, universal build and packaging. The additional scoped-snapshot change still requires the complete current-head gate before release.

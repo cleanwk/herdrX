@@ -158,6 +158,13 @@ final class Desk: ObservableObject {
     private var transportIDs: [String: UUID] = [:]
     func transportIdentity(_ id: String) -> UUID? { transportIDs[id] }
     private var connectionIDs: [String: UUID] = [:]
+    private var sessionReaders: [String: (endpoint: Device.Endpoint, reader: SessionReader)] = [:]
+    private func sessionReader(for device: Device) -> SessionReader {
+        if let saved = sessionReaders[device.id], saved.endpoint == device.endpoint { return saved.reader }
+        let reader = SessionReader()
+        sessionReaders[device.id] = (device.endpoint, reader)
+        return reader
+    }
     private var polls: [String: Task<Void, Never>] = [:]
     private var remoteLayouts: [String: Layout] = [:]
     private var hiddenTask: Task<Void, Never>?
@@ -263,6 +270,7 @@ final class Desk: ObservableObject {
         if let path = paths.removeValue(forKey: id), path.hasPrefix("/tmp/hx-") { try? FileManager.default.removeItem(atPath: path) }
     }
     func remove(_ id: String) {
+        sessionReaders[id] = nil
         detach(id); TailcatSecrets.remove("token." + id); attentionState.remove(device: id); devices.removeAll { $0.id == id }; sessions[id] = nil; connections[id] = nil
         for key in Array(terminals.keys) where key.device == id { terminals.removeValue(forKey: key)?.stop(); ended.remove(key) }
         if deviceFilter == id { deviceFilter = "" }
@@ -365,7 +373,7 @@ final class Desk: ObservableObject {
                 while Date() < deadline {
                     try Task.checkCancellation()
                     do {
-                        _ = try Session(try await RPC(path: device.endpoint.socketPath).call("session.snapshot", timeout: 1)["snapshot"])
+                        _ = try await self.sessionReader(for: device).load(RPC(path: device.endpoint.socketPath), timeout: 1)
                         try Task.checkCancellation()
                         guard self.connectionIDs[device.id] == generation,
                               self.devices.contains(where: { $0.id == device.id && $0.endpoint == device.endpoint }) else { return }
@@ -478,10 +486,10 @@ final class Desk: ObservableObject {
         }
     }
     func refresh(_ id: String, client: RPC) async throws {
-        guard paths[id] == client.path else { throw CancellationError() }
+        guard paths[id] == client.path, let device = devices.first(where: { $0.id == id }) else { throw CancellationError() }
         let connection = connectionIDs[id]
         let token = UUID(); refreshIDs[id] = token
-        let snapshot = try await Session.load(client)
+        let snapshot = try await sessionReader(for: device).load(client)
         try Task.checkCancellation()
         guard connectionIDs[id] == connection, paths[id] == client.path, refreshIDs[id] == token, devices.contains(where: { $0.id == id }) else { return }
         let reconnected = connections[id] != .connected

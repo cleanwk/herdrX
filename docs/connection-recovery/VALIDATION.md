@@ -4,7 +4,7 @@ Date: 2026-10-10. Native macOS, Herdr 0.9.3 / protocol 22.
 
 ## Contract
 
-HerdrX remains a GUI for Herdr. Start Herdr invokes the existing `herdr server` or `herdr --session <name> server` command on request. The server owns persisted sessions and processes. Only canonical default/named socket paths map to a launch; arbitrary paths and remote devices do not. A validated `session.snapshot` establishes readiness.
+HerdrX remains a GUI for Herdr. Start Herdr invokes the existing `herdr server` or `herdr --session <name> server` command on request. The server owns persisted sessions and processes. Only canonical default/named socket paths map to a launch; arbitrary paths and remote devices do not. A validated server snapshot establishes readiness, including the [scoped-read compatibility path](scoped-snapshots.md) after an aggregate response truncates.
 
 The sidebar shows a short status and action, with guidance and selectable diagnostics behind an accessible info button. The empty canvas centers the same recovery group. The 28pt tab bar contains 22pt pills, with 3pt vertical insets, and only horizontal overflow can scroll.
 

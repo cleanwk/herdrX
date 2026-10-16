@@ -200,8 +200,6 @@
 "stale" = "已过期";
 "Move Up" = "上移";
 "Move Down" = "下移";
-"Move Left" = "左移";
-"Move Right" = "右移";
 "Collapsed" = "已折叠";
 "Expanded" = "已展开";
 "Expand group" = "展开分组";

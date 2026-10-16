@@ -3,6 +3,10 @@ import Darwin
 
 /// Short-lived control connections. Terminal bytes never enter this channel.
 public struct RPC: Sendable {
+    /// EOF before a complete NDJSON response, distinct from RPC/JSON/timeout errors.
+    public struct TruncatedResponse: Error, LocalizedError, Sendable {
+        public var errorDescription: String? { "Truncated RPC response" }
+    }
     public let path: String
     public init(path: String) { self.path = path }
     public func call(_ method: String, _ params: [String: JSON] = [:], timeout: Int = 15) async throws -> JSON {
@@ -40,7 +44,8 @@ public struct RPC: Sendable {
             while true {
                 let n = read(fd, &chunk, chunk.count)
                 if n < 0 && errno == EINTR { continue }
-                guard n > 0 else { throw Failure(n == 0 ? "Truncated RPC response" : "RPC read timed out or failed") }
+                if n == 0 { throw TruncatedResponse() }
+                guard n > 0 else { throw Failure("RPC read timed out or failed") }
                 let lines = try framer.append(Data(chunk.prefix(n)))
                 if let line = lines.first {
                     let response = try JSONDecoder().decode(JSON.self, from: line)
