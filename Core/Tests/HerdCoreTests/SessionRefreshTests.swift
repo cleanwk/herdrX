@@ -109,6 +109,14 @@ final class SessionRefreshTests: XCTestCase {
         XCTAssertEqual(serialWire.maximum, 1)
         XCTAssertLessThan(parallelTime, serialTime * 0.8, "Scoped reads still accumulate every round trip")
         print("PERF synthetic 9/37/23, 20–40ms injected latency: serial=\(serialTime)s parallel=\(parallelTime)s maxSockets=\(parallelWire.maximum)")
+        let actionStart = Date()
+        let scoped = try await reader.loadWorkspace("w1", RPC(path: parallelServer.path))
+        let actionTime = Date().timeIntervalSince(actionStart)
+        let patched = try published.replacingWorkspace("w1", with: scoped.session)
+        XCTAssertEqual(patched.spaces, published.spaces); XCTAssertEqual(patched.tabs, published.tabs)
+        XCTAssertEqual(patched.panes, published.panes); XCTAssertEqual(patched.agents, published.agents)
+        XCTAssertLessThan(actionTime, parallelTime * 0.25, "Mutation still pays for every Space and Agent")
+        print("ACTION PERF synthetic 9/37/23: full=\(parallelTime)s scoped=\(actionTime)s")
         let previous = published
         parallelWire.breakLayout(true)
         do { published = try await reader.load(RPC(path: parallelServer.path)); XCTFail("Partial parallel snapshot published") }

@@ -10,7 +10,8 @@ public actor SessionReader {
     private var scoped = false
     private var scopedAgents = false
     private var tail: Task<Void, Never>?
-    private var pending: (revision: UInt64, path: String, timeout: Int, task: Task<Snapshot, Error>)?
+    private var actionTail: Task<Void, Never>?
+    private var pending: (id: UUID, path: String, timeout: Int, task: Task<Snapshot, Error>)?
     private var revision: UInt64 = 0
     private let concurrency: Int
     public init() { concurrency = 4 }
@@ -30,17 +31,51 @@ public actor SessionReader {
             task = pending.task
         } else {
             let previous = tail
-            revision += 1
-            let revision = revision
+            let id = UUID()
             task = Task {
                 await previous?.value
-                if self.pending?.revision == revision { self.pending = nil }
+                if self.pending?.id == id { self.pending = nil }
+                self.revision += 1
+                let revision = self.revision
                 return Snapshot(revision: revision, session: try await self.read(rpc, timeout: timeout))
             }
-            pending = (revision, rpc.path, timeout, task)
+            pending = (id, rpc.path, timeout, task)
             tail = Task { _ = await task.result }
         }
         // One cancelled waiter must not cancel a read needed by other callers.
+        let snapshot = try await task.value
+        try Task.checkCancellation()
+        return snapshot
+    }
+
+    /// Mutations read only their Space, independently of an outstanding full read.
+    /// Serialize these short reads so patches for different Spaces cannot overtake
+    /// each other. Full and scoped reads share revisions allocated when they start.
+    public func loadWorkspace(_ id: String, _ rpc: RPC, timeout: Int = 5) async throws -> Snapshot {
+        try Task.checkCancellation()
+        let previous = actionTail
+        let task = Task {
+            await previous?.value
+            self.revision += 1
+            let revision = self.revision
+            let before = try Self.records(try await rpc.call("workspace.list", timeout: timeout), "workspaces")
+            _ = try Self.topology(before)
+            guard let space = before.first(where: { $0["workspace_id"].string == id }) else {
+                return Snapshot(revision: revision, session: try Session(.object([
+                    "workspaces": .array([]), "tabs": .array([]), "panes": .array([]), "layouts": .array([])
+                ])))
+            }
+            let contents = try await Self.workspace(space, rpc: rpc, timeout: timeout)
+            let after = try Self.records(try await rpc.call("workspace.list", timeout: timeout), "workspaces")
+            guard try Self.topology(before)[id] == Self.topology(after)[id] else {
+                throw Failure("Session topology changed during scoped read")
+            }
+            return Snapshot(revision: revision, session: try Session(.object([
+                "workspaces": .array([space]), "tabs": .array(contents.tabs),
+                "panes": .array(contents.panes), "layouts": .array(contents.layouts)
+            ])))
+        }
+        actionTail = Task { _ = await task.result }
         let snapshot = try await task.value
         try Task.checkCancellation()
         return snapshot

@@ -61,11 +61,40 @@ public struct Session: Equatable, Sendable {
             agents = panes.filter { $0.agent != nil }
         }
         layouts = snapshot["layouts"]
+        try validate()
+    }
+    private init(spaces: [Item], tabs: [Item], panes: [Item], agents: [Item], layouts: JSON) throws {
+        self.spaces = spaces; self.tabs = tabs; self.panes = panes; self.agents = agents; self.layouts = layouts
+        try validate()
+    }
+    private func validate() throws {
         let spaceIDs = Set(spaces.map(\.id))
         let tabKeys = Set(tabs.map { $0.workspace + "|" + $0.id })
         guard Set(spaces.map(\.id)).count == spaces.count, Set(tabs.map(\.id)).count == tabs.count, Set(panes.map(\.id)).count == panes.count, Set(agents.map(\.id)).count == agents.count,
               tabs.allSatisfy({ spaceIDs.contains($0.workspace) }),
               panes.allSatisfy({ pane in tabKeys.contains(pane.workspace + "|" + pane.tab) }) else { throw Failure("Invalid session topology") }
+    }
+    /// Replace a complete server-read Space without inventing pane IDs or split
+    /// geometry. Other Spaces and their enriched Agent records remain untouched.
+    public func replacingWorkspace(_ id: String, with scoped: Session) throws -> Session {
+        guard scoped.spaces.count <= 1, scoped.spaces.allSatisfy({ $0.id == id }),
+              scoped.tabs.allSatisfy({ $0.workspace == id }), scoped.panes.allSatisfy({ $0.workspace == id }),
+              scoped.layouts.array.allSatisfy({ $0["workspace_id"].string == id }) else {
+            throw Failure("Mismatched scoped workspace")
+        }
+        func replace(_ old: [Item], _ new: [Item], matches: (Item) -> Bool) -> [Item] {
+            let index = old.firstIndex(where: matches) ?? old.count
+            return Array(old[..<index]) + new + old[index...].filter { !matches($0) }
+        }
+        let scopedAgents = scoped.agents.map { pane in
+            agents.first { $0.id == pane.id && $0.terminal == pane.terminal && $0.workspace == pane.workspace && $0.tab == pane.tab && $0.agent == pane.agent && $0.status == pane.status } ?? pane
+        }
+        return try Session(
+            spaces: replace(spaces, scoped.spaces, matches: { $0.id == id }),
+            tabs: replace(tabs, scoped.tabs, matches: { $0.workspace == id }),
+            panes: replace(panes, scoped.panes, matches: { $0.workspace == id }),
+            agents: replace(agents, scopedAgents, matches: { $0.workspace == id }),
+            layouts: .array(layouts.array.filter { $0["workspace_id"].string != id } + scoped.layouts.array))
     }
     public static func load(_ rpc: RPC) async throws -> Session {
         try await SessionReader().load(rpc)
