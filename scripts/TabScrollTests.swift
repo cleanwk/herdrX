@@ -127,6 +127,7 @@ final class TabSnapshotBackground: NSView {
         // Match the workbench's hidden title bar and background-drag policy.
         // Calling Strip.mouseDragged directly bypasses AppKit's window routing.
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 28), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
         window.titleVisibility = .hidden; window.titlebarAppearsTransparent = true
         window.isMovableByWindowBackground = true
         for kind in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] { window.standardWindowButton(kind)?.isHidden = true }
@@ -134,6 +135,8 @@ final class TabSnapshotBackground: NSView {
         let scroll = Tabs.HorizontalScrollView(frame: NSRect(x: 0, y: host.bounds.maxY - 28, width: host.bounds.width, height: 28))
         scroll.autoresizingMask = [.width, .minYMargin]
         let strip = Tabs.Strip(); scroll.documentView = strip; host.addSubview(scroll)
+        window.makeKeyAndOrderFront(nil)
+        defer { strip.stopDrag(); window.orderOut(nil); window.close() }
         let initial = [TabEntry(id: "wide", title: "A very wide tab that must reach both ends", count: 12), TabEntry(id: "b", title: "B", count: 1), TabEntry(id: "c", title: "C", count: 1)]
         var moves: [(String, Int)] = []
         strip.select = { strip.selected = $0 }
@@ -161,8 +164,9 @@ final class TabSnapshotBackground: NSView {
         precondition(!strip.mouseDownCanMoveWindow && strip.buttons.allSatisfy { !$0.mouseDownCanMoveWindow }, "Tab views allow background window dragging")
         let wide = strip.buttons[0], start = wide.frame.midX, end = strip.contentWidth + 50
         send(.leftMouseDown, x: start)
+        precondition(strip.source == "wide", "Window mouseDown did not reach the tab: source=\(String(describing: strip.source)), key=\(window.isKeyWindow), visible=\(window.isVisible)")
         send(.leftMouseDragged, x: end)
-        precondition(strip.dragged && wide.lifted && wide.frame.minY == 3, "Dragged pill did not lift or left the horizontal track")
+        precondition(strip.dragged && wide.lifted && wide.frame.minY == 3, "Dragged pill did not lift or left the horizontal track: source=\(String(describing: strip.source)), dragged=\(strip.dragged), frame=\(wide.frame)")
         precondition(strip.buttons[1].targetFrame.minX == TabMetrics.inset, "Neighbours did not make room")
         precondition(strip.entries.map(\.id) == initial.map(\.id) && moves.isEmpty, "Drag preview committed before release")
         send(.leftMouseUp, x: end); settle()
