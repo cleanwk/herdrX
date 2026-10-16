@@ -10,7 +10,7 @@ refresh. Its 2.526s synthetic result was not an acceptable interaction target.
 `workspace.get`, workspace-scoped `tab.list`/`pane.list`, and `pane.layout` RPCs.
 It validates scope/counts/layout membership and the target Space's before/after
 topology. Only the server's `workspace_not_found` error removes that Space after
-its last pane closes; other errors retain the cache. Independent tab/pane lists
+its last pane closes; other errors retain the cache. Independent workspace/tab/pane reads
 run concurrently, as do up to four tab layouts. Other Spaces are not re-read and Agent enrichment is not on this
 critical path. No pane identities or split geometry are predicted locally.
 

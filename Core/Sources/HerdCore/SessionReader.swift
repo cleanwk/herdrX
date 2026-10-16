@@ -59,8 +59,11 @@ public actor SessionReader {
             self.revision += 1
             let revision = self.revision
             let params = ["workspace_id": JSON.string(id)]
+            async let spaceRead = rpc.call("workspace.get", params, timeout: timeout)
+            async let tabRead = rpc.call("tab.list", params, timeout: timeout)
+            async let paneRead = rpc.call("pane.list", params, timeout: timeout)
             let space: JSON
-            do { space = try await rpc.call("workspace.get", params, timeout: timeout)["workspace"] }
+            do { space = try await spaceRead["workspace"] }
             catch let error as RPC.RemoteError where error.code == "workspace_not_found" {
                 return Snapshot(revision: revision, session: try Session(.object([
                     "workspaces": .array([]), "tabs": .array([]), "panes": .array([]), "layouts": .array([])
@@ -68,7 +71,9 @@ public actor SessionReader {
             }
             guard space["workspace_id"].string == id else { throw Failure("Mismatched scoped workspace") }
             let before = try Self.topology([space])
-            let contents = try await Self.workspace(space, rpc: rpc, timeout: timeout, concurrency: 4)
+            let lists = try await (tabRead, paneRead)
+            let contents = try await Self.workspace(space, rpc: rpc, timeout: timeout, concurrency: 4,
+                lists: (try Self.records(lists.0, "tabs"), try Self.records(lists.1, "panes")))
             let after = try await rpc.call("workspace.get", params, timeout: timeout)["workspace"]
             guard after["workspace_id"].string == id, before == (try Self.topology([after])) else {
                 throw Failure("Session topology changed during scoped read")
@@ -111,7 +116,8 @@ public actor SessionReader {
         let panes: [JSON]
         let layouts: [JSON]
     }
-    private static func workspace(_ space: JSON, rpc: RPC, timeout: Int, concurrency: Int = 1) async throws -> Workspace {
+    private static func workspace(_ space: JSON, rpc: RPC, timeout: Int, concurrency: Int = 1,
+        lists: ([JSON], [JSON])? = nil) async throws -> Workspace {
         @Sendable func call(_ method: String, _ params: [String: JSON]) async throws -> JSON {
             try Task.checkCancellation()
             let value = try await rpc.call(method, params, timeout: timeout)
@@ -120,7 +126,9 @@ public actor SessionReader {
         }
         let params = ["workspace_id": space["workspace_id"]]
         let tabs: [JSON], panes: [JSON]
-        if concurrency > 1 {
+        if let lists {
+            tabs = lists.0; panes = lists.1
+        } else if concurrency > 1 {
             async let tabList = call("tab.list", params)
             async let paneList = call("pane.list", params)
             let lists = try await (tabList, paneList)
