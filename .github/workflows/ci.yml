@@ -29,6 +29,7 @@ jobs:
           path: |
             build/tests/selection.xcresult
             build/tests/pane-actions.xcresult
+            build/tests/pane-actions-diagnostics
             build/tests/selection-diagnostics
           retention-days: 7
       - run: scripts/build.sh

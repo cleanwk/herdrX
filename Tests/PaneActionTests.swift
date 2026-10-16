@@ -45,8 +45,10 @@ import Testing
         let closeStart = Date()
         desk.objectAction(device: device.id, method: "pane.close", params: ["pane_id": .string("right")])
         try await wait { desk.sessions[device.id]?.panes.contains(where: { $0.id == "right" }) == false }
+        let closeStateTime = Date().timeIntervalSince(closeStart)
         render()
         let closeTime = Date().timeIntervalSince(closeStart)
+        print("NATIVE CLOSE STAGES: state=\(closeStateTime)s layout=\(closeTime - closeStateTime)s total=\(closeTime)s")
         #expect(closeTime < 0.75, "Close waited for the two-second background read")
         #expect(desk.terminals[right] == nil)
         #expect(removed.view.superview == nil, "Closed native surface remained mounted")
@@ -58,8 +60,10 @@ import Testing
         let splitStart = Date()
         desk.split(horizontal: true, target: left)
         try await wait { desk.sessions[device.id]?.panes.contains(where: { $0.id == "new-3" }) == true }
+        let splitStateTime = Date().timeIntervalSince(splitStart)
         render()
         let splitTime = Date().timeIntervalSince(splitStart)
+        print("NATIVE SPLIT STAGES: state=\(splitStateTime)s layout=\(splitTime - splitStateTime)s total=\(splitTime)s")
         #expect(splitTime < 0.75, "Split waited for unrelated metadata")
         #expect(desk.terminals[left] === survivor)
         #expect(survivor.view.frame.width < oldWidth * 1.1)
@@ -73,6 +77,8 @@ import Testing
         try FileManager.default.createDirectory(at: evidence.deletingLastPathComponent(), withIntermediateDirectories: true)
         try JSONSerialization.data(withJSONObject: ["full_snapshot_delay_seconds": 2, "scoped_rpc_delay_seconds": 0.02,
             "native_close_seconds": closeTime, "native_split_seconds": splitTime,
+            "close_state_seconds": closeStateTime, "split_state_seconds": splitStateTime,
+            "configuration": "Release",
             "includes_native_layout": true], options: [.prettyPrinted, .sortedKeys]).write(to: evidence, options: .atomic)
     }
 

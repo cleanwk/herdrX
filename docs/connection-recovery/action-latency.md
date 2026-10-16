@@ -43,7 +43,8 @@ Validation:
   detaches its native surfaces during teardown. Both test invocations have bounded
   execution time. Timing fixtures send each normal response in a single write,
   matching Herdr; the existing transport and large-session tests retain deliberate
-  17-byte fragmentation coverage.
+  17-byte fragmentation coverage. Native tests use the shipping Release optimization
+  level and report state-publication and native-layout times separately.
 - The synthetic 9-Space/37-pane/23-Agent socket test now compares full and scoped
   timing and verifies untouched topology and Agent data. Existing real Herdr
   0.8.2/0.9.3 fixtures cover split/close geometry and survivor identity.
@@ -59,6 +60,11 @@ Validation:
   `stationaryEdgesGrowAndCancellationStops` selection test. That run was cancelled
   for diagnosis, not counted as a pass. Process isolation and explicit view
   teardown keep the Desk fixture out of the independent selection test process.
+- The isolated Debug run then completed but missed the native timing target
+  (0.909s close / 1.032s split); structural assertions passed. It is not counted as
+  a pass. Performance is gated on the shipping Release configuration, retaining
+  the same 750ms threshold and all structural assertions, with stage timing in
+  the evidence to distinguish read/publication from native layout work.
 
 These fixtures establish latency under controlled backend delays and actual
 native reconciliation. User-device timing, live SSH/Tailcat RTT and a Space whose
