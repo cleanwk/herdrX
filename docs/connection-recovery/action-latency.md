@@ -65,6 +65,14 @@ Validation:
   a pass. Performance is gated on the shipping Release configuration, retaining
   the same 750ms threshold and all structural assertions, with stage timing in
   the evidence to distinguish read/publication from native layout work.
+- Per-RPC tracing then found the isolated server taking 58–169ms for nominal
+  20ms delays in the background xctest process. Client publication followed the
+  final response by about 1ms; native layout took 8–21ms. The socket fixture now
+  holds a foreground latency-critical process activity and assigns user-initiated
+  QoS to its worker threads, preventing App Nap/timer coalescing from dominating
+  the injected delay. Traces report actual sleep time as well as handler time.
+  This only changes the fixture; production scheduling and all timing targets
+  remain unchanged.
 
 These fixtures establish latency under controlled backend delays and actual
 native reconciliation. User-device timing, live SSH/Tailcat RTT and a Space whose

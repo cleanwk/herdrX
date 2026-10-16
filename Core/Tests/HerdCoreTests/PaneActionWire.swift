@@ -10,7 +10,7 @@ final class PaneActionWire: @unchecked Sendable {
     private var reads = 0
     private var invalidLayout = false
     private var workspaceError: String?
-    private var timings: [(String, Date, TimeInterval)] = []
+    private var timings: [(String, Date, TimeInterval, TimeInterval)] = []
     let stopEvents = DispatchSemaphore(value: 0)
     var fullReads: Int { lock.lock(); defer { lock.unlock() }; return reads }
     func breakLayout(_ broken: Bool) { lock.lock(); invalidLayout = broken; lock.unlock() }
@@ -18,8 +18,8 @@ final class PaneActionWire: @unchecked Sendable {
     var snapshot: JSON { lock.lock(); defer { lock.unlock() }; return makeSnapshot() }
     func trace(since start: Date) {
         lock.lock(); let records = timings; lock.unlock()
-        for (method, date, elapsed) in records where date >= start {
-            print("ACTION WIRE \(method): start=\(date.timeIntervalSince(start))s handler=\(elapsed)s")
+        for (method, date, elapsed, sleep) in records where date >= start {
+            print("ACTION WIRE \(method): start=\(date.timeIntervalSince(start))s handler=\(elapsed)s sleep=\(sleep)s")
         }
     }
     private func makeSnapshot() -> JSON {
@@ -42,7 +42,8 @@ final class PaneActionWire: @unchecked Sendable {
     func respond(_ request: JSON) -> Data {
         let method = request["method"].string!, params = request["params"]
         let start = Date()
-        defer { lock.lock(); timings.append((method, start, Date().timeIntervalSince(start))); lock.unlock() }
+        var sleep: TimeInterval = 0
+        defer { lock.lock(); timings.append((method, start, Date().timeIntervalSince(start), sleep)); lock.unlock() }
         lock.lock()
         if method == "pane.close" { ids.removeAll { $0 == params["pane_id"].string } }
         if method == "pane.split" { ids.append("new-\(next)"); next += 1 }
@@ -50,7 +51,9 @@ final class PaneActionWire: @unchecked Sendable {
         let snapshot = makeSnapshot(), created = ids.last, workspaceError = workspaceError
         lock.unlock()
         if method == "events.subscribe" { _ = stopEvents.wait(timeout: .now() + 15) }
+        let sleepStart = Date()
         Thread.sleep(forTimeInterval: method == "session.snapshot" ? 2 : 0.02)
+        sleep = Date().timeIntervalSince(sleepStart)
         let result: JSON
         switch method {
         case "session.snapshot": result = .object(["snapshot": snapshot])
