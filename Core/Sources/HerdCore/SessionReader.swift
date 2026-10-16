@@ -10,7 +10,8 @@ public actor SessionReader {
     private var scoped = false
     private var scopedAgents = false
     private var tail: Task<Void, Never>?
-    private var pending: (revision: UInt64, path: String, timeout: Int, task: Task<Snapshot, Error>)?
+    private var actionTail: Task<Void, Never>?
+    private var pending: (id: UUID, path: String, timeout: Int, task: Task<Snapshot, Error>)?
     private var revision: UInt64 = 0
     private let concurrency: Int
     public init() { concurrency = 4 }
@@ -30,14 +31,15 @@ public actor SessionReader {
             task = pending.task
         } else {
             let previous = tail
-            revision += 1
-            let revision = revision
+            let id = UUID()
             task = Task {
                 await previous?.value
-                if self.pending?.revision == revision { self.pending = nil }
+                if self.pending?.id == id { self.pending = nil }
+                self.revision += 1
+                let revision = self.revision
                 return Snapshot(revision: revision, session: try await self.read(rpc, timeout: timeout))
             }
-            pending = (revision, rpc.path, timeout, task)
+            pending = (id, rpc.path, timeout, task)
             tail = Task { _ = await task.result }
         }
         // One cancelled waiter must not cancel a read needed by other callers.
@@ -46,8 +48,49 @@ public actor SessionReader {
         return snapshot
     }
 
+    /// Mutations read only their Space, independently of an outstanding full read.
+    /// Serialize these short reads so patches for different Spaces cannot overtake
+    /// each other. Full and scoped reads share revisions allocated when they start.
+    public func loadWorkspace(_ id: String, _ rpc: RPC, timeout: Int = 5) async throws -> Snapshot {
+        try Task.checkCancellation()
+        let previous = actionTail
+        let task = Task {
+            await previous?.value
+            self.revision += 1
+            let revision = self.revision
+            let params = ["workspace_id": JSON.string(id)]
+            async let spaceRead = rpc.call("workspace.get", params, timeout: timeout)
+            async let tabRead = rpc.call("tab.list", params, timeout: timeout)
+            async let paneRead = rpc.call("pane.list", params, timeout: timeout)
+            let space: JSON
+            do { space = try await spaceRead["workspace"] }
+            catch let error as RPC.RemoteError where error.code == "workspace_not_found" {
+                return Snapshot(revision: revision, session: try Session(.object([
+                    "workspaces": .array([]), "tabs": .array([]), "panes": .array([]), "layouts": .array([])
+                ])))
+            }
+            guard space["workspace_id"].string == id else { throw Failure("Mismatched scoped workspace") }
+            let before = try Self.topology([space])
+            let lists = try await (tabRead, paneRead)
+            let contents = try await Self.workspace(space, rpc: rpc, timeout: timeout, concurrency: 4,
+                lists: (try Self.records(lists.0, "tabs"), try Self.records(lists.1, "panes")))
+            let after = try await rpc.call("workspace.get", params, timeout: timeout)["workspace"]
+            guard after["workspace_id"].string == id, before == (try Self.topology([after])) else {
+                throw Failure("Session topology changed during scoped read")
+            }
+            return Snapshot(revision: revision, session: try Session(.object([
+                "workspaces": .array([space]), "tabs": .array(contents.tabs),
+                "panes": .array(contents.panes), "layouts": .array(contents.layouts)
+            ])))
+        }
+        actionTail = Task { _ = await task.result }
+        let snapshot = try await task.value
+        try Task.checkCancellation()
+        return snapshot
+    }
+
     /// Bound socket pressure and preserve server order, regardless of reply order.
-    private func batch<Input: Sendable, Output: Sendable>(_ inputs: [Input],
+    private static func batch<Input: Sendable, Output: Sendable>(_ inputs: [Input], concurrency: Int,
         operation: @escaping @Sendable (Input) async throws -> Output) async throws -> [Output] {
         try await withThrowingTaskGroup(of: (Int, Output).self) { group in
             var next = 0
@@ -73,24 +116,34 @@ public actor SessionReader {
         let panes: [JSON]
         let layouts: [JSON]
     }
-    private static func workspace(_ space: JSON, rpc: RPC, timeout: Int) async throws -> Workspace {
-        func call(_ method: String, _ params: [String: JSON]) async throws -> JSON {
+    private static func workspace(_ space: JSON, rpc: RPC, timeout: Int, concurrency: Int = 1,
+        lists: ([JSON], [JSON])? = nil) async throws -> Workspace {
+        @Sendable func call(_ method: String, _ params: [String: JSON]) async throws -> JSON {
             try Task.checkCancellation()
             let value = try await rpc.call(method, params, timeout: timeout)
             try Task.checkCancellation()
             return value
         }
         let params = ["workspace_id": space["workspace_id"]]
-        let tabs = try records(try await call("tab.list", params), "tabs")
-        let panes = try records(try await call("pane.list", params), "panes")
+        let tabs: [JSON], panes: [JSON]
+        if let lists {
+            tabs = lists.0; panes = lists.1
+        } else if concurrency > 1 {
+            async let tabList = call("tab.list", params)
+            async let paneList = call("pane.list", params)
+            let lists = try await (tabList, paneList)
+            tabs = try records(lists.0, "tabs"); panes = try records(lists.1, "panes")
+        } else {
+            tabs = try records(try await call("tab.list", params), "tabs")
+            panes = try records(try await call("pane.list", params), "panes")
+        }
         guard tabs.allSatisfy({ $0["workspace_id"] == space["workspace_id"] }),
               panes.allSatisfy({ $0["workspace_id"] == space["workspace_id"] }),
               space["tab_count"] == .number(Double(tabs.count)),
               space["pane_count"] == .number(Double(panes.count)) else {
             throw Failure("Session topology changed during scoped read")
         }
-        var layouts: [JSON] = []
-        for tab in tabs {
+        let layouts = try await batch(tabs, concurrency: concurrency) { tab in
             let members = panes.filter { $0["tab_id"] == tab["tab_id"] }
             guard tab["pane_count"] == .number(Double(members.count)), let first = members.first else {
                 throw Failure("Incomplete scoped tab")
@@ -102,7 +155,7 @@ public actor SessionReader {
                   Set(rectangles.map { $0["pane_id"] }) == Set(members.map { $0["pane_id"] }) else {
                 throw Failure("Session layout changed during scoped read")
             }
-            layouts.append(layout)
+            return layout
         }
         return Workspace(tabs: tabs, panes: panes, layouts: layouts)
     }
@@ -122,7 +175,7 @@ public actor SessionReader {
         let ping = try await call("ping")
         let spaces = try Self.records(try await call("workspace.list"), "workspaces")
         let before = try Self.topology(spaces)
-        let workspaces = try await batch(spaces) { space in
+        let workspaces = try await Self.batch(spaces, concurrency: concurrency) { space in
             try await Self.workspace(space, rpc: rpc, timeout: timeout)
         }
         let tabs = workspaces.flatMap(\.tabs), panes = workspaces.flatMap(\.panes), layouts = workspaces.flatMap(\.layouts)
@@ -141,7 +194,7 @@ public actor SessionReader {
             catch is RPC.TruncatedResponse { scopedAgents = true }
         }
         if scopedAgents {
-            agents = try await batch(panes.filter { $0["agent"].string != nil }) { pane in
+            agents = try await Self.batch(panes.filter { $0["agent"].string != nil }, concurrency: concurrency) { pane in
                 let agent = try await rpc.call("agent.get", ["target": pane["pane_id"]], timeout: timeout)["agent"]
                 guard Self.samePane(pane, agent) else { throw Failure("Agent changed during scoped read") }
                 return agent

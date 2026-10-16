@@ -65,7 +65,7 @@ targets:
         PRODUCT_NAME: HerdrX
         PRODUCT_BUNDLE_IDENTIFIER: io.github.cleanwk.herdrx
         SWIFT_VERSION: '5.0'
-        MARKETING_VERSION: '0.1.20'
+        MARKETING_VERSION: '0.1.21'
         CURRENT_PROJECT_VERSION: 1
         CODE_SIGN_IDENTITY: '-'
         CODE_SIGN_STYLE: Manual
@@ -85,6 +85,9 @@ targets:
         excludes: [Main.swift, Info.plist, Resources, '*.xcassets']
       - Tests/SelectionTests.swift
       - Tests/FloatingTerminalTests.swift
+      - Tests/PaneActionTests.swift
+      - Core/Tests/HerdCoreTests/TestRPCServer.swift
+      - Core/Tests/HerdCoreTests/PaneActionWire.swift
     dependencies:
       - package: HerdCore
       - package: HerdCore

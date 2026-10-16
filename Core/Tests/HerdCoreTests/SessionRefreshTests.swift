@@ -35,13 +35,14 @@ private final class LargeSessionWire: @unchecked Sendable {
         lock.lock(); active += 1; maximum = max(maximum, active); let broken = broken; lock.unlock()
         defer { lock.lock(); active -= 1; lock.unlock() }
         // Different delays intentionally finish later spaces before earlier ones.
-        Thread.sleep(forTimeInterval: request["params"]["workspace_id"] == .string("w1") ? 0.04 : 0.02)
+        TestRPCServer.delay(request["params"]["workspace_id"] == .string("w1") ? 0.04 : 0.02)
         let params = request["params"], method = request["method"].string!
         let result: JSON
         switch method {
         case "session.snapshot", "agent.list": return Data(String(repeating: "x", count: 8192).utf8)
         case "ping": result = .object([:])
         case "workspace.list": result = .object(["workspaces": .array(spaces)])
+        case "workspace.get": result = .object(["workspace": spaces.first { $0["workspace_id"] == params["workspace_id"] }!])
         case "tab.list": result = .object(["tabs": .array(tabs.filter { $0["workspace_id"] == params["workspace_id"] })])
         case "pane.list": result = .object(["panes": .array(panes.filter { $0["workspace_id"] == params["workspace_id"] })])
         case "pane.layout":
@@ -109,6 +110,13 @@ final class SessionRefreshTests: XCTestCase {
         XCTAssertEqual(serialWire.maximum, 1)
         XCTAssertLessThan(parallelTime, serialTime * 0.8, "Scoped reads still accumulate every round trip")
         print("PERF synthetic 9/37/23, 20–40ms injected latency: serial=\(serialTime)s parallel=\(parallelTime)s maxSockets=\(parallelWire.maximum)")
+        let actionStart = Date()
+        let scoped = try await reader.loadWorkspace("w1", RPC(path: parallelServer.path))
+        let actionTime = Date().timeIntervalSince(actionStart)
+        let patched = try published.replacingWorkspace("w1", with: scoped.session)
+        XCTAssertEqual(patched, published)
+        XCTAssertLessThan(actionTime, parallelTime * 0.25, "Mutation still pays for every Space and Agent")
+        print("ACTION PERF synthetic 9/37/23: full=\(parallelTime)s scoped=\(actionTime)s")
         let previous = published
         parallelWire.breakLayout(true)
         do { published = try await reader.load(RPC(path: parallelServer.path)); XCTFail("Partial parallel snapshot published") }

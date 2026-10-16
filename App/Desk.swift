@@ -240,9 +240,11 @@ final class Desk: ObservableObject {
         let rects = Dictionary(uniqueKeysWithValues: activeRects)
         return terminals.filter { floatingPanes[$0.key] == nil }.map { ($0.key, $0.value, rects[$0.key] ?? .zero) }
     }
-    init() {
+    init(startServices: Bool = true) {
         try? FileManager.default.createDirectory(at: Self.support, withIntermediateDirectories: true)
         devices = (try? JSONDecoder().decode([Device].self, from: Data(contentsOf: saveURL))) ?? (ProcessInfo.processInfo.environment["HERDRX_STATE_DIR"] != nil ? [] : [Device(id: "local", displayName: "Local", endpoint: .init(kind: "local", socketPath: NSHomeDirectory() + "/.config/herdr/herdr.sock"))])
+        // Native integration tests connect only their isolated fixture explicitly.
+        guard startServices else { return }
         for device in devices { connect(device) }
         notificationRouter = NotificationRouter(desk: self)
         UNUserNotificationCenter.current().delegate = notificationRouter
@@ -264,7 +266,7 @@ final class Desk: ObservableObject {
         resolvedSockets[id] = nil; transportIDs[id] = nil
         invalidatePlugins(id)
         localStarts.removeValue(forKey: id)?.cancel()
-        connectionIDs[id] = nil; publishedRefreshes[id] = nil
+        connectionIDs[id] = nil; publications[id] = nil
         polls.removeValue(forKey: id)?.cancel(); tailcats.removeValue(forKey: id)?.stop()
         if let tunnel = tunnels.removeValue(forKey: id), tunnel.isRunning { tunnel.terminate() }
         if let path = paths.removeValue(forKey: id), path.hasPrefix("/tmp/hx-") { try? FileManager.default.removeItem(atPath: path) }
@@ -441,7 +443,7 @@ final class Desk: ObservableObject {
             }
         }
     }
-    private var publishedRefreshes: [String: UInt64] = [:]
+    private var publications: [String: SessionPublication] = [:]
     private func scrollTerminal(_ key: PaneKey, terminal: Terminal, events: [NSEvent]) async {
         guard canWrite(key.device), !ended.contains(key), terminals[key] === terminal,
               let client = try? rpc(key.device),
@@ -487,16 +489,45 @@ final class Desk: ObservableObject {
     }
     func refresh(_ id: String, client: RPC) async throws {
         guard paths[id] == client.path, let device = devices.first(where: { $0.id == id }) else { throw CancellationError() }
-        let connection = connectionIDs[id]
+        let connection = connectionIDs[id], transport = transportIDs[id]
         let result = try await sessionReader(for: device).loadSnapshot(client)
         try Task.checkCancellation()
-        guard connectionIDs[id] == connection, paths[id] == client.path,
+        guard connectionIDs[id] == connection, transportIDs[id] == transport, paths[id] == client.path,
               devices.contains(where: { $0.id == id && $0.endpoint == device.endpoint }) else { throw CancellationError() }
         // A later *request* must not discard this completed snapshot. Only a
         // newer published result can supersede it; action callers need the cache now.
-        guard result.revision >= publishedRefreshes[id, default: 0] else { return }
-        publishedRefreshes[id] = result.revision
-        let snapshot = result.session
+        guard let snapshot = try publications[id, default: SessionPublication()].apply(result, to: sessions[id]) else { return }
+        publish(id, snapshot: snapshot)
+    }
+    func refreshAfterAction(_ id: String, workspace: String, client: RPC) async throws {
+        guard paths[id] == client.path, let device = devices.first(where: { $0.id == id }) else { throw CancellationError() }
+        let connection = connectionIDs[id], transport = transportIDs[id]
+        func valid() -> Bool {
+            connectionIDs[id] == connection && transportIDs[id] == transport && paths[id] == client.path
+                && devices.contains(where: { $0.id == id && $0.endpoint == device.endpoint })
+        }
+        do {
+            let result = try await sessionReader(for: device).loadWorkspace(workspace, client)
+            try Task.checkCancellation()
+            guard valid() else { throw CancellationError() }
+            if let snapshot = try publications[id, default: SessionPublication()].apply(result, to: sessions[id], workspace: workspace) {
+                publish(id, snapshot: snapshot)
+            }
+        } catch is CancellationError { throw CancellationError() }
+        catch {
+            // A topology race or unsupported scoped response retains the usable
+            // cache and falls back to a complete read; never repeat the mutation.
+            guard valid() else { throw CancellationError() }
+            try await refresh(id, client: client)
+            return
+        }
+        // Enriched Agent metadata and unrelated Spaces catch up independently.
+        Task { [weak self] in
+            guard let self, valid() else { return }
+            try? await self.refresh(id, client: client)
+        }
+    }
+    private func publish(_ id: String, snapshot: Session) {
         let reconnected = connections[id] != .connected
         if reconnected { connections[id] = .connected; refreshPluginCatalog(id) }
         if sessions[id] != snapshot { let old = sessions[id]; attentionState.update(device: id, old: old, new: snapshot); notifyChanges(device: id, old: old, new: snapshot); sessions[id] = snapshot; reconcile(id, previous: old); reindex() }
@@ -570,17 +601,19 @@ final class Desk: ObservableObject {
     func split(horizontal: Bool, target: PaneKey? = nil) {
         guard let key = target ?? focused, canSplit(horizontal: horizontal, target: key) else { return }
         if selectedDevice != nil {
-            let tab = selectedTab, action = key.device + "|pane|" + key.pane
+            guard let targetPane = sessions[key.device]?.panes.first(where: { $0.id == key.pane }) else { return }
+            let tab = targetPane.tab, workspace = targetPane.workspace, action = key.device + "|pane|" + key.pane
             guard begin(action, device: key.device) else { return }
             let origin = focusRevision, originalFocus = focused, endpoint = currentDevice?.endpoint
             Task { defer { busy.remove(action) }; do {
                 let rpc = try rpc(key.device)
                 let pane = try await rpc.call("pane.get", ["pane_id": .string(key.pane)])["pane"]
-                guard let cwd = pane["foreground_cwd"].string ?? pane["cwd"].string else { throw Failure("Cannot read current directory; split cancelled") }
+                guard pane["pane_id"].string == key.pane, pane["workspace_id"].string == workspace, pane["tab_id"].string == tab,
+                      let cwd = pane["foreground_cwd"].string ?? pane["cwd"].string else { throw Failure("Cannot read current directory; split cancelled") }
                 guard canWrite(key.device), devices.first(where: { $0.id == key.device })?.endpoint == endpoint,
                       sessions[key.device]?.panes.contains(where: { $0.id == key.pane && $0.tab == tab }) == true else { throw Failure(L("The creation target changed. Try again.")) }
                 let result = try await rpc.call("pane.split", ["target_pane_id": .string(key.pane), "direction": .string(horizontal ? "right" : "down"), "cwd": .string(cwd), "focus": .bool(false)])
-                try await refresh(key.device, client: rpc)
+                try await refreshAfterAction(key.device, workspace: workspace, client: rpc)
                 if origin == focusRevision, focused == originalFocus, selectedDevice == key.device, selectedTab == tab, let id = result["pane"]["pane_id"].string { zoomed = false; focused = PaneKey(device: key.device, pane: id); requestFocus() }
             } catch { message = error.localizedDescription } }
         }
@@ -628,7 +661,7 @@ final class Desk: ObservableObject {
                       canWrite(id), devices.first(where: { $0.id == id })?.endpoint == endpoint,
                       sessions[id]?.panes.contains(where: { $0.id == pane.pane && $0.workspace == space }) == true else { throw Failure(L("The creation target changed. Try again.")) }
                 let result = try await client.call("tab.create", ["workspace_id": .string(space), "cwd": .string(cwd), "focus": .bool(false)])
-                try await refresh(id, client: client)
+                try await refreshAfterAction(id, workspace: space, client: client)
                 if origin == focusRevision, let paneID = result["root_pane"]["pane_id"].string,
                    let created = sessions[id]?.panes.first(where: { $0.id == paneID }) { select(device: id, space: created.workspace, tab: created.tab) }
             } catch { message = error.localizedDescription }

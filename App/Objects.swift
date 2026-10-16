@@ -40,9 +40,14 @@ extension Desk {
             }
             defer { busy.remove(key) }
             let client = try rpc(request.device)
+            let workspace: String
+            switch request.target {
+            case .space(let id): workspace = id
+            case .tab(_, let space), .pane(_, _, let space): workspace = space
+            }
             _ = try await client.call(request.target.method, request.target.parameters(name: name))
             // Only a server snapshot changes the displayed name. A failed RPC leaves it intact.
-            try await refresh(request.device, client: client)
+            try await refreshAfterAction(request.device, workspace: workspace, client: client)
         }
         try await operation.value
     }
@@ -71,8 +76,21 @@ extension Desk {
     func objectAction(device: String, method: String, params: [String: JSON]) {
         let object = params["pane_id"]?.string.map { "pane|" + $0 } ?? params["tab_id"]?.string.map { "tab|" + $0 } ?? params["workspace_id"]?.string.map { "space|" + $0 } ?? method
         let key = device + "|" + object
-        guard begin(key, device: device) else { return }
-        Task { defer { busy.remove(key) }; do { let client = try rpc(device); _ = try await client.call(method, params); try await refresh(device, client: client) } catch { message = error.localizedDescription } }
+        let workspace = params["workspace_id"]?.string
+            ?? sessions[device]?.tabs.first { $0.id == params["tab_id"]?.string }?.workspace
+            ?? sessions[device]?.panes.first { $0.id == params["pane_id"]?.string }?.workspace
+        guard let endpoint = devices.first(where: { $0.id == device })?.endpoint,
+              let client = try? rpc(device), begin(key, device: device) else { return }
+        let transport = transportIdentity(device)
+        Task { defer { busy.remove(key) }; do {
+            guard canWrite(device), devices.contains(where: { $0.id == device && $0.endpoint == endpoint }),
+                  transportIdentity(device) == transport else { throw CancellationError() }
+            _ = try await client.call(method, params)
+            guard transportIdentity(device) == transport else { throw CancellationError() }
+            if let workspace, method != "workspace.move" {
+                try await refreshAfterAction(device, workspace: workspace, client: client)
+            } else { try await refresh(device, client: client) }
+        } catch is CancellationError {} catch { message = error.localizedDescription } }
     }
 }
 
