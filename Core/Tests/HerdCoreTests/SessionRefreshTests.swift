@@ -70,7 +70,20 @@ private final class RefreshWire: @unchecked Sendable {
             let gate = number == 1 ? first : second
             XCTAssertEqual(gate.wait(timeout: .now() + 10), .success, "Test did not release snapshot")
         }
-        let snapshot: JSON = .object(["workspaces": .array([.object(["workspace_id": .string("w"), "label": .string("Revision \(number)")])]), "tabs": .array([]), "panes": .array([])])
+        // The first snapshot predates pane.close. Subsequent snapshots contain
+        // only the surviving terminal and its expanded, authoritative rectangle.
+        let ids = number == 1 ? ["left", "right"] : ["left"]
+        let area: JSON = .object(["x": .number(0), "y": .number(0), "width": .number(100), "height": .number(40)])
+        let panes: [JSON] = ids.map { .object(["workspace_id": .string("w"), "tab_id": .string("t"), "pane_id": .string($0), "terminal_id": .string("term-" + $0)]) }
+        let rectangles: [JSON] = ids.enumerated().map { index, id in
+            .object(["pane_id": .string(id), "rect": ids.count == 1 ? area : .object(["x": .number(Double(index * 50)), "y": .number(0), "width": .number(50), "height": .number(40)])])
+        }
+        let snapshot: JSON = .object([
+            "workspaces": .array([.object(["workspace_id": .string("w"), "label": .string("Revision \(number)")])]),
+            "tabs": .array([.object(["workspace_id": .string("w"), "tab_id": .string("t")])]),
+            "panes": .array(panes),
+            "layouts": .array([.object(["workspace_id": .string("w"), "tab_id": .string("t"), "area": area, "panes": .array(rectangles)])])
+        ])
         return try! JSONEncoder().encode(JSON.object(["id": request["id"], "result": .object(["snapshot": snapshot])])) + Data([10])
     }
 }
@@ -122,6 +135,7 @@ final class SessionRefreshTests: XCTestCase {
         try await waitForRequests(2, wire: wire)
         XCTAssertEqual(completed.revision, 1)
         XCTAssertEqual(completed.session.spaces.first?.label, "Revision 1")
+        XCTAssertEqual(completed.session.panes.map(\.id), ["left", "right"])
         // A background refresh is pending; the completed result is still usable
         // immediately, rather than being discarded by a latest-request token.
         XCTAssertEqual(wire.count, 2)
@@ -131,6 +145,11 @@ final class SessionRefreshTests: XCTestCase {
             let updated = try await task.value
             XCTAssertEqual(updated.revision, 2)
             XCTAssertEqual(updated.session.spaces.first?.label, "Revision 2")
+            XCTAssertEqual(updated.session.panes.map(\.id), ["left"], "Closed pane survived post-mutation refresh")
+            XCTAssertEqual(updated.session.panes.first?.terminal, "term-left", "Surviving terminal identity changed")
+            let layout = updated.session.layouts.array[0]
+            XCTAssertEqual(layout["panes"].array.map { $0["pane_id"].string }, ["left"])
+            XCTAssertEqual(PaneLayoutGeometry.normalizedRect(layout["panes"].array[0]["rect"], in: layout["area"]), CGRect(x: 0, y: 0, width: 1, height: 1), "Surviving pane did not fill the canvas")
         }
         XCTAssertEqual(wire.count, 2, "Burst queued redundant full refreshes")
         let later = try await reader.loadSnapshot(rpc)

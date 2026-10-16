@@ -60,6 +60,17 @@ looked for the new pane in the old cache and skipped selecting it, making the pl
 appear ineffective. Rename retained the old label until the later refresh, and
 split could focus a pane before its layout was visible.
 
+The same publication race affects `pane.close`: Herdr has already stopped and
+removed the terminal, but the old client snapshot still mounts its surface. The
+attachment can then display `terminal attach ended: terminal … not found` while
+the surviving pane retains the old split rectangle. In Herdr 0.9.3 this message
+comes from `src/server/headless/render.rs`; its generic `ServerShutdown` envelope
+does not mean the entire server stopped. Pane public IDs are monotonic and remain
+stable after another pane closes (`src/workspace.rs`). The fix publishes the
+completed authoritative topology/layout; existing reconciliation removes the
+closed terminal surface and the surviving pane takes the server's expanded area.
+It does not reconnect or recreate a deliberately closed terminal.
+
 Each reader now numbers reads and Desk compares completed revisions, preserving
 connection, socket and endpoint guards. Starting another request cannot suppress
 a completed result; an older result cannot overwrite a newer published one.
@@ -85,6 +96,12 @@ Regression coverage:
 - A gated socket test verifies a completed result remains available while a
   later read is blocked, twelve queued callers share one subsequent read, a
   cancelled waiter does not cancel its peers, and later requests get fresh data.
+  Its before/after close snapshots assert that the removed pane disappears, the
+  surviving terminal keeps its identity and its normalized rectangle fills the canvas.
+- The real Herdr 0.8.2/0.9.3 layout fixture closes both added panes after a nested
+  split, verifies the survivor's pane/terminal IDs and full-area rectangle, then
+  passes the captured layouts through native point/pixel geometry at three canvas
+  sizes and 1×/2× scale. Only its named disposable server is stopped.
 
 Local validation: 14 Python release/update tests and `git diff --check` passed.
 This Linux executor cannot run AppKit or the Darwin Core tests; the current PR
@@ -99,5 +116,9 @@ passes for the stress test. The fixture now retains servers across async waits,
 closes listeners in their accept loop and uses dedicated blocking I/O threads.
 Production control RPC reads also run on a dedicated dispatch queue instead of
 blocking Swift's cooperative executor while waiting for remote responses.
-The complete [PR #31 head checks](https://github.com/cleanwk/herdrX/pull/31/checks)
-remain the release gate.
+The corrected [macOS run at 690640c](https://github.com/cleanwk/herdrX/actions/runs/38875302895)
+passed the complete workflow, including 77 Core tests. Its synthetic delayed
+9/37/23 session measured 5.736s serial versus 2.266s concurrent (60.5% less elapsed
+time, at most four sockets). This is a fixture result, not user-device timing.
+The additional close-pane regressions must also pass in the complete
+[PR #31 head checks](https://github.com/cleanwk/herdrX/pull/31/checks) before release.

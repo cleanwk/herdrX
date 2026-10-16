@@ -61,6 +61,17 @@ def capture(binary, nonzero):
             record("nested", 3)
             remaining = rpc("session.snapshot")["snapshot"]["panes"]
             assert any(pane["pane_id"] == original["pane_id"] and pane["terminal_id"] == original["terminal_id"] for pane in remaining)
+            added = [pane for pane in remaining if pane["tab_id"] == tab and pane["pane_id"] != original["pane_id"]]
+            assert len(added) == 2
+            for count, pane in zip((2, 1), reversed(added)):
+                rpc("pane.close", dict(pane_id=pane["pane_id"]))
+                record("close-to-columns" if count == 2 else "close-to-single", count)
+                remaining = rpc("session.snapshot")["snapshot"]["panes"]
+                assert not any(p["pane_id"] == pane["pane_id"] for p in remaining)
+                assert any(p["pane_id"] == original["pane_id"] and p["terminal_id"] == original["terminal_id"] for p in remaining)
+            final = cases[-1]["layout"]
+            assert final["panes"][0]["pane_id"] == original["pane_id"]
+            assert final["panes"][0]["rect"] == final["area"], "Closing a split did not expand the survivor"
             return cases
         finally:
             subprocess.run(args + ["server", "stop"], env=env, capture_output=True, timeout=10)
