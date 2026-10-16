@@ -28,6 +28,7 @@ jobs:
           name: native-test-failure
           path: |
             build/tests/selection.xcresult
+            build/tests/pane-actions.xcresult
             build/tests/selection-diagnostics
           retention-days: 7
       - run: scripts/build.sh

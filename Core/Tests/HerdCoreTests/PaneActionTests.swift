@@ -23,7 +23,7 @@ final class PaneActionTests: XCTestCase {
 
     func testCloseAndSplitPublishBeforeTwoSecondFullReadAndCannotBeRolledBack() async throws {
         let wire = PaneActionWire(), reader = SessionReader()
-        let server = try TestRPCServer(requests: 100, concurrent: true, rawHandler: wire.respond)
+        let server = try TestRPCServer(requests: 100, concurrent: true, fragmentSize: 65536, rawHandler: wire.respond)
         defer { withExtendedLifetime(server) {} }
         let rpc = RPC(path: server.path)
         var current = try Session(wire.snapshot), publication = SessionPublication()
@@ -57,7 +57,7 @@ final class PaneActionTests: XCTestCase {
 
     func testBadScopeKeepsCacheAndClosingLastPaneRemovesOnlyItsSpace() async throws {
         let wire = PaneActionWire(), reader = SessionReader()
-        let server = try TestRPCServer(requests: 100, concurrent: true, rawHandler: wire.respond)
+        let server = try TestRPCServer(requests: 100, concurrent: true, fragmentSize: 65536, rawHandler: wire.respond)
         defer { withExtendedLifetime(server) {} }
         let rpc = RPC(path: server.path), baseline = try Session(wire.snapshot)
         var current = baseline, publication = SessionPublication()

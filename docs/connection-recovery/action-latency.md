@@ -39,6 +39,11 @@ Validation:
   requires visible action completion below 750ms and prints measured times.
   App launch services are disabled only for this hostless fixture; no default
   Herdr session, notification setup or machine discovery is started.
+  It runs in its own test process, separate from the selection/scroll suite, and
+  detaches its native surfaces during teardown. Both test invocations have bounded
+  execution time. Timing fixtures send each normal response in a single write,
+  matching Herdr; the existing transport and large-session tests retain deliberate
+  17-byte fragmentation coverage.
 - The synthetic 9-Space/37-pane/23-Agent socket test now compares full and scoped
   timing and verifies untouched topology and Agent data. Existing real Herdr
   0.8.2/0.9.3 fixtures cover split/close geometry and survivor identity.
@@ -49,6 +54,11 @@ Validation:
   It is not a successful release gate. The follow-up replaces global workspace
   lists with individual workspace reads and parallelizes independent lists and
   layouts without increasing the four-socket ceiling of full background reads.
+- A later run passed native action checks (0.701s close / 0.733s split including
+  layout, with 17-byte fragmented fixture writes), then hung in the existing
+  `stationaryEdgesGrowAndCancellationStops` selection test. That run was cancelled
+  for diagnosis, not counted as a pass. Process isolation and explicit view
+  teardown keep the Desk fixture out of the independent selection test process.
 
 These fixtures establish latency under controlled backend delays and actual
 native reconciliation. User-device timing, live SSH/Tailcat RTT and a Space whose

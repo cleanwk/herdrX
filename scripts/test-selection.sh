@@ -4,9 +4,18 @@ cd "$(dirname "$0")/.."
 mkdir -p build/tests
 scripts/icon.sh
 xcodegen generate
-# A hostless bundle: no HerdrX startup, default Herdr session or user preferences.
+# Hostless bundles: the Desk/PTY fixture runs in a separate test process so its
+# windows, async metadata tasks and Ghostty controller do not leak into selection.
 if xcodebuild test -project HerdrX.xcodeproj -scheme SelectionTests -configuration Debug \
   -derivedDataPath build/release -destination 'platform=macOS' \
+  -parallel-testing-enabled NO -only-testing:SelectionTests/PaneActionInteractionTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 60 \
+  -maximum-test-execution-time-allowance 120 -resultBundlePath build/tests/pane-actions.xcresult && \
+  xcodebuild test-without-building -project HerdrX.xcodeproj -scheme SelectionTests -configuration Debug \
+  -derivedDataPath build/release -destination 'platform=macOS' \
+  -skip-testing:SelectionTests/PaneActionInteractionTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 60 \
+  -maximum-test-execution-time-allowance 120 \
   -parallel-testing-enabled NO -resultBundlePath build/tests/selection.xcresult; then
   cat build/tests/pane-actions.json
   exit 0

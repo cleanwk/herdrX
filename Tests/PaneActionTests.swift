@@ -13,7 +13,7 @@ import Testing
             try? FileManager.default.removeItem(at: root)
         }
         let wire = PaneActionWire()
-        let server = try TestRPCServer(requests: 200, concurrent: true, rawHandler: wire.respond)
+        let server = try TestRPCServer(requests: 200, concurrent: true, fragmentSize: 65536, rawHandler: wire.respond)
         let desk = Desk(startServices: false)
         defer { desk.shutdown(); wire.stopEvents.signal(); withExtendedLifetime(server) {} }
         let device = Device(id: "fixture", displayName: "Isolated latency fixture", endpoint: .init(kind: "local", socketPath: server.path))
@@ -26,7 +26,12 @@ import Testing
         let canvas = TerminalCanvas.Canvas(frame: CGRect(x: 0, y: 0, width: 900, height: 600))
         let window = NSWindow(contentRect: canvas.frame, styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = canvas; window.orderFront(nil)
-        defer { window.close() }
+        defer {
+            desk.shutdown()
+            canvas.entries = []
+            for view in canvas.subviews where view is TerminalView { view.removeFromSuperview() }
+            window.orderOut(nil); window.contentView = nil; window.close()
+        }
         func render() {
             canvas.entries = desk.canvas; canvas.focused = desk.focused; canvas.focusRevision = desk.focusRevision; canvas.titles = desk.paneTitles
             canvas.needsLayout = true; canvas.layoutSubtreeIfNeeded()
