@@ -89,8 +89,7 @@ final class TabSnapshotBackground: NSView {
         let second = menu(at: 1)
         (second.items.first as? ActionMenuItem)?.invoke()
         precondition(clicked == "1" && strip.selected == "0", "Context rename lost its clicked target")
-        precondition(second.items.contains { $0.title == "Move Left" && $0.isEnabled })
-        precondition(second.items.contains { $0.title == "Move Right" && !$0.isEnabled })
+        precondition(second.items.filter { !$0.isSeparatorItem }.map(\.title) == ["Rename Tab…", "Close Tab…"], "Tab menu still offers directional moves")
         precondition(second.items[second.items.count - 2].isSeparatorItem, "Close is not separated")
         strip.writable = false
         precondition(menu(at: 0).items.filter { !$0.isSeparatorItem }.allSatisfy { !$0.isEnabled }, "Offline menu permits writes")
@@ -121,13 +120,20 @@ final class TabSnapshotBackground: NSView {
             }
         }
         testDragging()
-        print("PASS: tab scroll containment, stable selection geometry, clicked context target, grouped/conditional/offline menus, bidirectional drag/drop, cancellation and edge scrolling; 28pt bar / 22pt pills / 3pt insets")
+        print("PASS: tab scroll containment, stable selection geometry, clicked context target, rename/close-only offline-safe menus, window-dispatched bidirectional drag/drop without window movement, cancellation and edge scrolling; 28pt bar / 22pt pills / 3pt insets")
     }
 
     @MainActor static func testDragging() {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 28), styleMask: .borderless, backing: .buffered, defer: false)
-        let scroll = Tabs.HorizontalScrollView(frame: NSRect(x: 0, y: 0, width: 600, height: 28))
-        let strip = Tabs.Strip(); scroll.documentView = strip; window.contentView = scroll
+        // Match the workbench's hidden title bar and background-drag policy.
+        // Calling Strip.mouseDragged directly bypasses AppKit's window routing.
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 28), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
+        window.titleVisibility = .hidden; window.titlebarAppearsTransparent = true
+        window.isMovableByWindowBackground = true
+        for kind in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] { window.standardWindowButton(kind)?.isHidden = true }
+        let host = window.contentView!
+        let scroll = Tabs.HorizontalScrollView(frame: NSRect(x: 0, y: host.bounds.maxY - 28, width: host.bounds.width, height: 28))
+        scroll.autoresizingMask = [.width, .minYMargin]
+        let strip = Tabs.Strip(); scroll.documentView = strip; host.addSubview(scroll)
         let initial = [TabEntry(id: "wide", title: "A very wide tab that must reach both ends", count: 12), TabEntry(id: "b", title: "B", count: 1), TabEntry(id: "c", title: "C", count: 1)]
         var moves: [(String, Int)] = []
         strip.select = { strip.selected = $0 }
@@ -146,41 +152,56 @@ final class TabSnapshotBackground: NSView {
         func event(_ type: NSEvent.EventType, x: CGFloat) -> NSEvent {
             NSEvent.mouseEvent(with: type, location: strip.convert(NSPoint(x: x, y: 14), to: nil), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1)!
         }
+        func send(_ type: NSEvent.EventType, x: CGFloat) {
+            let frame = window.frame
+            window.sendEvent(event(type, x: x))
+            precondition(window.frame == frame, "Tab gesture moved the window")
+        }
         reset()
+        precondition(!strip.mouseDownCanMoveWindow && strip.buttons.allSatisfy { !$0.mouseDownCanMoveWindow }, "Tab views allow background window dragging")
         let wide = strip.buttons[0], start = wide.frame.midX, end = strip.contentWidth + 50
-        strip.mouseDown(with: event(.leftMouseDown, x: start))
-        strip.mouseDragged(with: event(.leftMouseDragged, x: end))
+        send(.leftMouseDown, x: start)
+        send(.leftMouseDragged, x: end)
         precondition(strip.dragged && wide.lifted && wide.frame.minY == 3, "Dragged pill did not lift or left the horizontal track")
         precondition(strip.buttons[1].targetFrame.minX == TabMetrics.inset, "Neighbours did not make room")
         precondition(strip.entries.map(\.id) == initial.map(\.id) && moves.isEmpty, "Drag preview committed before release")
-        strip.mouseUp(with: event(.leftMouseUp, x: end)); settle()
+        send(.leftMouseUp, x: end); settle()
         precondition(moves.count == 1 && moves[0].0 == "wide" && moves[0].1 == 3, "Wide tab cannot move past short tabs")
         precondition(strip.entries.map(\.id) == ["b", "c", "wide"] && strip.buttons[2] === wide, "Drop lost tab identity/order")
         precondition(strip.selected == "b" && !wide.lifted, "Reordering changed selection or left the drag appearance active")
-        strip.mouseDown(with: event(.leftMouseDown, x: wide.frame.midX))
-        strip.mouseDragged(with: event(.leftMouseDragged, x: -50))
-        strip.mouseUp(with: event(.leftMouseUp, x: -50)); settle()
+        send(.leftMouseDown, x: wide.frame.midX)
+        send(.leftMouseDragged, x: -50)
+        send(.leftMouseUp, x: -50); settle()
         precondition(moves.count == 2 && moves[1].1 == 0 && strip.buttons[0] === wide, "Cannot drag back to the first slot")
 
+        // The pill padding and separate pane-count slot are drag targets too.
+        for grabX in [wide.frame.minX + 2, wide.frame.minX + wide.countRect.midX] {
+            reset()
+            send(.leftMouseDown, x: grabX)
+            send(.leftMouseDragged, x: end)
+            send(.leftMouseUp, x: end); settle()
+            precondition(moves.count == 1 && strip.entries.last?.id == "wide", "Dragging pill padding/count did not reorder")
+        }
+
         reset()
-        strip.mouseDown(with: event(.leftMouseDown, x: start))
-        strip.mouseDragged(with: event(.leftMouseDragged, x: start + 2))
-        strip.mouseUp(with: event(.leftMouseUp, x: start + 2))
+        send(.leftMouseDown, x: start)
+        send(.leftMouseDragged, x: start + 2)
+        send(.leftMouseUp, x: start + 2)
         precondition(moves.isEmpty && strip.selected == "wide", "Click jitter became a reorder")
-        strip.mouseDown(with: event(.leftMouseDown, x: start))
-        strip.mouseDragged(with: event(.leftMouseDragged, x: end))
-        strip.mouseUp(with: event(.leftMouseUp, x: start)); settle()
+        send(.leftMouseDown, x: start)
+        send(.leftMouseDragged, x: end)
+        send(.leftMouseUp, x: start); settle()
         precondition(moves.isEmpty && strip.buttons[0].frame.minX == TabMetrics.inset, "Returning to the original slot emitted a move")
 
         reset(); strip.writable = false
-        strip.mouseDown(with: event(.leftMouseDown, x: start)); strip.syncButtons()
-        strip.mouseUp(with: event(.leftMouseUp, x: start))
+        send(.leftMouseDown, x: start); strip.syncButtons()
+        send(.leftMouseUp, x: start)
         precondition(strip.selected == "wide" && moves.isEmpty, "Read-only tabs lost ordinary selection")
 
         for cancellation in ["escape", "offline", "removed", "changed-order", "window"] {
             reset()
-            strip.mouseDown(with: event(.leftMouseDown, x: start))
-            strip.mouseDragged(with: event(.leftMouseDragged, x: end))
+            send(.leftMouseDown, x: start)
+            send(.leftMouseDragged, x: end)
             switch cancellation {
             case "escape": strip.cancelOperation(nil)
             case "offline": strip.writable = false; strip.syncButtons()
@@ -188,7 +209,7 @@ final class TabSnapshotBackground: NSView {
             case "changed-order": strip.entries.swapAt(1, 2); strip.syncButtons()
             default: NotificationCenter.default.post(name: NSWindow.didResignKeyNotification, object: window)
             }
-            strip.mouseUp(with: event(.leftMouseUp, x: end)); settle()
+            send(.leftMouseUp, x: end); settle()
             precondition(moves.isEmpty && strip.source == nil && !strip.dragged, "Cancelled drag committed: " + cancellation)
             precondition(strip.buttons.allSatisfy { !$0.lifted }, "Cancelled drag retained a lifted tab")
         }
@@ -196,10 +217,11 @@ final class TabSnapshotBackground: NSView {
         reset()
         strip.entries = (0..<20).map { TabEntry(id: String($0), title: "Overflow tab \($0)", count: 1) }
         strip.syncButtons(); window.setContentSize(NSSize(width: 260, height: 28)); scroll.frame.size.width = 260; scroll.layout(); settle()
-        strip.mouseDown(with: event(.leftMouseDown, x: strip.buttons[0].frame.midX))
-        strip.mouseDragged(with: event(.leftMouseDragged, x: scroll.contentView.bounds.maxX - 2)); settle()
+        send(.leftMouseDown, x: strip.buttons[0].frame.midX)
+        send(.leftMouseDragged, x: scroll.contentView.bounds.maxX - 2); settle()
         precondition(scroll.contentView.bounds.minX > 0 && scroll.contentView.bounds.minY == 0, "Edge drag did not scroll horizontally")
         strip.cancelOperation(nil)
+        send(.leftMouseUp, x: scroll.contentView.bounds.maxX - 2)
         let offset = scroll.contentView.bounds.minX; settle()
         precondition(scroll.contentView.bounds.minX == offset && moves.isEmpty, "Cancelled edge drag kept scrolling")
     }

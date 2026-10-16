@@ -80,6 +80,9 @@ struct Tabs: NSViewRepresentable {
     }
     final class Strip: NSView {
         override var isFlipped: Bool { true }
+        // The workbench enables background window dragging. Tab gestures must
+        // stay in this view instead of being claimed by the window/title bar.
+        override var mouseDownCanMoveWindow: Bool { false }
         var scope = ""
         var entries: [TabEntry] = []; var selected = ""; var writable = true
         private var edgeTimer: Timer?
@@ -156,6 +159,7 @@ struct Tabs: NSViewRepresentable {
         }
         @objc func pressed(_ sender: NSButton) { if entries.indices.contains(sender.tag) { select?(entries[sender.tag].id) } }
         final class TabButton: NSButton {
+            override var mouseDownCanMoveWindow: Bool { false }
             var entryID = ""
             var targetFrame: NSRect = .zero
             var hovered = false { didSet { if hovered != oldValue { needsDisplay = true } } }
@@ -197,13 +201,8 @@ struct Tabs: NSViewRepresentable {
             let x = convert(event.locationInWindow, from: nil).x
             guard let index = buttons.firstIndex(where: { $0.frame.minX <= x && x <= $0.frame.maxX }), entries.indices.contains(index) else { return nil }
             let menu = NSMenu(); menu.autoenablesItems = false
-            let id = entries[index].id, rename = rename, close = close, move = move
+            let id = entries[index].id, rename = rename, close = close
             menu.addItem(ActionMenuItem("Rename Tab…", enabled: writable) { rename?(id) })
-            if entries.count > 1 {
-                menu.addItem(.separator())
-                menu.addItem(ActionMenuItem("Move Left", enabled: writable && index > 0) { move?(id, index - 1) })
-                menu.addItem(ActionMenuItem("Move Right", enabled: writable && index + 1 < entries.count) { move?(id, index + 2) })
-            }
             menu.addItem(.separator())
             menu.addItem(ActionMenuItem("Close Tab…", enabled: writable) { close?(id) })
             return menu

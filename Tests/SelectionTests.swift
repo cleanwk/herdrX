@@ -3,13 +3,72 @@ import GhosttyTerminal
 import Testing
 import HerdCore
 
-// The production selection view and Theme compile unchanged in a hostless test
-// bundle. Only the application-wide controller holder is supplied by the harness.
-@MainActor enum Terminal {
-    static let controller = TerminalController(configSource: .none)
-}
-
 @Suite(.serialized) @MainActor struct SelectionTests {
+    @Test func markedTextKeepsStableInsertionRange() async throws {
+        let h = try await Harness()
+        defer { h.close() }
+        let surface = try #require(h.view.hostSurface)
+        let empty = NSRange(location: 0, length: 0)
+        let replacement = NSRange(location: NSNotFound, length: 0)
+        #expect(!h.view.hasMarkedText())
+        #expect(h.view.selectedRange() == empty)
+        #expect(h.view.markedRange() == empty)
+        h.output.clear()
+        // Include a surrogate pair to check the marked range uses UTF-16 units.
+        for text in ["你好", "你好🌏"] {
+            h.view.setMarkedText(text, selectedRange: NSRange(location: text.utf16.count, length: 0), replacementRange: replacement)
+            #expect(h.view.hasMarkedText())
+            #expect(h.view.selectedRange() == empty, "Preedit caret must not move the host insertion point")
+            #expect(h.view.markedRange() == NSRange(location: 0, length: text.utf16.count))
+            h.view.unmarkText()
+            #expect(!h.view.hasMarkedText())
+            #expect(h.view.selectedRange() == empty)
+            #expect(h.view.markedRange() == empty)
+        }
+        #expect(h.output.data.isEmpty, "Uncommitted preedit reached the terminal session")
+        #expect(h.view.hostSurface === surface)
+    }
+
+    @Test func asynchronousDictationCommitsThroughTerminalView() async throws {
+        let h = try await Harness()
+        defer { h.close() }
+        let surface = try #require(h.view.hostSurface)
+        let empty = NSRange(location: 0, length: 0)
+        let replacement = NSRange(location: NSNotFound, length: 0)
+        let initialSelection = h.view.selectedRange()
+        #expect(initialSelection == empty)
+        h.output.clear()
+        h.view.setMarkedText("你好", selectedRange: NSRange(location: 2, length: 0), replacementRange: replacement)
+        #expect(h.view.hasMarkedText())
+        #expect(h.view.selectedRange() == initialSelection)
+        #expect(h.view.markedRange() == NSRange(location: 0, length: 2))
+
+        // Dictation completes outside keyDown/interpretKeyEvents. Establish the
+        // current event through AppKit's queue, as required by the pinned adapter.
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(h.view.selectedRange() == initialSelection)
+        #expect(h.output.data.isEmpty)
+        let event = try #require(NSEvent.otherEvent(with: .applicationDefined, location: .zero,
+            modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: h.window.windowNumber, context: nil, subtype: 0, data1: 0, data2: 0))
+        NSApp.postEvent(event, atStart: true)
+        let current = try #require(NSApp.nextEvent(matching: .applicationDefined,
+            until: Date().addingTimeInterval(1), inMode: .default, dequeue: true))
+        NSApp.sendEvent(current)
+        try #require(NSApp.currentEvent?.type == .applicationDefined)
+        h.view.insertText("你好世界", replacementRange: replacement)
+        #expect(!h.view.hasMarkedText())
+        #expect(h.view.selectedRange() == initialSelection)
+        #expect(h.view.markedRange() == empty)
+        let expected = Data("你好世界".utf8)
+        let deadline = Date().addingTimeInterval(2)
+        while h.output.data.count < expected.count, Date() < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(h.output.data == expected, "Final UTF-8 text must reach the session exactly once")
+        #expect(h.view.hostSurface === surface)
+    }
+
     @Test func physicalControlCBypassesStaleKeyboardProtocolsAndSuppressesRelease() async throws {
         let h = try await Harness()
         defer { h.close() }
@@ -424,7 +483,7 @@ private final class LockedOutput: @unchecked Sendable {
     static let text = "\u{1b}[2J\u{1b}[HALPHA_ONE bravo charlie\r\nDELTA_TWO echo foxtrot\r\n中文选择测试 标点，句号。 emoji 👩‍💻 END\r\n"
     let output = LockedOutput()
     let session: InMemoryTerminalSession
-    let view = InterruptTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 400))
+    let view = TerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 400))
     let window: NSWindow
     var openedURLs: [String] = []
     private var metrics: TerminalGridMetrics?

@@ -79,15 +79,12 @@ targets:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - App/SelectionTerminalView.swift
-      - App/InterruptTerminalView.swift
-      - App/Theme.swift
-      - App/ThemeColors.swift
-      - App/Localization.swift
+      # Compile the real TerminalView and its host dependencies without starting
+      # the GUI, updater, or a Herdr session through the application entry point.
+      - path: App
+        excludes: [Main.swift, Info.plist, Resources]
       - Tests/SelectionTests.swift
       - Tests/FloatingTerminalTests.swift
-      - App/FloatingTerminal.swift
-      - App/PTY.swift
     dependencies:
       - package: HerdCore
       - package: HerdCore
@@ -96,6 +93,7 @@ targets:
         product: GhosttyTerminal
       - package: Ghostty
         product: GhosttyTheme
+      - package: Sparkle
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.cleanwk.herdrx.selection-tests
