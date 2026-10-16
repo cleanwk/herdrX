@@ -52,7 +52,7 @@ final class PaneActionWire: @unchecked Sendable {
         lock.unlock()
         if method == "events.subscribe" { _ = stopEvents.wait(timeout: .now() + 15) }
         let sleepStart = Date()
-        Thread.sleep(forTimeInterval: method == "session.snapshot" ? 2 : 0.02)
+        TestRPCServer.delay(method == "session.snapshot" ? 2 : 0.02)
         sleep = Date().timeIntervalSince(sleepStart)
         let result: JSON
         switch method {

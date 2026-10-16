@@ -69,8 +69,10 @@ Validation:
   20ms delays in the background xctest process. Client publication followed the
   final response by about 1ms; native layout took 8–21ms. The socket fixture now
   holds a foreground latency-critical process activity and assigns user-initiated
-  QoS to its worker threads, preventing App Nap/timer coalescing from dominating
-  the injected delay. Traces report actual sleep time as well as handler time.
+  QoS to its worker threads. Further traces showed that `Thread.sleep` still
+  coalesced nominal 20ms sleeps to 150–168ms despite that activity. Both latency
+  fixtures now inject delays with strict dispatch timers and zero leeway.
+  Traces report actual wait time as well as handler time.
   This only changes the fixture; production scheduling and all timing targets
   remain unchanged.
 

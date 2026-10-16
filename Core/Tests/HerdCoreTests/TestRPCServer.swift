@@ -5,6 +5,17 @@ import HerdCore
 /// A real Unix socket exercises framing, snapshot validation and event recovery.
 final class TestRPCServer {
     let path = "/tmp/hxt-" + UUID().uuidString.prefix(10) + ".sock"
+    /// NSThread.sleep can add ~150ms of timer coalescing even with a foreground
+    /// activity. Strict dispatch timers keep controlled backend delays accurate.
+    static func delay(_ interval: TimeInterval) {
+        let gate = DispatchSemaphore(value: 0)
+        let timer = DispatchSource.makeTimerSource(flags: .strict, queue: .global(qos: .userInitiated))
+        timer.setEventHandler { gate.signal() }
+        timer.schedule(deadline: .now() + interval, leeway: .nanoseconds(0))
+        timer.resume()
+        gate.wait()
+        timer.cancel()
+    }
     private final class Listener: @unchecked Sendable {
         let fd: Int32
         private let lock = NSLock()
@@ -28,8 +39,7 @@ final class TestRPCServer {
         let bound = withUnsafePointer(to: &address) { p in p.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) } }
         guard bound == 0, listen(fd, 8) == 0 else { close(fd); throw Failure("Test socket failed") }
         let listener = Listener(fd); self.listener = listener
-        // A background xctest process can coalesce a 20ms fixture sleep to
-        // 150ms. Measure foreground interaction, not App Nap's timer policy.
+        // Keep foreground scheduling while strict timers inject backend delay.
         activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .latencyCritical], reason: "Measure isolated foreground RPC latency")
         Thread.detachNewThread {
             Thread.current.qualityOfService = .userInitiated

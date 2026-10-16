@@ -35,7 +35,7 @@ private final class LargeSessionWire: @unchecked Sendable {
         lock.lock(); active += 1; maximum = max(maximum, active); let broken = broken; lock.unlock()
         defer { lock.lock(); active -= 1; lock.unlock() }
         // Different delays intentionally finish later spaces before earlier ones.
-        Thread.sleep(forTimeInterval: request["params"]["workspace_id"] == .string("w1") ? 0.04 : 0.02)
+        TestRPCServer.delay(request["params"]["workspace_id"] == .string("w1") ? 0.04 : 0.02)
         let params = request["params"], method = request["method"].string!
         let result: JSON
         switch method {
