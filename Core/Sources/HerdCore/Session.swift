@@ -68,7 +68,7 @@ public struct Session: Equatable, Sendable {
               panes.allSatisfy({ pane in tabKeys.contains(pane.workspace + "|" + pane.tab) }) else { throw Failure("Invalid session topology") }
     }
     public static func load(_ rpc: RPC) async throws -> Session {
-        return try Session(try await rpc.call("session.snapshot")["snapshot"])
+        try await SessionReader().load(rpc)
     }
 }
 

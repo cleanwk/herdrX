@@ -61,6 +61,34 @@ command = ["/bin/sh", "-c", "printf 'PLUGIN_OK'; exec sleep 60"]
             workspace = rpc("workspace.create", dict(cwd=temp, label="Integration", focus=False))["workspace"]["workspace_id"]
             snapshot = rpc("session.snapshot")["snapshot"]
             original = next(p for p in snapshot["panes"] if p["workspace_id"] == workspace)
+            # Verify scoped-read field/target contracts against real Herdr 0.9.3.
+            # This metadata belongs only to the explicitly named disposable fixture.
+            rpc("pane.report_agent", dict(pane_id=original["pane_id"], source="herdrx.synthetic.fixture", agent="codex", state="working"))
+            assert rpc("ping")["version"]
+            before_spaces = rpc("workspace.list")["workspaces"]
+            all_panes = []
+            for space in before_spaces:
+                params = dict(workspace_id=space["workspace_id"])
+                tabs = rpc("tab.list", params)["tabs"]
+                panes = rpc("pane.list", params)["panes"]
+                all_panes.extend(panes)
+                assert len(tabs) == space["tab_count"] and len(panes) == space["pane_count"]
+                for tab in tabs:
+                    members = [p for p in panes if p["tab_id"] == tab["tab_id"]]
+                    assert len(members) == tab["pane_count"]
+                    layout = rpc("pane.layout", dict(pane_id=members[0]["pane_id"]))["layout"]
+                    assert layout["workspace_id"] == space["workspace_id"] and layout["tab_id"] == tab["tab_id"]
+                    assert {p["pane_id"] for p in layout["panes"]} == {p["pane_id"] for p in members}
+            current = rpc("pane.current")["pane"]
+            assert any(all(p[k] == current[k] for k in ("workspace_id", "tab_id", "pane_id", "terminal_id")) for p in all_panes)
+            agents = rpc("agent.list")["agents"]
+            assert any(a["pane_id"] == original["pane_id"] for a in agents)
+            for agent in agents:
+                fetched_agent = rpc("agent.get", dict(target=agent["pane_id"]))["agent"]
+                assert all(fetched_agent[k] == agent[k] for k in ("workspace_id", "tab_id", "pane_id", "terminal_id"))
+            topology = lambda spaces: {s["workspace_id"]: (s["tab_count"], s["pane_count"]) for s in spaces}
+            assert topology(before_spaces) == topology(rpc("workspace.list")["workspaces"])
+            print("PASS: real Herdr scoped workspace/tab/pane/layout/current/agent read contracts")
             rpc("plugin.action.invoke", dict(plugin_id="herdrx.fixture", action_id="status", context=dict(invocation_source="gui")))
             pane = rpc("plugin.pane.open", dict(plugin_id="herdrx.fixture", entrypoint="board", placement="tab", focus=False, workspace_id=workspace))["plugin_pane"]["pane"]
             fetched = rpc("pane.get", dict(pane_id=pane["pane_id"]))["pane"]

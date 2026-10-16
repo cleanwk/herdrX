@@ -3,10 +3,15 @@ import Darwin
 @testable import HerdCore
 
 /// A real Unix socket exercises framing, snapshot validation and event recovery.
-private final class Server {
+final class TestRPCServer {
     let path = "/tmp/hxt-" + UUID().uuidString.prefix(10) + ".sock"
     let fd: Int32
-    init(requests: Int, handler: @escaping @Sendable (JSON) -> [JSON]) throws {
+    convenience init(requests: Int, handler: @escaping @Sendable (JSON) -> [JSON]) throws {
+        try self.init(requests: requests, rawHandler: { request in
+            handler(request).compactMap { try? JSONEncoder().encode($0) }.reduce(into: Data()) { $0 += $1 + Data([10]) }
+        })
+    }
+    init(requests: Int, rawHandler: @escaping @Sendable (JSON) -> Data) throws {
         fd = socket(AF_UNIX, SOCK_STREAM, 0)
         var address = sockaddr_un(); address.sun_family = sa_family_t(AF_UNIX)
         let bytes = Array(path.utf8)
@@ -21,13 +26,9 @@ private final class Server {
                 var data = Data(), bytes = [UInt8](repeating: 0, count: 4096)
                 while !data.contains(10) { let count = read(peer, &bytes, bytes.count); if count <= 0 { break }; data.append(contentsOf: bytes.prefix(count)) }
                 if let end = data.firstIndex(of: 10), let request = try? JSONDecoder().decode(JSON.self, from: data[..<end]) {
-                    for response in handler(request) {
-                        guard let encoded = try? JSONEncoder().encode(response) else { continue }
-                        let output = encoded + Data([10])
-                        output.withUnsafeBytes { raw in
-                            var offset = 0
-                            while offset < raw.count { let count = write(peer, raw.baseAddress!.advanced(by: offset), min(17, raw.count - offset)); if count <= 0 { break }; offset += count }
-                        }
+                    rawHandler(request).withUnsafeBytes { raw in
+                        var offset = 0
+                        while offset < raw.count { let count = write(peer, raw.baseAddress!.advanced(by: offset), min(17, raw.count - offset)); if count <= 0 { break }; offset += count }
                     }
                 }
                 close(peer)
@@ -40,23 +41,23 @@ private final class Server {
 final class TransportTests: XCTestCase {
     func testRPCReassemblesLargeFragmentedResponse() async throws {
         let text = String(repeating: "文", count: 30000)
-        let server = try Server(requests: 1) { request in [.object(["id": request["id"], "result": .object(["text": .string(text)])])] }
+        let server = try TestRPCServer(requests: 1) { request in [.object(["id": request["id"], "result": .object(["text": .string(text)])])] }
         let result = try await RPC(path: server.path).call("test")
         XCTAssertEqual(result["text"].string, text)
     }
     func testResponseIdentityCannotCrossRequests() async throws {
-        let server = try Server(requests: 1) { _ in [.object(["id": .string("wrong"), "result": .object([:])])] }
+        let server = try TestRPCServer(requests: 1) { _ in [.object(["id": .string("wrong"), "result": .object([:])])] }
         do { _ = try await RPC(path: server.path).call("test"); XCTFail("Mismatched response accepted") } catch { XCTAssertTrue(error.localizedDescription.contains("Mismatched")) }
     }
     func testUnsupportedSnapshotIsNotHiddenByLegacyFallback() async throws {
-        let server = try Server(requests: 1) { request in
+        let server = try TestRPCServer(requests: 1) { request in
             [.object(["id": request["id"], "error": .object(["message": .string("snapshot unavailable")])])]
         }
         do { _ = try await Session.load(RPC(path: server.path)); XCTFail("Unsupported snapshot accepted") }
         catch { XCTAssertTrue(error.localizedDescription.contains("snapshot unavailable")) }
     }
     func testEventHistoryLossRequiresARefreshAndNewSubscription() async throws {
-        let server = try Server(requests: 1) { request in [
+        let server = try TestRPCServer(requests: 1) { request in [
             .object(["id": request["id"], "result": .object(["type": .string("subscription_started")])]),
             .object(["id": request["id"], "error": .object(["code": .string("events_lost"), "message": .string("Event history lost")])])
         ] }

@@ -61,3 +61,5 @@ Validation:
 - Local Swift syntax parsing, release-version consistency, unchanged Ghostty pin, `git diff --check`, shell syntax and all 14 Python release/appcast tests passed.
 - The corrected implementation and tab fix must pass all [current PR #30 checks](https://github.com/cleanwk/herdrX/pull/30/checks) before merge/release, including native tests, Core, Herdr fixtures, universal build and packaging.
 - Physical Doubao speech input remains NOT_RUN here.
+
+The combined tab/dictation implementation passed the complete [macOS run 38864629582](https://github.com/cleanwk/herdrX/actions/runs/38864629582) at `b89aa758b30bc91ffb5334324ddc096d4a21e11d`, including native tab dispatch, 16 Ghostty tests, 66 Core tests, universal build and packaging. The additional scoped-snapshot change still requires the complete current-head gate before release.

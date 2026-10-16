@@ -36,6 +36,8 @@ Use **Settings → Connections** to add SSH devices or discover local named sess
 
 Stopped local sessions show a start action. Custom socket paths show connection settings instead of guessing which server to launch. Temporary disconnections reconnect automatically; the info button exposes diagnostics when needed.
 
+If Herdr truncates a large session response, HerdrX automatically reads smaller workspace, pane, layout and agent responses. It checks topology before updating the display and keeps the last complete snapshot if any read fails. Existing terminal attachments continue independently.
+
 Space rows show Git branches when available. If Git is missing or a branch refresh fails, the row keeps a neutral Directory label or its last known branch; hover for details. This metadata does not indicate whether the terminal or device is connected.
 
 ## Everyday controls

@@ -48,3 +48,5 @@ Validation for this change:
 No installed application, Herdr session or release was changed.
 
 The 0.1.19 release also runs this harness on macOS through [PR #30 checks](https://github.com/cleanwk/herdrX/pull/30/checks); the current head must pass before merging and tagging. The Linux limitation above describes the initial local pass, not a waiver of native CI. Physical mouse/trackpad acceptance remains separate.
+
+The combined tab/dictation implementation passed the complete [macOS run 38864629582](https://github.com/cleanwk/herdrX/actions/runs/38864629582) at `b89aa758b30bc91ffb5334324ddc096d4a21e11d`, including native tab dispatch, 16 Ghostty tests, 66 Core tests, universal build and packaging. The additional scoped-snapshot change still requires the complete current-head gate before release.
