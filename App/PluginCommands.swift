@@ -8,8 +8,19 @@ struct PluginCommand: Identifiable, Equatable {
     let pane: Bool
     let label: String
     let detail: String
+    let id: String
     var entryID: String { entry["id"].string ?? "" }
-    var id: String { "plugin|" + ((try? JSONEncoder().encode([device, plugin, pane ? "pane" : "action", entryID])) ?? Data()).base64EncodedString() }
+    init(device: String, plugin: String, entry: JSON, pane: Bool, label: String, detail: String) {
+        self.device = device
+        self.plugin = plugin
+        self.entry = entry
+        self.pane = pane
+        self.label = label
+        self.detail = detail
+        // The id is read repeatedly by menus and search reindexing; encode it
+        // once when the catalog row is created instead of on every access.
+        id = "plugin|" + ((try? JSONEncoder().encode([device, plugin, pane ? "pane" : "action", entry["id"].string ?? ""])) ?? Data()).base64EncodedString()
+    }
 }
 
 extension Desk {

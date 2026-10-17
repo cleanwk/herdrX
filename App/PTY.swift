@@ -12,6 +12,10 @@ final class ByteProcess: @unchecked Sendable {
         var writer: DispatchSourceWrite?
         var active = true
         var pending = Data()
+        var pendingOffset = 0
+        // One reusable read buffer per run: high-throughput output otherwise
+        // allocates 64 KiB for every readable event.
+        var readBuffer = [UInt8](repeating: 0, count: 65536)
         let lock = NSLock()
         var reaped = false
         init(fd: Int32, pid: pid_t) { self.fd = fd; self.pid = pid }
@@ -55,13 +59,12 @@ final class ByteProcess: @unchecked Sendable {
             reader.setCancelHandler { close(fd) }
             reader.setEventHandler {
                 guard context.active else { return }
-                var bytes = [UInt8](repeating: 0, count: 65536)
-                let count = read(fd, &bytes, bytes.count)
+                let count = read(fd, &context.readBuffer, context.readBuffer.count)
                 if count > 0 {
                     guard let self else { return }
                     self.state.lock(); defer { self.state.unlock() }
                     guard self.generation == epoch, self.run === context else { return }
-                    output?(Data(bytes.prefix(count)))
+                    output?(Data(context.readBuffer.prefix(count)))
                 }
                 else if count == 0 || (count < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) { context.active = false; context.writer?.cancel(); context.writer = nil; context.reader?.cancel(); context.reader = nil }
             }
@@ -84,7 +87,8 @@ final class ByteProcess: @unchecked Sendable {
         let rejected = inputRejected
         context.queue.async { [weak self] in
             guard context.active else { return }
-            guard context.pending.count + data.count <= 16 * 1024 * 1024 else { DispatchQueue.main.async { rejected?() }; return }
+            let queued = context.pending.count - context.pendingOffset
+            guard queued + data.count <= 16 * 1024 * 1024 else { DispatchQueue.main.async { rejected?() }; return }
             context.pending.append(data)
             if context.writer == nil {
                 let writer = DispatchSource.makeWriteSource(fileDescriptor: context.fd, queue: context.queue)
@@ -92,10 +96,25 @@ final class ByteProcess: @unchecked Sendable {
                     guard context.active, let self else { return }
                     self.state.lock(); defer { self.state.unlock() }
                     guard self.run === context else { return }
-                    let n = context.pending.withUnsafeBytes { Darwin.write(context.fd, $0.baseAddress, $0.count) }
-                    if n > 0 { context.pending.removeFirst(n) }
-                    else if n < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR { context.pending.removeAll(); context.writer?.cancel(); context.writer = nil; return }
-                    if context.pending.isEmpty { context.writer?.cancel(); context.writer = nil }
+                    guard context.pendingOffset < context.pending.count else {
+                        context.pending.removeAll(keepingCapacity: true); context.pendingOffset = 0
+                        context.writer?.cancel(); context.writer = nil; return
+                    }
+                    let n = context.pending.withUnsafeBytes { raw in
+                        Darwin.write(context.fd, raw.baseAddress!.advanced(by: context.pendingOffset), raw.count - context.pendingOffset)
+                    }
+                    if n > 0 {
+                        context.pendingOffset += n
+                        if context.pendingOffset >= context.pending.count {
+                            context.pending.removeAll(keepingCapacity: true); context.pendingOffset = 0
+                        } else if context.pendingOffset > 64 * 1024 {
+                            // Compact occasionally instead of moving the remaining
+                            // bytes after every partial write.
+                            context.pending.removeFirst(context.pendingOffset); context.pendingOffset = 0
+                        }
+                    }
+                    else if n < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR { context.pending.removeAll(); context.pendingOffset = 0; context.writer?.cancel(); context.writer = nil; return }
+                    if context.pendingOffset >= context.pending.count { context.writer?.cancel(); context.writer = nil }
                 }
                 context.writer = writer; writer.activate()
             }

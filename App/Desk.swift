@@ -13,7 +13,7 @@ indirect enum Layout {
             self = .split(value["direction"].string == "right", ratio, first, second)
         } else { return nil }
     }
-    struct Divider { let path: [Bool]; let horizontal: Bool; let ratio: Double; let box: CGRect; let panes: Set<PaneKey> }
+    struct Divider: Equatable { let path: [Bool]; let horizontal: Bool; let ratio: Double; let box: CGRect; let panes: Set<PaneKey> }
     func dividers(in box: CGRect = CGRect(x: 0, y: 0, width: 1, height: 1), path: [Bool] = []) -> [Divider] {
         guard case .split(let horizontal, let rawRatio, let a, let b) = self else { return [] }
         let ratio = min(0.9, max(0.1, rawRatio))
@@ -149,6 +149,12 @@ final class Desk: ObservableObject {
     @Published var agents: [AgentRow] = []
     @Published var jumpRows: [String: JumpRow] = [:]
     private var indexedRows: [JumpRow] = []
+    // Recomputed by every workbench body evaluation otherwise; invalidated by
+    // session or device changes and by an in-app language switch.
+    var paneTitlesCache: [PaneKey: PaneTitle] = [:]
+    var paneTitlesCacheRevision = -1
+    var paneTitlesRevision = 0
+    var paneTitlesCacheLanguage = ""
     var terminals: [PaneKey: Terminal] = [:]
     private var notificationRouter: NotificationRouter?
     private var tailcats: [String: TailcatConnection] = [:]
@@ -259,9 +265,9 @@ final class Desk: ObservableObject {
             detach(device.id); sessions[device.id] = nil; attentionState.remove(device: device.id)
             for key in Array(terminals.keys) where key.device == device.id { terminals.removeValue(forKey: key)?.stop(); ended.remove(key) }
         }
-        devices[index] = device; save(); if changedEndpoint { connect(device) }; reindex()
+        devices[index] = device; paneTitlesRevision &+= 1; save(); if changedEndpoint { connect(device) }; reindex()
     }
-    func add(_ device: Device) { devices.append(device); save(); connect(device) }
+    func add(_ device: Device) { devices.append(device); paneTitlesRevision &+= 1; save(); connect(device) }
     private func detach(_ id: String) {
         resolvedSockets[id] = nil; transportIDs[id] = nil
         invalidatePlugins(id)
@@ -274,6 +280,7 @@ final class Desk: ObservableObject {
     func remove(_ id: String) {
         sessionReaders[id] = nil
         detach(id); TailcatSecrets.remove("token." + id); attentionState.remove(device: id); devices.removeAll { $0.id == id }; sessions[id] = nil; connections[id] = nil
+        paneTitlesRevision &+= 1
         for key in Array(terminals.keys) where key.device == id { terminals.removeValue(forKey: key)?.stop(); ended.remove(key) }
         if deviceFilter == id { deviceFilter = "" }
         if selectedDevice == id { select(device: nil) }; save(); reindex()
@@ -530,7 +537,7 @@ final class Desk: ObservableObject {
     private func publish(_ id: String, snapshot: Session) {
         let reconnected = connections[id] != .connected
         if reconnected { connections[id] = .connected; refreshPluginCatalog(id) }
-        if sessions[id] != snapshot { let old = sessions[id]; attentionState.update(device: id, old: old, new: snapshot); notifyChanges(device: id, old: old, new: snapshot); sessions[id] = snapshot; reconcile(id, previous: old); reindex() }
+        if sessions[id] != snapshot { let old = sessions[id]; attentionState.update(device: id, old: old, new: snapshot); notifyChanges(device: id, old: old, new: snapshot); sessions[id] = snapshot; paneTitlesRevision &+= 1; reconcile(id, previous: old); reindex() }
         // A restored server can retain topology/IDs but move its socket. Refresh
         // the existing terminal commands even when the snapshot is unchanged.
         else if reconnected, selectedDevice == id { ensureAttachments() }
@@ -729,8 +736,26 @@ final class Desk: ObservableObject {
         var ranks: [String: Int] = [:]
         for device in devices {
             guard let session = sessions[device.id] else { continue }
-            rows += session.spaces.map { JumpRow(id: "space|" + device.id + "|" + $0.id, device: device.id, space: $0.id, tab: nil, pane: nil, label: $0.label, detail: DisplayTitle.detail([device.displayName, spacePath(device: device.id, space: $0.id), branches[device.id + "|" + $0.id]])) }
-            rows += session.panes.map { pane in JumpRow(id: "pane|" + device.id + "|" + pane.id, device: device.id, space: pane.workspace, tab: pane.tab, pane: pane.id, label: title(device: device.id, pane: pane), detail: DisplayTitle.detail([device.displayName, session.spaces.first { space in space.id == pane.workspace }?.label, pane.agent ?? L("Terminal"), pane.cwd, pane.terminalTitle])) }
+            // Avoid rescanning spaces and tabs for every pane and pane list for
+            // every space; both loops are otherwise quadratic in large sessions.
+            let spacesByID = Dictionary(uniqueKeysWithValues: session.spaces.map { ($0.id, $0) })
+            let tabsByID = Dictionary(uniqueKeysWithValues: session.tabs.map { ($0.id, $0) })
+            var firstPaneBySpace: [String: Item] = [:]
+            for pane in session.panes where firstPaneBySpace[pane.workspace] == nil { firstPaneBySpace[pane.workspace] = pane }
+            let focusedPane = focused.flatMap { key in key.device == device.id ? session.panes.first(where: { $0.id == key.pane }) : nil }
+            let terminalLabel = L("Terminal")
+            rows += session.spaces.map { space in
+                let path = space.cwd
+                    ?? (focusedPane?.workspace == space.id ? focusedPane?.cwd : nil)
+                    ?? firstPaneBySpace[space.id]?.cwd
+                return JumpRow(id: "space|" + device.id + "|" + space.id, device: device.id, space: space.id, tab: nil, pane: nil, label: space.label, detail: DisplayTitle.detail([device.displayName, path, branches[device.id + "|" + space.id]]))
+            }
+            rows += session.panes.map { pane in
+                let label = pane.agent == nil
+                    ? DisplayTitle.terminal(pane, fallback: terminalLabel)
+                    : DisplayTitle.pane(pane, tab: tabsByID[pane.tab], fallback: terminalLabel)
+                return JumpRow(id: "pane|" + device.id + "|" + pane.id, device: device.id, space: pane.workspace, tab: pane.tab, pane: pane.id, label: label, detail: DisplayTitle.detail([device.displayName, spacesByID[pane.workspace]?.label, pane.agent ?? terminalLabel, pane.cwd, pane.terminalTitle]))
+            }
             for pane in session.panes { ranks["pane|" + device.id + "|" + pane.id] = rank(pane.status) }
         }
         rows += commandRows

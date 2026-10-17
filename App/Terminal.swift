@@ -157,8 +157,30 @@ struct TerminalCanvas: NSViewRepresentable {
     let corners: PaneCorners
     func makeNSView(context: Context) -> Canvas { Canvas() }
     func updateNSView(_ canvas: Canvas, context: Context) {
+        // SwiftUI re-runs this for every observable change on Desk, including
+        // status polls that cannot affect pane chrome. Only invalidate AppKit
+        // layout and drawing when an input it consumes actually changed.
+        let entriesChanged = canvas.entries.count != terminals.count || !zip(canvas.entries, terminals).allSatisfy { pair in
+            pair.0.0 == pair.1.0 && pair.0.1 === pair.1.1 && pair.0.2 == pair.1.2
+        }
+        let titlesChanged = canvas.titles != titles
+        let focusChanged = canvas.focused != focused
+        let dividersChanged = canvas.dividers != dividers
+        let zoomChanged = canvas.zoomed != zoomed
+        let minimumChanged = canvas.minimumPaneSize != minimumPaneSize
+        let cornersChanged = canvas.corners != corners
+        let focusRevisionChanged = canvas.focusRevision != focusRevision
         canvas.corners = corners; canvas.actions = actions; canvas.focusRevision = focusRevision; canvas.minimumPaneSize = minimumPaneSize
-        canvas.titles = titles; canvas.close = close; canvas.canClose = canClose; canvas.entries = terminals; canvas.focused = focused; canvas.dividers = dividers; canvas.setRatio = setRatio; canvas.previewRatio = previewRatio; canvas.zoomed = zoomed; canvas.restore = restore; canvas.needsLayout = true; canvas.needsDisplay = true
+        canvas.titles = titles; canvas.close = close; canvas.canClose = canClose; canvas.entries = terminals; canvas.focused = focused; canvas.dividers = dividers; canvas.setRatio = setRatio; canvas.previewRatio = previewRatio; canvas.zoomed = zoomed; canvas.restore = restore
+        // Terminal views consult these closures for shortcuts even when the
+        // visible layout did not change.
+        for (_, terminal, _) in terminals { terminal.view.commands = actions }
+        // Theme and appearance changes do not alter these inputs but must still
+        // repaint chrome, so drawing stays unconditional while layout is skipped.
+        canvas.markChromeForDisplay()
+        guard entriesChanged || titlesChanged || focusChanged || dividersChanged || zoomChanged || minimumChanged || cornersChanged || focusRevisionChanged else { return }
+        if titlesChanged { canvas.clearMeasuredTitleWidths() }
+        canvas.needsLayout = true
     }
     final class Canvas: NSView {
         var actions: WorkbenchActions?
@@ -210,6 +232,23 @@ struct TerminalCanvas: NSViewRepresentable {
         private var closeButtons: [PaneKey: CloseButton] = [:]
         private var visibleKeys: Set<PaneKey> = []
         private var handles: [String: Handle] = [:]
+        // Text measurement is the expensive part of pane chrome drawing; titles
+        // change rarely, so retain the raw widths until the title dictionary does.
+        private var titleWidths: [String: CGFloat] = [:]
+        private static let regularTitleFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+        private static let semiboldTitleFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .semibold)
+        private static let titleParagraphStyle: NSParagraphStyle = {
+            let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingTail; return style
+        }()
+        private static let contextParagraphStyle: NSParagraphStyle = {
+            let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingMiddle; return style
+        }()
+        func clearMeasuredTitleWidths() { titleWidths.removeAll(keepingCapacity: true) }
+        func markChromeForDisplay() {
+            needsDisplay = true
+            for button in closeButtons.values { button.needsDisplay = true }
+            restoreButton.needsDisplay = true
+        }
         override func updateTrackingAreas() {
             super.updateTrackingAreas()
             if let tracking { removeTrackingArea(tracking) }
@@ -224,9 +263,10 @@ struct TerminalCanvas: NSViewRepresentable {
         override func mouseEntered(with event: NSEvent) { mouseMoved(with: event) }
         override func mouseExited(with event: NSEvent) { hovered = nil; updateCloseButtons() }
         private func updateCloseButtons() {
+            let voiceOver = NSWorkspace.shared.isVoiceOverEnabled
             for (key, button) in closeButtons {
                 let visible = visibleKeys.contains(key)
-                let revealed = hovered == key || button.pointerInside || NSWorkspace.shared.isVoiceOverEnabled
+                let revealed = hovered == key || button.pointerInside || voiceOver
                 button.setVisibility(visible && (revealed || focused == key), opacity: revealed ? 1 : 0.5)
             }
             needsDisplay = true
@@ -236,35 +276,57 @@ struct TerminalCanvas: NSViewRepresentable {
             return entries.first { $0.2.width > 0 && paneFrame($0.2).contains(point) }?.1.view.objectMenu?(.title)
         }
         override func draw(_ dirtyRect: NSRect) {
-            Theme.content.setFill(); bounds.fill()
+            let content = Theme.content
+            content.setFill(); bounds.fill()
+            let keyWindow = window?.isKeyWindow == true
+            let borderWidth = PaneMetrics.borderWidth(scale: window?.backingScaleFactor ?? 2)
+            let inactiveStroke = Theme.foreground.withAlphaComponent(0.28).cgColor
+            let activeStroke = Theme.accentStroke.cgColor
+            let graphics = NSGraphicsContext.current?.cgContext
+            let activeAttributes: [NSAttributedString.Key: Any] = [.font: Self.semiboldTitleFont, .foregroundColor: Theme.accent, .paragraphStyle: Self.titleParagraphStyle]
+            let regularAttributes: [NSAttributedString.Key: Any] = [.font: Self.regularTitleFont, .foregroundColor: Theme.secondary, .paragraphStyle: Self.titleParagraphStyle]
+            let contextAttributes: [NSAttributedString.Key: Any] = [.font: Self.regularTitleFont, .foregroundColor: Theme.secondary, .paragraphStyle: Self.contextParagraphStyle]
             for (key, _, rect) in entries where rect.width > 0 && rect.height > 0 {
                 let frame = borderFrame(rect)
-                let active = focused == key && window?.isKeyWindow == true
-                if let context = NSGraphicsContext.current?.cgContext {
-                    context.saveGState()
-                    context.setStrokeColor((active ? Theme.accentStroke : Theme.foreground.withAlphaComponent(0.28)).cgColor)
-                    context.setLineWidth(PaneMetrics.borderWidth(scale: window?.backingScaleFactor ?? 2))
-                    let radii = paneCorners(rect).inset(by: PaneMetrics.borderWidth(scale: window?.backingScaleFactor ?? 2) / 2)
-                    context.addPath(PaneShape.path(in: frame, corners: radii))
-                    context.strokePath(); context.restoreGState()
+                let active = focused == key && keyWindow
+                if let graphics {
+                    graphics.saveGState()
+                    graphics.setStrokeColor(active ? activeStroke : inactiveStroke)
+                    graphics.setLineWidth(borderWidth)
+                    let radii = paneCorners(rect).inset(by: borderWidth / 2)
+                    graphics.addPath(PaneShape.path(in: frame, corners: radii))
+                    graphics.strokePath(); graphics.restoreGState()
                 }
                 let title = titles[key] ?? PaneTitle(main: L("Terminal"), context: "")
-                let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingTail
-                let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: active ? .semibold : .regular), .foregroundColor: active ? Theme.accent : Theme.secondary, .paragraphStyle: style]
-                let contextStyle = NSMutableParagraphStyle(); contextStyle.lineBreakMode = .byTruncatingMiddle
-                let secondary: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular), .foregroundColor: Theme.secondary, .paragraphStyle: contextStyle]
+                let attributes = active ? activeAttributes : regularAttributes
                 let available = max(0, frame.width - (zoomed ? 82 : 56))
                 let context = available >= 260 ? title.context : ""
-                let mainWidth = min(available * (context.isEmpty ? 1 : 0.64), (title.main as NSString).size(withAttributes: attributes).width)
-                let contextWidth = min(max(0, available - mainWidth - PaneMetrics.titleGap), (context as NSString).size(withAttributes: secondary).width)
+                let mainKey = "m" + title.main + (active ? "\u{0}" : "\u{1}")
+                let measuredMain: CGFloat
+                if let cached = titleWidths[mainKey] {
+                    measuredMain = cached
+                } else {
+                    measuredMain = (title.main as NSString).size(withAttributes: attributes).width
+                    titleWidths[mainKey] = measuredMain
+                }
+                let mainWidth = min(available * (context.isEmpty ? 1 : 0.64), measuredMain)
+                let measuredContext: CGFloat
+                if context.isEmpty {
+                    measuredContext = 0
+                } else if let cached = titleWidths["c" + context] {
+                    measuredContext = cached
+                } else {
+                    measuredContext = (context as NSString).size(withAttributes: contextAttributes).width
+                    titleWidths["c" + context] = measuredContext
+                }
+                let contextWidth = min(max(0, available - mainWidth - PaneMetrics.titleGap), measuredContext)
                 let box = NSRect(x: paneFrame(rect).minX + PaneMetrics.titleLeading, y: frame.maxY - 7, width: mainWidth + (contextWidth > 0 ? contextWidth + PaneMetrics.titleGap : 0) + PaneMetrics.titlePadding * 2, height: 14)
-                Theme.content.setFill(); box.fill()
+                content.setFill(); box.fill()
                 (title.main as NSString).draw(in: NSRect(x: box.minX + PaneMetrics.titlePadding, y: box.minY, width: mainWidth, height: 14), withAttributes: attributes)
-                if contextWidth > 0 { (context as NSString).draw(in: NSRect(x: box.minX + PaneMetrics.titlePadding + mainWidth + PaneMetrics.titleGap, y: box.minY, width: contextWidth, height: 14), withAttributes: secondary) }
-
+                if contextWidth > 0 { (context as NSString).draw(in: NSRect(x: box.minX + PaneMetrics.titlePadding + mainWidth + PaneMetrics.titleGap, y: box.minY, width: contextWidth, height: 14), withAttributes: contextAttributes) }
             }
             // Keep the backing opaque while the button glyph fades across the title outline.
-            Theme.content.setFill()
+            content.setFill()
             for button in closeButtons.values where !button.isHidden { button.frame.fill() }
         }
         override func viewDidChangeBackingProperties() {

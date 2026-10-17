@@ -249,6 +249,9 @@ struct Jump: View {
     var results: [String] { desk.search.query(query) }
     func open(_ id: String) { guard results.contains(id), let row = desk.jumpRows[id], desk.valid(row) else { return }; desk.focusReturn = nil; desk.jump(id) }
     var body: some View {
+        // The body reads the result list for rows, height, onChange and its
+        // empty state; query the index once per evaluation instead of per use.
+        let results = desk.search.query(query)
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary).accessibilityHidden(true)

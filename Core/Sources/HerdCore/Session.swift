@@ -111,7 +111,15 @@ public struct Search: Sendable {
         public let context: String
         public init(id: String, name: String, context: String = "") { self.id = id; self.name = name; self.context = context }
     }
-    private struct Row: Sendable { let id: String; let name: String; let latin: String; let initials: String; let context: String }
+    private struct Row: Sendable {
+        let id: String
+        let name: String
+        let latin: String
+        let compact: String
+        let words: [Substring]
+        let initials: String
+        let context: String
+    }
     private var rows: [Row]
     private var source: [String: Document] = [:]
     public init(_ items: [(String, String)]) { self.init(documents: items.map { Document(id: $0.0, name: $0.1) }) }
@@ -121,7 +129,15 @@ public struct Search: Sendable {
         rows = documents.map { item in
             if let old = source[item.id], old.name == item.name, old.context == item.context, let row = previous[item.id] { return row }
             let latin = Self.latin(item.name)
-            return Row(id: item.id, name: item.name.lowercased(), latin: latin, initials: latin.split(separator: " ").compactMap(\.first).map(String.init).joined(), context: (item.context + " " + Self.latin(item.context)).lowercased())
+            // Each keystroke scans every row; keep the derived prefix inputs
+            // instead of rebuilding them inside query().
+            let name = item.name.lowercased()
+            let combined = name + " " + latin
+            return Row(id: item.id, name: name, latin: latin,
+                       compact: latin.replacingOccurrences(of: " ", with: ""),
+                       words: combined.split(separator: " "),
+                       initials: latin.split(separator: " ").compactMap(\.first).map(String.init).joined(),
+                       context: (item.context + " " + Self.latin(item.context)).lowercased())
         }
         source = Dictionary(uniqueKeysWithValues: documents.map { ($0.id, $0) })
     }
@@ -130,8 +146,8 @@ public struct Search: Sendable {
         let text = input.lowercased().trimmingCharacters(in: .whitespaces)
         var buckets = [[String](), [String](), [String](), [String]()]
         for row in rows {
-            if text.isEmpty || row.name.hasPrefix(text) || row.latin.hasPrefix(text) || row.latin.replacingOccurrences(of: " ", with: "").hasPrefix(text) || row.initials.hasPrefix(text) { buckets[0].append(row.id) }
-            else if (row.name + " " + row.latin).split(separator: " ").contains(where: { $0.hasPrefix(text) }) { buckets[1].append(row.id) }
+            if text.isEmpty || row.name.hasPrefix(text) || row.latin.hasPrefix(text) || row.compact.hasPrefix(text) || row.initials.hasPrefix(text) { buckets[0].append(row.id) }
+            else if row.words.contains(where: { $0.hasPrefix(text) }) { buckets[1].append(row.id) }
             else if row.name.contains(text) || row.latin.contains(text) { buckets[2].append(row.id) }
             else if row.context.contains(text) { buckets[3].append(row.id) }
         }
