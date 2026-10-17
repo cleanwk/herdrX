@@ -2,18 +2,53 @@ import Foundation
 
 /// Projects only explicit protocol fields. It never infers a task from terminal contents.
 public enum DisplayTitle {
+    private static let knownTools = ["codex", "claude", "gemini", "opencode", "kimi", "grok", "cursor", "copilot", "pi", "omp"]
+    // Compiling a pattern for every title is much more expensive than matching
+    // against a cached expression.
+    private static let genericTitle = try! NSRegularExpression(pattern: #"^(tab|pane|shell|terminal|agent)[ -]?[0-9]*$"#)
+    private static let generatedID = try! NSRegularExpression(pattern: #"^[a-z]+-[0-9a-f]{6,}$"#)
+    private static let userHost = try! NSRegularExpression(pattern: #"^[^\s@:]+@[^\s:]+$"#)
+
     public static func clean(_ value: String?) -> String? {
-        let text = (value ?? "").split(whereSeparator: { $0.isWhitespace || $0.isNewline }).joined(separator: " ")
+        guard let value, !value.isEmpty else { return nil }
+        // Most labels are already trimmed, single-space-separated text. Return
+        // that value without allocating the split/join result.
+        var lastWasWhitespace = true
+        var normalized = true
+        for scalar in value.unicodeScalars {
+            if scalar.properties.isWhitespace {
+                if lastWasWhitespace || scalar != " " { normalized = false; break }
+                lastWasWhitespace = true
+            } else {
+                lastWasWhitespace = false
+            }
+        }
+        if lastWasWhitespace { normalized = false }
+        if normalized { return value }
+        let text = value.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).joined(separator: " ")
         return text.isEmpty ? nil : text
+    }
+    private static func isToolInvocation(_ lower: String, tool: String?) -> Bool {
+        if let tool {
+            let name = tool.lowercased()
+            if lower == name || lower.hasPrefix(name + " ") || lower.hasPrefix("exec " + name) { return true }
+        }
+        return knownTools.contains { lower == $0 || lower.hasPrefix($0 + " ") || lower.hasPrefix("exec " + $0) }
+    }
+    private static func isToolName(_ value: String, tool: String?) -> Bool {
+        if let tool, value == tool.lowercased() { return true }
+        return knownTools.contains(value)
+    }
+    private static func matches(_ expression: NSRegularExpression, _ value: String) -> Bool {
+        expression.firstMatch(in: value, range: NSRange(value.startIndex..., in: value)) != nil
     }
     public static func meaningful(_ value: String?, tool: String?) -> String? {
         guard let text = clean(value) else { return nil }
         let lower = text.lowercased()
         if Int(lower) != nil { return nil }
-        let tools = [tool?.lowercased(), "codex", "claude", "gemini", "opencode", "kimi", "grok", "cursor", "copilot", "pi", "omp"].compactMap { $0 }
-        if tools.contains(where: { lower == $0 || lower.hasPrefix($0 + " ") || lower.hasPrefix("exec " + $0) }) { return nil }
-        if lower.range(of: #"^(tab|pane|shell|terminal|agent)[ -]?[0-9]*$"#, options: .regularExpression) != nil { return nil }
-        if lower.range(of: #"^[a-z]+-[0-9a-f]{6,}$"#, options: .regularExpression) != nil { return nil }
+        if isToolInvocation(lower, tool: tool) { return nil }
+        if matches(genericTitle, lower) { return nil }
+        if matches(generatedID, lower) { return nil }
         return text
     }
     public static func pane(_ pane: Item, tab: Item?, fallback: String = "Terminal") -> String {
@@ -31,8 +66,7 @@ public enum DisplayTitle {
     /// Shorten only a recognizable shell location, preserving authored labels and OSC tasks.
     private static func authoredTask(_ value: String?, tool: String?) -> String? {
         guard let value = clean(value) else { return nil }
-        let brands = [tool, "codex", "claude", "gemini", "opencode", "kimi", "grok", "cursor", "copilot", "pi", "omp"].compactMap { $0?.lowercased() }
-        return brands.contains(value.lowercased()) ? nil : value
+        return isToolName(value.lowercased(), tool: tool) ? nil : value
     }
     public static func terminal(_ pane: Item, fallback: String = "Terminal") -> String {
         if let label = pane.customLabel { return label }
@@ -40,7 +74,7 @@ public enum DisplayTitle {
             if let cwd = pane.cwd {
                 if title == cwd { return directory(cwd) }
                 let parts = title.split(separator: ":", maxSplits: 1).map(String.init)
-                if parts.count == 2, parts[0].range(of: #"^[^\s@:]+@[^\s:]+$"#, options: .regularExpression) != nil {
+                if parts.count == 2, matches(userHost, parts[0]) {
                     let path = parts[1]
                     if path == cwd || (path.hasPrefix("~/") && cwd.hasSuffix(String(path.dropFirst()))) {
                         return directory(path)

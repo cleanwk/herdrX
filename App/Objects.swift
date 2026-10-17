@@ -5,18 +5,28 @@ enum PaneMenuSource { case terminal, title }
 
 extension Desk {
     var paneTitles: [PaneKey: PaneTitle] {
+        let language = UserDefaults.standard.string(forKey: "language") ?? "system"
+        if paneTitlesCacheRevision == paneTitlesRevision && paneTitlesCacheLanguage == language { return paneTitlesCache }
         var result: [PaneKey: PaneTitle] = [:]
         for device in devices {
             guard let session = sessions[device.id] else { continue }
+            let spacesByID = Dictionary(uniqueKeysWithValues: session.spaces.map { ($0.id, $0) })
+            let tabsByID = Dictionary(uniqueKeysWithValues: session.tabs.map { ($0.id, $0) })
+            let terminalLabel = L("Terminal")
             for pane in session.panes {
-                let space = session.spaces.first { $0.id == pane.workspace }?.label ?? ""
-                let main = title(device: device.id, pane: pane)
+                let space = spacesByID[pane.workspace]?.label ?? ""
+                let main = pane.agent == nil
+                    ? DisplayTitle.terminal(pane, fallback: terminalLabel)
+                    : DisplayTitle.pane(pane, tab: tabsByID[pane.tab], fallback: terminalLabel)
                 let context = DisplayTitle.detail([space == main ? nil : space, devices.count > 1 ? device.displayName : nil])
                 var identity: [String] = []
                 for part in [main, pane.terminalTitle, pane.cwd, space, device.displayName].compactMap({ $0 }) where !part.isEmpty && !identity.contains(part) { identity.append(part) }
                 result[PaneKey(device: device.id, pane: pane.id)] = PaneTitle(main: main, context: context, identity: identity.joined(separator: "\n"))
             }
         }
+        paneTitlesCache = result
+        paneTitlesCacheRevision = paneTitlesRevision
+        paneTitlesCacheLanguage = language
         return result
     }
     func renameTab(_ id: String) {

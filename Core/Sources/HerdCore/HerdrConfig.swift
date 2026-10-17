@@ -42,11 +42,14 @@ public struct HerdrConfig: Equatable, Sendable {
             popups.append(Popup(id: "config-popup-\(index)", command: command, title: DisplayTitle.clean(row["description"].string) ?? command, key: row["key"].string ?? "", width: row["width"], height: row["height"]))
         }
     }
+    private static let ansiSequence = try! NSRegularExpression(pattern: "\\u001B\\[[0-?]*[ -/]*[@-~]")
     public static func statusText(_ bytes: Data) -> String {
         // Status is plain text, never interpreted as terminal controls.
         let text = String(decoding: bytes, as: UTF8.self)
-        let stripped = text.replacingOccurrences(of: "\\u001B\\[[0-?]*[ -/]*[@-~]", with: "", options: .regularExpression)
+        let stripped = ansiSequence.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "")
         let line = stripped.split(whereSeparator: { $0.isNewline }).first.map(String.init) ?? ""
-        return String(line.unicodeScalars.filter { !CharacterSet.controlCharacters.contains($0) }.map(String.init).joined().prefix(256)).trimmingCharacters(in: .whitespaces)
+        var scalars = String.UnicodeScalarView()
+        for scalar in line.unicodeScalars where !CharacterSet.controlCharacters.contains(scalar) { scalars.append(scalar) }
+        return String(String(scalars).prefix(256)).trimmingCharacters(in: .whitespaces)
     }
 }

@@ -1,8 +1,8 @@
 import Foundation
 import HerdCore
 
-struct BranchState {
-    enum Phase { case loading, branch, directory, failed, stale }
+struct BranchState: Equatable {
+    enum Phase: Equatable { case loading, branch, directory, failed, stale }
     let phase: Phase
     let value: String
     let detail: String
@@ -19,16 +19,27 @@ extension Desk {
     func refreshBranches(_ device: Device, snapshot: Session) {
         for space in snapshot.spaces {
             let key = device.id + "|" + space.id
-            guard let path = spacePath(device: device.id, space: space.id) else { branchStates[key] = BranchState(phase: .failed, value: "", detail: L("Directory is unavailable.")); continue }
+            guard let path = spacePath(device: device.id, space: space.id) else {
+                let next = BranchState(phase: .failed, value: "", detail: L("Directory is unavailable."))
+                if branchStates[key] != next { branchStates[key] = next }
+                continue
+            }
             let context = DisplayTitle.detail([path, device.endpoint.kind, device.endpoint.target, device.endpoint.sshConfig, device.endpoint.port.map(String.init)])
             if branchContexts[key] != context {
                 branchContexts[key] = context; branchRequests[key] = nil; branchUpdated[key] = nil; branches[key] = nil
                 branchStates[key] = BranchState(phase: .loading, value: "", detail: path)
             }
             if let branch = space.tokens["branch"]?.string {
-                branches[key] = branch; branchStates[key] = BranchState(phase: branch.isEmpty ? .directory : .branch, value: branch.isEmpty ? URL(fileURLWithPath: path).lastPathComponent : branch, detail: path); continue
+                let next = BranchState(phase: branch.isEmpty ? .directory : .branch, value: branch.isEmpty ? URL(fileURLWithPath: path).lastPathComponent : branch, detail: path)
+                if branches[key] != branch { branches[key] = branch }
+                if branchStates[key] != next { branchStates[key] = next }
+                continue
             }
-            guard ["local", "ssh"].contains(device.endpoint.kind) else { branchStates[key] = BranchState(phase: .directory, value: URL(fileURLWithPath: path).lastPathComponent, detail: path); continue }
+            guard ["local", "ssh"].contains(device.endpoint.kind) else {
+                let next = BranchState(phase: .directory, value: URL(fileURLWithPath: path).lastPathComponent, detail: path)
+                if branchStates[key] != next { branchStates[key] = next }
+                continue
+            }
             guard branchRequests[key] == nil, branchUpdated[key].map({ Date().timeIntervalSince($0) > 30 }) ?? true else { continue }
             let token = UUID(); branchRequests[key] = token
             Task {
@@ -41,11 +52,18 @@ extension Desk {
                     } else { data = try await CommandProcess.run("/bin/sh", ["-c", command], input: Data()) }
                     guard branchRequests[key] == token, branchContexts[key] == context, devices.contains(device), spacePath(device: device.id, space: space.id) == path else { return }
                     let value = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
-                    branches[key] = value; branchStates[key] = BranchState(phase: value.isEmpty ? .directory : .branch, value: value.isEmpty ? URL(fileURLWithPath: path).lastPathComponent : value, detail: path); reindex()
+                    let next = BranchState(phase: value.isEmpty ? .directory : .branch, value: value.isEmpty ? URL(fileURLWithPath: path).lastPathComponent : value, detail: path)
+                    // Branch refreshes can finish together; only republish
+                    // derived state and reindex when the visible value changed.
+                    let branchChanged = branches[key] != value
+                    if branchChanged { branches[key] = value }
+                    if branchStates[key] != next { branchStates[key] = next }
+                    if branchChanged { reindex() }
                 } catch {
                     guard branchRequests[key] == token, branchContexts[key] == context else { return }
                     let previous = branches[key] ?? ""
-                    branchStates[key] = BranchState(phase: previous.isEmpty ? .failed : .stale, value: previous, detail: path + "\n" + L("Git branch information could not be refreshed.") + "\n" + error.localizedDescription)
+                    let next = BranchState(phase: previous.isEmpty ? .failed : .stale, value: previous, detail: path + "\n" + L("Git branch information could not be refreshed.") + "\n" + error.localizedDescription)
+                    if branchStates[key] != next { branchStates[key] = next }
                 }
             }
         }

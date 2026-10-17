@@ -122,6 +122,7 @@ public final class EventFeed: @unchecked Sendable {
                         }
                     }
                     var framer = LineBuffer(limit: 16 * 1024 * 1024), chunk = [UInt8](repeating: 0, count: 65536)
+                    let decoder = JSONDecoder()
                     var acknowledged = false, lastSignal = Date()
                     while true {
                         state.lock.lock(); let stopped = state.stopped; state.lock.unlock()
@@ -136,7 +137,7 @@ public final class EventFeed: @unchecked Sendable {
                         }
                         guard count > 0 else { throw Failure("Event stream disconnected") }
                         for line in try framer.append(Data(chunk.prefix(count))) {
-                            let value = try JSONDecoder().decode(JSON.self, from: line)
+                            let value = try decoder.decode(JSON.self, from: line)
                             if value["error"] != .null { throw Failure(value["error"]["message"].string ?? "Event history lost") }
                             if !acknowledged {
                                 guard value["id"].string == "events", value["result"] != .null else { throw Failure("Invalid subscription acknowledgement") }

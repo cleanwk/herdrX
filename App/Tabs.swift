@@ -24,13 +24,26 @@ struct Tabs: NSViewRepresentable {
     func makeNSView(context: Context) -> HorizontalScrollView { let scroll = HorizontalScrollView(); scroll.documentView = Strip(); return scroll }
     func updateNSView(_ scroll: HorizontalScrollView, context: Context) {
         guard let strip = scroll.documentView as? Strip else { return }
-        let navigate = strip.scope != scope || strip.selected != selected
-        if strip.scope != scope { strip.stopDrag() }; strip.scope = scope; strip.writable = writable
-        strip.entries = entries; strip.selected = selected; strip.select = select; strip.move = move; strip.rename = rename; strip.close = close
-        strip.syncButtons()
-        scroll.fitDocument()
+        let scopeChanged = strip.scope != scope
+        let selectionChanged = strip.selected != selected
+        let contentChanged = scopeChanged || selectionChanged || strip.entries != entries
+        let navigate = scopeChanged || selectionChanged
+        if scopeChanged { strip.stopDrag() }
+        strip.scope = scope; strip.writable = writable
+        strip.select = select; strip.move = move; strip.rename = rename; strip.close = close
+        if contentChanged {
+            strip.entries = entries; strip.selected = selected
+            strip.syncButtons()
+            scroll.fitDocument()
+            if navigate { strip.revealSelection() }
+        }
+        // Theme and appearance changes do not change the entries; keep the
+        // strip and its button tint current without remeasuring title widths.
         strip.needsDisplay = true
-        if navigate { strip.revealSelection() }
+        for (index, button) in strip.buttons.enumerated() where index < strip.entries.count {
+            button.contentTintColor = strip.entries[index].id == strip.selected ? Theme.selectedText : Theme.tabText
+            button.needsDisplay = true
+        }
     }
     /// A tab bar has one scrolling axis, including momentum and programmatic reveals.
     final class HorizontalScrollView: NSScrollView {

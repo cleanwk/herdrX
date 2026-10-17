@@ -122,6 +122,9 @@ private struct TerminalSettings: View {
     @AppStorage("copyOnSelect") private var copy = true
     @State private var importError: String?
     @State private var families: [String] = ["SF Mono"]
+    // Querying every installed family instantiates fonts; keep the result for
+    // the life of the process instead of repeating it on each tab visit.
+    private static var cachedFamilies: [String]?
     var body: some View {
         ScrollView {
         VStack(alignment: .leading, spacing: 12) {
@@ -169,7 +172,13 @@ private struct TerminalSettings: View {
             }.padding(.top, 3)
         }.padding(.horizontal, 17).padding(.top, 20).padding(.bottom, 17).font(.system(size: 13))
         }.onAppear {
-            if families.count == 1 { families = Array(Set(NSFontManager.shared.availableFontFamilies.filter { NSFont(name: $0, size: 12)?.isFixedPitch == true } + ["SF Mono", family])).sorted() }
+            if families.count == 1 {
+                if let cached = Self.cachedFamilies { families = cached }
+                else {
+                    let values = Array(Set(NSFontManager.shared.availableFontFamilies.filter { NSFont(name: $0, size: 12)?.isFixedPitch == true } + ["SF Mono", family])).sorted()
+                    Self.cachedFamilies = values; families = values
+                }
+            }
             apply()
         }.onChange(of: size) { apply() }.onChange(of: family) { apply() }.onChange(of: spacing) { apply() }.onChange(of: thin) { apply() }.onChange(of: copy) { apply() }.onChange(of: noMouse) { apply() }.onChange(of: weight) { apply() }
     }

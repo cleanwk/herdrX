@@ -18,12 +18,13 @@ public enum TerminalAttachment {
 /// Decode only documented terminal-session envelopes, never terminal text as JSON.
 public struct TerminalFrameDecoder {
     private var lines = LineBuffer(limit: 16 * 1024 * 1024)
+    private let decoder = JSONDecoder()
     private var sequence: Int?
     public private(set) var closedReason: String?
     public init() {}
     public mutating func append(_ data: Data) throws -> [Data] {
         try lines.append(data).compactMap { line in
-            let value = try JSONDecoder().decode(JSON.self, from: line)
+            let value = try decoder.decode(JSON.self, from: line)
             if value["type"].string == "terminal.closed" {
                 closedReason = value["reason"].string ?? "Terminal observation ended"
                 return nil
