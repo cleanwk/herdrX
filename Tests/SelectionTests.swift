@@ -29,9 +29,11 @@ import HerdCore
         #expect(h.view.hostSurface === surface)
     }
 
-    @Test func asynchronousDictationCommitsThroughTerminalView() async throws {
+    @Test(arguments: ["", "\u{1b}[?2004h", "\u{1b}[?2004h\u{1b}[>31u"])
+    func asynchronousDictationCommitsThroughTerminalView(modes: String) async throws {
         let h = try await Harness()
         defer { h.close() }
+        h.receive(modes)
         let surface = try #require(h.view.hostSurface)
         let empty = NSRange(location: 0, length: 0)
         let replacement = NSRange(location: NSNotFound, length: 0)
@@ -43,30 +45,60 @@ import HerdCore
         #expect(h.view.selectedRange() == initialSelection)
         #expect(h.view.markedRange() == NSRange(location: 0, length: 2))
 
-        // Dictation completes outside keyDown/interpretKeyEvents. Establish the
-        // current event through AppKit's queue, as required by the pinned adapter.
+        // Dictation completes outside keyDown/interpretKeyEvents. A non-key
+        // current event also lets the old adapter reach its incorrect paste path.
         try await Task.sleep(for: .milliseconds(50))
         #expect(h.view.selectedRange() == initialSelection)
         #expect(h.output.data.isEmpty)
-        let event = try #require(NSEvent.otherEvent(with: .applicationDefined, location: .zero,
-            modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
-            windowNumber: h.window.windowNumber, context: nil, subtype: 0, data1: 0, data2: 0))
-        NSApp.postEvent(event, atStart: true)
-        let current = try #require(NSApp.nextEvent(matching: .applicationDefined,
-            until: Date().addingTimeInterval(1), inMode: .default, dequeue: true))
-        NSApp.sendEvent(current)
-        try #require(NSApp.currentEvent?.type == .applicationDefined)
-        h.view.insertText("你好世界", replacementRange: replacement)
+        try h.establishCurrentEvent()
+        let text = "你好世界🌏，Codex / Claude Code，字面量 \\x1b[201~。"
+        h.view.insertText(NSAttributedString(string: text), replacementRange: replacement)
         #expect(!h.view.hasMarkedText())
         #expect(h.view.selectedRange() == initialSelection)
         #expect(h.view.markedRange() == empty)
-        let expected = Data("你好世界".utf8)
+        let expected = Data(text.utf8)
         let deadline = Date().addingTimeInterval(2)
         while h.output.data.count < expected.count, Date() < deadline {
             try await Task.sleep(for: .milliseconds(10))
         }
         #expect(h.output.data == expected, "Final UTF-8 text must reach the session exactly once")
         #expect(h.view.hostSurface === surface)
+    }
+
+    @Test func asynchronousTextPreservesLiteralBytesAndClipboardPasteRemainsFramed() async throws {
+        let h = try await Harness()
+        defer { h.close() }
+        h.receive("\u{1b}[?2004h")
+        h.output.clear()
+        // Some input methods send only the final string, without marked text.
+        let text = "中文🌏\nC:\\work\\file \"quoted\" \\x1b[201~"
+        h.view.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
+        #expect(h.view.paste(text: "clipboard"))
+        let expected = Data((text + "\u{1b}[200~clipboard\u{1b}[201~").utf8)
+        let deadline = Date().addingTimeInterval(2)
+        while h.output.data.count < expected.count, Date() < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(h.output.data == expected)
+    }
+
+    @Test func keyDownCommitRetainsEncodingBeforeNextAsynchronousCommit() async throws {
+        let view = CommittingTerminalView(frame: .zero)
+        let h = try await Harness(view: view)
+        defer { h.close() }
+        h.receive("\u{1b}[?2004h\u{1b}[>31u")
+        try h.establishCurrentEvent()
+        h.output.clear()
+        view.keyDown(with: h.key(.keyDown, characters: "\u{1}", ignoring: "a", modifiers: .control, code: 0))
+        view.insertText("后续语音", replacementRange: NSRange(location: NSNotFound, length: 0))
+        let deadline = Date().addingTimeInterval(2)
+        while !String(decoding: h.output.data, as: UTF8.self).hasSuffix("后续语音"), Date() < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let actual = String(decoding: h.output.data, as: UTF8.self)
+        #expect(actual.hasPrefix("\u{1b}[97;5"), "Synchronous commits must retain physical Control/Kitty encoding")
+        #expect(actual.hasSuffix("后续语音"))
+        #expect(!actual.contains("[200~"), "A text commit must not be framed as clipboard paste")
     }
 
     @Test func physicalControlCBypassesStaleKeyboardProtocolsAndSuppressesRelease() async throws {
@@ -479,11 +511,19 @@ private final class LockedOutput: @unchecked Sendable {
     func clear() { lock.lock(); bytes.removeAll(); lock.unlock() }
 }
 
+// Deliver a deterministic IME commit from inside real keyDown interpretation,
+// without changing the machine's active keyboard layout or posting global keys.
+@MainActor private final class CommittingTerminalView: InterruptTerminalView {
+    override func interpretKeyEvents(_ eventArray: [NSEvent]) {
+        insertText("a", replacementRange: NSRange(location: NSNotFound, length: 0))
+    }
+}
+
 @MainActor private final class Harness: TerminalSurfaceLifecycleDelegate, TerminalSurfaceGridResizeDelegate, TerminalSurfaceOpenURLDelegate {
     static let text = "\u{1b}[2J\u{1b}[HALPHA_ONE bravo charlie\r\nDELTA_TWO echo foxtrot\r\n中文选择测试 标点，句号。 emoji 👩‍💻 END\r\n"
     let output = LockedOutput()
     let session: InMemoryTerminalSession
-    let view = TerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 400))
+    let view: InterruptTerminalView
     let window: NSWindow
     var openedURLs: [String] = []
     private var metrics: TerminalGridMetrics?
@@ -492,8 +532,11 @@ private final class LockedOutput: @unchecked Sendable {
     private var clipboardItems: [[NSPasteboard.PasteboardType: Data]] = []
     var cellWidth: CGFloat { CGFloat(metrics!.cellWidthPixels) / window.backingScaleFactor }
     var cellHeight: CGFloat { CGFloat(metrics!.cellHeightPixels) / window.backingScaleFactor }
-    init() async throws {
+    init(view suppliedView: InterruptTerminalView? = nil) async throws {
         _ = NSApplication.shared
+        let view = suppliedView ?? TerminalView(frame: .zero)
+        self.view = view
+        view.frame = NSRect(x: 0, y: 0, width: 800, height: 400)
         window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 800, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         let output = output
@@ -525,6 +568,16 @@ private final class LockedOutput: @unchecked Sendable {
         Theme.apply()
     }
     func receive(_ text: String) { session.receive(text); session.waitForPendingOutput() }
+    func establishCurrentEvent() throws {
+        let event = try #require(NSEvent.otherEvent(with: .applicationDefined, location: .zero,
+            modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber, context: nil, subtype: 0, data1: 0, data2: 0))
+        NSApp.postEvent(event, atStart: true)
+        let current = try #require(NSApp.nextEvent(matching: .applicationDefined,
+            until: Date().addingTimeInterval(1), inMode: .default, dequeue: true))
+        NSApp.sendEvent(current)
+        try #require(NSApp.currentEvent?.type == .applicationDefined)
+    }
     func key(_ type: NSEvent.EventType, characters: String, ignoring: String, modifiers: NSEvent.ModifierFlags = [], code: UInt16) -> NSEvent {
         NSEvent.keyEvent(with: type, location: .zero, modifierFlags: modifiers, timestamp: ProcessInfo.processInfo.systemUptime,
             windowNumber: window.windowNumber, context: nil, characters: characters, charactersIgnoringModifiers: ignoring,
