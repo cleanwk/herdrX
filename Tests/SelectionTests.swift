@@ -532,8 +532,9 @@ private final class LockedOutput: @unchecked Sendable {
     private var clipboardItems: [[NSPasteboard.PasteboardType: Data]] = []
     var cellWidth: CGFloat { CGFloat(metrics!.cellWidthPixels) / window.backingScaleFactor }
     var cellHeight: CGFloat { CGFloat(metrics!.cellHeightPixels) / window.backingScaleFactor }
-    init(view: InterruptTerminalView = TerminalView(frame: .zero)) async throws {
+    init(view suppliedView: InterruptTerminalView? = nil) async throws {
         _ = NSApplication.shared
+        let view = suppliedView ?? TerminalView(frame: .zero)
         self.view = view
         view.frame = NSRect(x: 0, y: 0, width: 800, height: 400)
         window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 800, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
