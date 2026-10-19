@@ -63,3 +63,48 @@ Validation:
 - Physical Doubao speech input remains NOT_RUN here.
 
 The combined tab/dictation implementation passed the complete [macOS run 38864629582](https://github.com/cleanwk/herdrX/actions/runs/38864629582) at `b89aa758b30bc91ffb5334324ddc096d4a21e11d`, including native tab dispatch, 16 Ghostty tests, 66 Core tests, universal build and packaging. The additional scoped-snapshot change still requires the complete current-head gate before release.
+
+## Doubao hold-to-talk commit follow-up — 2026-10-19
+
+The user reports that recording stops on shortcut release, but its text does not
+reach Codex / Claude Code inside HerdrX; the same input works in Ghostty. This is
+not yet a physical reproduction on the user's Mac.
+
+The pinned `libghostty-spm` 1.6.20260909 adapter's
+`TerminalTextInputHandler.insertText` requires `NSApp.currentEvent`, then sends
+commits outside key interpretation through `surface.paste(text:)`. The 0.1.19
+regression established a current event and tested only without bracketed paste;
+it therefore did not expose the added paste framing in a TUI. Native Ghostty's
+current AppKit implementation sends asynchronous committed text as input rather
+than clipboard paste. These source differences identify defects in HerdrX's
+commit path, but do not alone prove the user's complete failure sequence.
+
+`SelectionTerminalView`, shared by pane and floating terminals, now distinguishes
+commits inside its `keyDown` call from asynchronous `insertText` callbacks. The
+synchronous path still delegates to Ghostty's accumulator and key encoder. The
+asynchronous path accepts strings and attributed strings independently of
+`NSApp.currentEvent`, clears preedit, and invokes Ghostty's existing `text:` binding
+with every UTF-8 byte escaped as `\xNN`. The pinned engine parses this binding as
+a Zig string literal and queues the resulting bytes, without clipboard framing
+or newline conversion. Escaping protects literal backslashes and action-like
+content from reinterpretation. No raw surface pointer, synthetic key event,
+clipboard mutation, direct PTY write, dependency change or Herdr protocol change
+is introduced. Stable insertion ranges now live in this shared view as well.
+
+Native regressions exercise the real surface and session write callback:
+
+- Asynchronous attributed-string commits with no terminal modes, bracketed paste,
+  and bracketed paste plus Kitty flags 31. Each must clear marked text, retain
+  the surface and insertion point, and deliver exactly the final UTF-8 once.
+- Unmarked string commits preserve Chinese, emoji, literal backslashes, quotes
+  and newlines; a subsequent actual clipboard paste retains its paste markers.
+- An IME commit during `keyDown` retains Control/Kitty encoding. A following
+  asynchronous commit must use the text path, even while the current event is
+  unchanged. Existing cancellation, interrupt, clipboard and selection tests
+  remain in the same native target.
+
+Local Linux validation: all 14 Python release/appcast tests and `git diff --check`
+passed. This environment has no AppKit, Swift toolchain or Xcode. Native tests,
+universal build and packaging are pending macOS CI. Physical Doubao hold-to-talk
+in live Codex and Claude Code, older macOS and Intel hardware remain NOT_RUN.
+No application release or local installation is claimed.
