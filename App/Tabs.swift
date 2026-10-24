@@ -242,6 +242,7 @@ struct Tabs: NSViewRepresentable {
         }
         func stopDrag(restore: Bool = true, animated: Bool = false) {
             source = nil; insertion = nil; dropFrame = nil; dragged = false; dragOrder = []
+            if !isMousePointInside { unpinWindow() }
             edgeTimer?.invalidate(); edgeTimer = nil
             if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor); self.escapeMonitor = nil }
             if let dragMonitor { NSEvent.removeMonitor(dragMonitor); self.dragMonitor = nil }
@@ -250,8 +251,12 @@ struct Tabs: NSViewRepresentable {
             if restore { positionButtons(layoutFrames, animated: animated) }
             updateHover(); needsDisplay = true
         }
+        private var isMousePointInside: Bool {
+            guard let window else { return false }
+            return visibleRect.contains(convert(window.mouseLocationOutsideOfEventStream, from: nil))
+        }
         override func cancelOperation(_ sender: Any?) { stopDrag(animated: true) }
-        override func viewWillMove(toWindow newWindow: NSWindow?) { if newWindow == nil { stopDrag() }; super.viewWillMove(toWindow: newWindow) }
+        override func viewWillMove(toWindow newWindow: NSWindow?) { if newWindow == nil { stopDrag(); unpinWindow() }; super.viewWillMove(toWindow: newWindow) }
         private func scrollEdge() {
             guard dragged, writable, let scroll = enclosingScrollView as? HorizontalScrollView, let source, entries.contains(where: { $0.id == source }) else { return }
             let point = convert(pointer, from: nil), visible = visibleRect
@@ -293,6 +298,30 @@ struct Tabs: NSViewRepresentable {
                 Theme.accentStroke.withAlphaComponent(0.40).setStroke()
                 path.lineWidth = 1; path.setLineDash([3, 2], count: 2, phase: 0); path.stroke()
             }
+        }
+        // The bar sits in the hidden title bar of a SwiftUI `Window`. There the
+        // window server starts a title-bar window drag on mouse-down, before the
+        // event reaches AppKit, and SwiftUI's hosting views report the region as
+        // movable, so `mouseDownCanMoveWindow` and event monitors cannot stop it.
+        // Turn off window moving while the pointer is over the strip instead; the
+        // server reads `isMovable` when the button goes down.
+        private final class MoveGuard: NSResponder {
+            weak var strip: Strip?
+            override func mouseEntered(with event: NSEvent) { strip?.pinWindow() }
+            override func mouseExited(with event: NSEvent) { if strip?.source == nil { strip?.unpinWindow() } }
+        }
+        private let moveGuard = MoveGuard()
+        private var guardArea: NSTrackingArea?
+        private weak var pinnedWindow: NSWindow?
+        private func pinWindow() { if let window, window.isMovable { window.isMovable = false; pinnedWindow = window } }
+        private func unpinWindow() { pinnedWindow?.isMovable = true; pinnedWindow = nil }
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let guardArea { removeTrackingArea(guardArea); self.guardArea = nil }
+            guard window != nil else { return }
+            moveGuard.strip = self
+            let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: moveGuard)
+            guardArea = area; addTrackingArea(area)
         }
         override func mouseDown(with event: NSEvent) {
             stopDrag()

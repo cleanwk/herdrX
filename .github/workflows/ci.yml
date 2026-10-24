@@ -33,6 +33,7 @@ jobs:
             build/tests/selection-diagnostics
           retention-days: 7
       - run: scripts/build.sh
+      - run: scripts/test-tab-drag-app.sh
       - run: scripts/test-pty.sh
       - run: scripts/test-inputs.sh
       - run: scripts/package.sh
