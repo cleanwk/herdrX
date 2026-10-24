@@ -712,7 +712,7 @@ final class Desk: ObservableObject {
     }
 
     /// Stop the local attach immediately and expand neighbours from `Layout.removing`.
-    private func detachClosedPane(_ key: PaneKey) {
+    func detachClosedPane(_ key: PaneKey) {
         detachedPanes.insert(key)
         terminals.removeValue(forKey: key)?.stop()
         ended.remove(key)
@@ -742,7 +742,7 @@ final class Desk: ObservableObject {
         objectWillChange.send()
     }
 
-    private func restoreDetachedPane(_ key: PaneKey) {
+    func restoreDetachedPane(_ key: PaneKey) {
         guard detachedPanes.remove(key) != nil else { return }
         draggingLayout = nil
         ensureAttachments()
