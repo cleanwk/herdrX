@@ -156,6 +156,9 @@ final class Desk: ObservableObject {
     var paneTitlesRevision = 0
     var paneTitlesCacheLanguage = ""
     var terminals: [PaneKey: Terminal] = [:]
+    /// Panes closed locally before the authoritative snapshot arrives. Skip
+    /// recreating their surfaces and prefer the optimistic layout tree.
+    private var detachedPanes: Set<PaneKey> = []
     private var notificationRouter: NotificationRouter?
     private var tailcats: [String: TailcatConnection] = [:]
     private var tunnels: [String: Process] = [:]
@@ -228,15 +231,22 @@ final class Desk: ObservableObject {
     }
     var layoutRects: [(PaneKey, CGRect)] {
         if let draggingLayout { return draggingLayout.rects() }
+        if let device = selectedDevice,
+           detachedPanes.contains(where: { $0.device == device }),
+           let optimistic = remoteLayouts[device + "|" + selectedTab] {
+            return optimistic.rects()
+        }
         if let device = selectedDevice, let snapshot = sessions[device] {
-            let panes = snapshot.panes.filter { $0.tab == selectedTab }
+            let panes = snapshot.panes.filter { $0.tab == selectedTab && !detachedPanes.contains(PaneKey(device: device, pane: $0.id)) }
             if let layout = snapshot.layouts.array.first(where: { $0["tab_id"].string == selectedTab }),
                let width = layout["area"]["width"].int, let height = layout["area"]["height"].int, width > 0, height > 0 {
-                return layout["panes"].array.compactMap { leaf in
+                let rects = layout["panes"].array.compactMap { leaf -> (PaneKey, CGRect)? in
                     guard let id = leaf["pane_id"].string,
+                          !detachedPanes.contains(PaneKey(device: device, pane: id)),
                           let rect = PaneLayoutGeometry.normalizedRect(leaf["rect"], in: layout["area"]) else { return nil }
                     return (PaneKey(device: device, pane: id), rect)
                 }
+                if !rects.isEmpty { return rects }
             }
             return panes.enumerated().map { (PaneKey(device: device, pane: $0.element.id), CGRect(x: Double($0.offset) / Double(max(1, panes.count)), y: 0, width: 1 / Double(max(1, panes.count)), height: 1)) }
         }
@@ -281,6 +291,7 @@ final class Desk: ObservableObject {
         sessionReaders[id] = nil
         detach(id); TailcatSecrets.remove("token." + id); attentionState.remove(device: id); devices.removeAll { $0.id == id }; sessions[id] = nil; connections[id] = nil
         paneTitlesRevision &+= 1
+        detachedPanes = detachedPanes.filter { $0.device != id }
         for key in Array(terminals.keys) where key.device == id { terminals.removeValue(forKey: key)?.stop(); ended.remove(key) }
         if deviceFilter == id { deviceFilter = "" }
         if selectedDevice == id { select(device: nil) }; save(); reindex()
@@ -572,6 +583,8 @@ final class Desk: ObservableObject {
         for pane in session.panes where pane.tab == selectedTab {
             let key = PaneKey(device: device.id, pane: pane.id)
             guard floatingPanes[key] == nil else { continue }
+            // Local close already tore the surface down; wait for reconcile.
+            guard !detachedPanes.contains(key) else { continue }
 
             guard let target = pane.terminal else { continue }
             let socket = attachmentSocket(device)
@@ -698,6 +711,44 @@ final class Desk: ObservableObject {
         objectAction(device: key.device, method: "pane.close", params: ["pane_id": .string(key.pane)])
     }
 
+    /// Stop the local attach immediately and expand neighbours from `Layout.removing`.
+    func detachClosedPane(_ key: PaneKey) {
+        detachedPanes.insert(key)
+        terminals.removeValue(forKey: key)?.stop()
+        ended.remove(key)
+        exitStatus.removeValue(forKey: key)
+        let tab = sessions[key.device]?.panes.first { $0.id == key.pane }?.tab ?? selectedTab
+        let layoutKey = key.device + "|" + tab
+        let base = draggingLayout ?? remoteLayouts[layoutKey]
+        if let base {
+            if let next = base.removing(key) {
+                remoteLayouts[layoutKey] = next
+                draggingLayout = next
+            } else {
+                remoteLayouts.removeValue(forKey: layoutKey)
+                draggingLayout = nil
+            }
+        }
+        if focused == key {
+            if let next = (draggingLayout ?? remoteLayouts[layoutKey])?.rects().first?.0 {
+                focused = next
+            } else {
+                focused = sessions[key.device]?.panes
+                    .first { $0.tab == tab && $0.id != key.pane }
+                    .map { PaneKey(device: key.device, pane: $0.id) }
+            }
+            requestFocus()
+        }
+        objectWillChange.send()
+    }
+
+    func restoreDetachedPane(_ key: PaneKey) {
+        guard detachedPanes.remove(key) != nil else { return }
+        draggingLayout = nil
+        ensureAttachments()
+        objectWillChange.send()
+    }
+
     func reconcile(_ device: String, previous: Session? = nil) {
         if let previous {
             for pane in sessions[device]?.panes ?? [] where pane.agent == nil && previous.panes.contains(where: { $0.id == pane.id && $0.agent != nil }) {
@@ -713,7 +764,18 @@ final class Desk: ObservableObject {
             ensureAttachments()
         }
         let valid = Set(sessions[device]?.panes.map(\.id) ?? [])
-        for key in Array(terminals.keys) where key.device == device && !valid.contains(key.pane) { terminals.removeValue(forKey: key)?.stop(); ended.remove(key) }
+        for key in Array(terminals.keys) where key.device == device && !valid.contains(key.pane) {
+            terminals.removeValue(forKey: key)?.stop(); ended.remove(key); exitStatus.removeValue(forKey: key)
+        }
+        for key in Array(detachedPanes) where key.device == device {
+            if !valid.contains(key.pane) {
+                detachedPanes.remove(key)
+            } else if terminals[key] == nil {
+                // Close failed or raced; allow ensureAttachments to remount.
+                detachedPanes.remove(key)
+            }
+        }
+        if selectedDevice == device { draggingLayout = nil }
     }
     private func rank(_ status: String) -> Int { Attention.rank(status) }
     var sidebarAgents: [AgentRow] {

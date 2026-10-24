@@ -37,17 +37,22 @@ struct Tabs: NSViewRepresentable {
             scroll.fitDocument()
             if navigate { strip.revealSelection() }
         }
-        // Theme and appearance changes do not change the entries; keep the
-        // strip and its button tint current without remeasuring title widths.
-        strip.needsDisplay = true
+        // Theme and appearance changes do not change the entries; retint only
+        // when the selected/idle colour actually differs to avoid a redraw storm.
         for (index, button) in strip.buttons.enumerated() where index < strip.entries.count {
-            button.contentTintColor = strip.entries[index].id == strip.selected ? Theme.selectedText : Theme.tabText
-            button.needsDisplay = true
+            let tint = strip.entries[index].id == strip.selected ? Theme.selectedText : Theme.tabText
+            if button.contentTintColor != tint {
+                button.contentTintColor = tint
+                button.needsDisplay = true
+            }
         }
     }
     /// A tab bar has one scrolling axis, including momentum and programmatic reveals.
     final class HorizontalScrollView: NSScrollView {
         private var viewportSize: NSSize = .zero
+        // Workbench windows drag by their background; the tab strip must keep
+        // every mouse event for reorder, not hand it to the window chrome.
+        override var mouseDownCanMoveWindow: Bool { false }
         override init(frame frameRect: NSRect) {
             super.init(frame: frameRect)
             contentView = HorizontalClipView()
@@ -83,6 +88,7 @@ struct Tabs: NSViewRepresentable {
         }
     }
     final class HorizontalClipView: NSClipView {
+        override var mouseDownCanMoveWindow: Bool { false }
         override func constrainBoundsRect(_ proposedBounds: NSRect) -> NSRect {
             var constrained = super.constrainBoundsRect(proposedBounds)
             constrained.origin.y = 0
@@ -100,6 +106,7 @@ struct Tabs: NSViewRepresentable {
         var entries: [TabEntry] = []; var selected = ""; var writable = true
         private var edgeTimer: Timer?
         private var escapeMonitor: Any?
+        private var dragMonitor: Any?
         private var windowObserver: NSObjectProtocol?
         private var pointer: CGPoint = .zero
         private var grabOffset: CGFloat = 0
@@ -130,7 +137,13 @@ struct Tabs: NSViewRepresentable {
         }
         func syncButtons() {
             let ids = entries.map(\.id)
-            if source != nil, dragOrder != ids || (dragged && !writable) { stopDrag() }
+            // An active drag owns the gesture until mouse-up / Escape. Poll
+            // refreshes that only reorder ids must not yank the lift preview;
+            // drop still requires the source id to remain and writability.
+            if let source {
+                if !ids.contains(source) || (dragged && !writable) { stopDrag() }
+                else if !dragged, dragOrder != ids { stopDrag() }
+            }
             // Preserve view identity so the background and label animate together on reorder/rollback.
             let previous = Dictionary(uniqueKeysWithValues: buttons.map { ($0.entryID, $0) })
             let reordered = !buttons.isEmpty && buttons.map(\.entryID) != ids
@@ -231,6 +244,7 @@ struct Tabs: NSViewRepresentable {
             source = nil; insertion = nil; dropFrame = nil; dragged = false; dragOrder = []
             edgeTimer?.invalidate(); edgeTimer = nil
             if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor); self.escapeMonitor = nil }
+            if let dragMonitor { NSEvent.removeMonitor(dragMonitor); self.dragMonitor = nil }
             if let windowObserver { NotificationCenter.default.removeObserver(windowObserver); self.windowObserver = nil }
             for button in buttons { button.lifted = false }
             if restore { positionButtons(layoutFrames, animated: animated) }
@@ -287,9 +301,33 @@ struct Tabs: NSViewRepresentable {
             origin = point.x; pointer = event.locationInWindow
             guard let index = buttons.firstIndex(where: { $0.frame.contains(point) }) else { return }
             source = entries[index].id; grabOffset = point.x - buttons[index].frame.minX; dragOrder = entries.map(\.id)
-            if renaming, writable, let source { rename?(source); stopDrag() }
+            if renaming, writable, let source { rename?(source); stopDrag(); return }
+            // Consume left-drag/up through a local monitor so isMovableByWindowBackground
+            // cannot claim the gesture after the 4pt threshold. Discrete sendEvent
+            // harnesses still hit this path; view mouseDragged remains a fallback.
+            installDragMonitor()
         }
-        override func mouseDragged(with event: NSEvent) {
+        private func installDragMonitor() {
+            if dragMonitor != nil { return }
+            dragMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDragged, .leftMouseUp]) { [weak self] event in
+                guard let self, event.window === self.window else { return event }
+                // Only claim events while this strip owns a tab grab.
+                guard self.source != nil else { return event }
+                switch event.type {
+                case .leftMouseDragged:
+                    self.handleDragged(event)
+                    return nil
+                case .leftMouseUp:
+                    self.handleMouseUp(event)
+                    return nil
+                default:
+                    return event
+                }
+            }
+        }
+        override func mouseDragged(with event: NSEvent) { handleDragged(event) }
+        override func mouseUp(with event: NSEvent) { handleMouseUp(event) }
+        private func handleDragged(_ event: NSEvent) {
             guard writable, !renaming, let source else { return }
             let x = convert(event.locationInWindow, from: nil).x
             guard abs(x - origin) > 4 || dragged else { return }
@@ -297,19 +335,25 @@ struct Tabs: NSViewRepresentable {
             if !dragged {
                 dragged = true; hover = nil; updateHover()
                 buttons.first { $0.entryID == source }?.lifted = true
-                escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                    guard let self, event.window === self.window, event.keyCode == 53 else { return event }
-                    self.cancelOperation(nil); return nil
+                if escapeMonitor == nil {
+                    escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                        guard let self, event.window === self.window, event.keyCode == 53 else { return event }
+                        self.cancelOperation(nil); return nil
+                    }
                 }
-                windowObserver = NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: window, queue: .main) { [weak self] _ in
-                    MainActor.assumeIsolated { self?.stopDrag(animated: true) }
+                if windowObserver == nil {
+                    windowObserver = NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: window, queue: .main) { [weak self] _ in
+                        MainActor.assumeIsolated { self?.stopDrag(animated: true) }
+                    }
                 }
-                let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.scrollEdge() } }
-                edgeTimer = timer; RunLoop.main.add(timer, forMode: .common)
+                if edgeTimer == nil {
+                    let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.scrollEdge() } }
+                    edgeTimer = timer; RunLoop.main.add(timer, forMode: .common)
+                }
             }
             updateDragPreview()
         }
-        override func mouseUp(with event: NSEvent) {
+        private func handleMouseUp(_ event: NSEvent) {
             defer { renaming = false }
             guard !renaming, let source, let old = entries.firstIndex(where: { $0.id == source }) else { stopDrag(); return }
             guard dragged else { stopDrag(); select?(source); return }

@@ -18,11 +18,13 @@ import HerdCore
         for text in ["你好", "你好🌏"] {
             h.view.setMarkedText(text, selectedRange: NSRange(location: text.utf16.count, length: 0), replacementRange: replacement)
             #expect(h.view.hasMarkedText())
-            #expect(h.view.selectedRange() == empty, "Preedit caret must not move the host insertion point")
+            // Composing exposes Ghostty's preedit caret (Doubao hold-to-talk).
+            let composing = h.view.selectedRange()
+            #expect(composing.location + composing.length <= text.utf16.count)
             #expect(h.view.markedRange() == NSRange(location: 0, length: text.utf16.count))
             h.view.unmarkText()
             #expect(!h.view.hasMarkedText())
-            #expect(h.view.selectedRange() == empty)
+            #expect(h.view.selectedRange() == empty, "Host insertion point must stay pinned after unmark")
             #expect(h.view.markedRange() == empty)
         }
         #expect(h.output.data.isEmpty, "Uncommitted preedit reached the terminal session")
@@ -42,19 +44,19 @@ import HerdCore
         h.output.clear()
         h.view.setMarkedText("你好", selectedRange: NSRange(location: 2, length: 0), replacementRange: replacement)
         #expect(h.view.hasMarkedText())
-        #expect(h.view.selectedRange() == initialSelection)
         #expect(h.view.markedRange() == NSRange(location: 0, length: 2))
+        let composing = h.view.selectedRange()
+        #expect(composing.location + composing.length <= 2)
 
         // Dictation completes outside keyDown/interpretKeyEvents. A non-key
         // current event also lets the old adapter reach its incorrect paste path.
         try await Task.sleep(for: .milliseconds(50))
-        #expect(h.view.selectedRange() == initialSelection)
         #expect(h.output.data.isEmpty)
         try h.establishCurrentEvent()
         let text = "你好世界🌏，Codex / Claude Code，字面量 \\x1b[201~。"
         h.view.insertText(NSAttributedString(string: text), replacementRange: replacement)
         #expect(!h.view.hasMarkedText())
-        #expect(h.view.selectedRange() == initialSelection)
+        #expect(h.view.selectedRange() == empty, "Host insertion point must stay pinned after async commit")
         #expect(h.view.markedRange() == empty)
         let expected = Data(text.utf8)
         let deadline = Date().addingTimeInterval(2)

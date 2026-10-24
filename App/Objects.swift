@@ -89,9 +89,13 @@ extension Desk {
         let workspace = params["workspace_id"]?.string
             ?? sessions[device]?.tabs.first { $0.id == params["tab_id"]?.string }?.workspace
             ?? sessions[device]?.panes.first { $0.id == params["pane_id"]?.string }?.workspace
+        let closing: PaneKey? = (method == "pane.close" ? params["pane_id"]?.string.map { PaneKey(device: device, pane: $0) } : nil)
         guard let endpoint = devices.first(where: { $0.id == device })?.endpoint,
               let client = try? rpc(device), begin(key, device: device) else { return }
         let transport = transportIdentity(device)
+        // Close: drop the local surface before the server reply so attach exit
+        // text cannot flash, and expand survivors from Layout.removing.
+        if let closing { detachClosedPane(closing) }
         Task { defer { busy.remove(key) }; do {
             guard canWrite(device), devices.contains(where: { $0.id == device && $0.endpoint == endpoint }),
                   transportIdentity(device) == transport else { throw CancellationError() }
@@ -100,7 +104,12 @@ extension Desk {
             if let workspace, method != "workspace.move" {
                 try await refreshAfterAction(device, workspace: workspace, client: client)
             } else { try await refresh(device, client: client) }
-        } catch is CancellationError {} catch { message = error.localizedDescription } }
+        } catch is CancellationError {
+            if let closing { restoreDetachedPane(closing) }
+        } catch {
+            if let closing { restoreDetachedPane(closing) }
+            message = error.localizedDescription
+        } }
     }
 }
 

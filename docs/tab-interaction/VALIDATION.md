@@ -50,3 +50,16 @@ No installed application, Herdr session or release was changed.
 The 0.1.19 release also runs this harness on macOS through [PR #30 checks](https://github.com/cleanwk/herdrX/pull/30/checks); the current head must pass before merging and tagging. The Linux limitation above describes the initial local pass, not a waiver of native CI. Physical mouse/trackpad acceptance remains separate.
 
 The combined tab/dictation implementation passed the complete [macOS run 38864629582](https://github.com/cleanwk/herdrX/actions/runs/38864629582) at `b89aa758b30bc91ffb5334324ddc096d4a21e11d`, including native tab dispatch, 16 Ghostty tests, 66 Core tests, universal build and packaging. The additional scoped-snapshot change still requires the complete current-head gate before release.
+
+## Reliable drag vs window background — 2026-10-24
+
+`Tabs.Strip` installs an `NSEvent` local monitor for `.leftMouseDragged` /
+`.leftMouseUp` on mouse-down so `isMovableByWindowBackground` cannot claim the
+gesture after the 4pt threshold. `HorizontalScrollView` / `HorizontalClipView`
+also return `false` from `mouseDownCanMoveWindow`. An in-flight drag is no longer
+cancelled solely because a poll refreshed tab order; source removal or loss of
+write access still cancels. Discrete `window.sendEvent` harnesses keep working
+because view `mouseDragged`/`mouseUp` remain as fallbacks.
+
+Physical mouse/trackpad reorder on a movable-background workbench remains the
+user-acceptance gate; `scripts/TabScrollTests.swift` is the synthetic gate.
