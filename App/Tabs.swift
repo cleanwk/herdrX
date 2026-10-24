@@ -295,8 +295,22 @@ struct Tabs: NSViewRepresentable {
                 path.lineWidth = 1; path.setLineDash([3, 2], count: 2, phase: 0); path.stroke()
             }
         }
-        static var pinsWindow = true
+        static var pressMode = "consume"
         private weak var pinnedWindow: NSWindow?
+        private var pressMonitor: Any?
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let pressMonitor { NSEvent.removeMonitor(pressMonitor); self.pressMonitor = nil }
+            guard window != nil, Self.pressMode != "none" else { return }
+            pressMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+                guard let self, let window = self.window, event.window === window,
+                      let frameView = window.contentView?.superview,
+                      let hit = frameView.hitTest(frameView.convert(event.locationInWindow, from: nil)), hit.isDescendant(of: self) else { return event }
+                if Self.pressMode == "pin" { if window.isMovable { window.isMovable = false; self.pinnedWindow = window }; return event }
+                if !window.isKeyWindow { window.makeKeyAndOrderFront(nil) }
+                self.mouseDown(with: event); return nil
+            }
+        }
         override func mouseDown(with event: NSEvent) {
             stopDrag()
             renaming = event.clickCount == 2
@@ -309,7 +323,6 @@ struct Tabs: NSViewRepresentable {
             // cannot claim the gesture after the 4pt threshold. Discrete sendEvent
             // harnesses still hit this path; view mouseDragged remains a fallback.
             installDragMonitor()
-            if Self.pinsWindow, let window, window.isMovable { window.isMovable = false; pinnedWindow = window }
         }
         private func installDragMonitor() {
             if dragMonitor != nil { return }

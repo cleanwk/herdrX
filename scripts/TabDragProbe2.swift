@@ -54,7 +54,7 @@ func post(_ type: CGEventType, _ p: CGPoint) {
 func onMain<T>(_ f: @MainActor () -> T) -> T { DispatchQueue.main.sync { MainActor.assumeIsolated { f() } } }
 final class Delegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        Tabs.Strip.pinsWindow = variant == "pin"
+        Tabs.Strip.pressMode = variant == "baseline" ? "none" : variant
         Thread.detachNewThread {
             Thread.sleep(forTimeInterval: 2)
             let (window, start) = onMain { () -> (NSWindow, CGPoint) in
