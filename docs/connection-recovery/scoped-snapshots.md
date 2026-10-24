@@ -122,3 +122,15 @@ passed the complete workflow, including 77 Core tests. Its synthetic delayed
 time, at most four sockets). This is a fixture result, not user-device timing.
 The additional close-pane regressions must also pass in the complete
 [PR #31 head checks](https://github.com/cleanwk/herdrX/pull/31/checks) before release.
+
+## Optimistic pane close — 2026-10-24
+
+`pane.close` now calls `detachClosedPane` before the RPC: the local attach is
+stopped immediately (`intentionalClose` skips observation / ended overlay), the
+pane is removed from `layoutRects` / `ensureAttachments`, and survivors expand
+from `Layout.removing`. Failure restores the detached pane and resurfaces the
+error. This targets the documented `terminal … not found` flash and the wait for
+scoped refresh before tearing the surface.
+
+Mac timing / flash acceptance remains with the user; PaneActionTests + CI are the
+automated gates.

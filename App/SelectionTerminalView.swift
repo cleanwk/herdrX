@@ -7,10 +7,15 @@ import GhosttyKit
 class SelectionTerminalView: AppTerminalView {
     private var keyDownDepth = 0
 
-    // A preedit caret is not the host document's insertion point. Keep it
-    // stable while asynchronous input methods (including Doubao) compose.
-    override func selectedRange() -> NSRange { NSRange(location: 0, length: 0) }
-    override func markedRange() -> NSRange { hasMarkedText() ? super.markedRange() : NSRange(location: 0, length: 0) }
+    // Outside composition, pin the host insertion point so asynchronous
+    // dictation (0.1.19) still commits. While marked text is active, return
+    // Ghostty's preedit caret — Doubao hold-to-talk needs that range to finish.
+    override func selectedRange() -> NSRange {
+        hasMarkedText() ? super.selectedRange() : NSRange(location: 0, length: 0)
+    }
+    override func markedRange() -> NSRange {
+        hasMarkedText() ? super.markedRange() : NSRange(location: 0, length: 0)
+    }
 
     override func keyDown(with event: NSEvent) {
         keyDownDepth += 1
@@ -19,21 +24,27 @@ class SelectionTerminalView: AppTerminalView {
     }
 
     override func insertText(_ string: Any, replacementRange: NSRange) {
-        // The pinned adapter must collect synchronous commits while it
-        // interprets a physical key, preserving modifiers and key encoding.
+        // Synchronous key interpretation must keep Ghostty's encoding path.
         guard keyDownDepth == 0 else {
             super.insertText(string, replacementRange: replacementRange)
             return
         }
         guard let text = (string as? NSAttributedString)?.string ?? (string as? String) else { return }
-        unmarkText()
+        // Always clear preedit first so a failed commit cannot leave composing.
+        if hasMarkedText() { unmarkText() }
         guard !text.isEmpty else { return }
-        // Dictation can commit after the shortcut is released, with no current
-        // NSEvent. The adapter drops that case or treats it as clipboard paste.
-        // Ghostty's supported text action writes the committed UTF-8 without
-        // paste framing. Escape every byte for its Zig string-literal parser.
-        let escaped = text.utf8.map { String(format: "\\x%02x", $0) }.joined()
-        _ = performBindingAction("text:" + escaped)
+        // Dictation / hold-to-talk often commit with no current NSEvent. Ghostty's
+        // text binding writes UTF-8 without paste framing; escape for its parser.
+        let escaped = text.utf8.map { String(format: "\x%02x", $0) }.joined()
+        if performBindingAction("text:" + escaped) { return }
+        // Binding refused — still try the native client path so the commit is not lost.
+        super.insertText(string, replacementRange: replacementRange)
+    }
+
+    override func unmarkText() {
+        super.unmarkText()
+        // Some IMEs leave a zero-length mark; force a clean client state.
+        if hasMarkedText() { super.unmarkText() }
     }
 
     static let configurationWillChange = Notification.Name("HerdrXTerminalConfigurationWillChange")

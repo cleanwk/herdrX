@@ -108,3 +108,17 @@ passed. This environment has no AppKit, Swift toolchain or Xcode. Native tests,
 universal build and packaging are pending macOS CI. Physical Doubao hold-to-talk
 in live Codex and Claude Code, older macOS and Intel hardware remain NOT_RUN.
 No application release or local installation is claimed.
+
+## Doubao hold-to-talk composing — 0.1.22 follow-up (2026-10-24)
+
+`SelectionTerminalView.selectedRange()` now returns Ghostty's preedit caret while
+`hasMarkedText()` is true, and keeps the pinned `{0,0}` host insertion point only
+outside composition. Asynchronous `insertText` unmarks before the `text:` binding
+and falls back to `super.insertText` if the binding refuses. `unmarkText` retries
+once if a mark remains.
+
+`SelectionTests` still require a pinned empty selection after unmark / async commit;
+while marked, they only assert the caret stays within the preedit UTF-16 span.
+
+Physical Doubao short-press / hold-to-talk / dictation on a Mac remains **NOT_RUN**
+in this environment. CI SelectionTests + Kai machine acceptance are the gates.

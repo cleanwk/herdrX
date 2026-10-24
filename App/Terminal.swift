@@ -26,6 +26,9 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
     var scrollLineHeight: Double { max(1, Double(cellHeightPixels) / Double(view.window?.backingScaleFactor ?? 1)) }
     private(set) var attachmentID = UUID()
     private(set) var hoverURL: URL?
+    /// Set by `stop()` so a deliberate close does not start observation or
+    /// paint an ended overlay while the pane is being removed.
+    private var intentionalClose = false
     init(command: String, takeoverCommand: String, observationCommand: @escaping (UInt16, UInt16) -> String) {
         self.command = command
         self.takeoverCommand = takeoverCommand
@@ -47,6 +50,9 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
             guard let self else { return }
             self.view.allowsRemoteScroll = false
             self.process.stop(); self.resetInput()
+            // Closing the pane stops the attach on purpose. Do not feed the
+            // exit banner into the surface or start a stale observe session.
+            if self.intentionalClose { return }
             self.observation.start(self.observationCommand)
             self.onExit?(status)
         }
@@ -69,13 +75,25 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
         }
         process.start(command)
     }
-    func restart(takeover: Bool = false) { attachmentID = UUID(); observation.stop(); resetInput(); view.allowsRemoteScroll = true; start(takeover ? takeoverCommand : command) }
+    func restart(takeover: Bool = false) {
+        intentionalClose = false
+        attachmentID = UUID(); observation.stop(); resetInput(); view.allowsRemoteScroll = true
+        start(takeover ? takeoverCommand : command)
+    }
     // The live `herdr terminal attach` owns mouse capture, independently of the
     // child Agent. Clearing it on Agent exit disables shell/history scrolling.
     func repair() { view.cancelSelectionGesture(); session.receive(TerminalInputRecovery.keyboardBytes) }
     private func resetInput() { cancelScrolling(); view.cancelSelectionGesture(); session.receive(TerminalInputRecovery.bytes) }
     func interrupt() { process.write(Data([3])) }
-    func stop() { attachmentID = UUID(); cancelScrolling(); view.allowsRemoteScroll = false; observation.stop(); process.stop() }
+    func stop() {
+        intentionalClose = true
+        attachmentID = UUID(); cancelScrolling(); view.allowsRemoteScroll = false
+        observation.stop()
+        // Drop the output sink before tearing the PTY so an attach exit banner
+        // ("terminal … not found") cannot paint into the dying surface.
+        process.output = nil
+        process.stop()
+    }
     private func enqueueScroll(_ event: NSEvent) {
         guard view.allowsRemoteScroll else { return }
         wheelEvents.append(event)
