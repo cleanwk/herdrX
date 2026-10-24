@@ -35,7 +35,7 @@ class SelectionTerminalView: AppTerminalView {
         guard !text.isEmpty else { return }
         // Dictation / hold-to-talk often commit with no current NSEvent. Ghostty's
         // text binding writes UTF-8 without paste framing; escape for its parser.
-        let escaped = text.utf8.map { String(format: "\x%02x", $0) }.joined()
+        let escaped = text.utf8.map { String(format: "\\x%02x", $0) }.joined()
         if performBindingAction("text:" + escaped) { return }
         // Binding refused — still try the native client path so the commit is not lost.
         super.insertText(string, replacementRange: replacementRange)
