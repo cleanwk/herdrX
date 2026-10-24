@@ -242,6 +242,7 @@ struct Tabs: NSViewRepresentable {
         }
         func stopDrag(restore: Bool = true, animated: Bool = false) {
             source = nil; insertion = nil; dropFrame = nil; dragged = false; dragOrder = []
+            pinnedWindow?.isMovable = true; pinnedWindow = nil
             edgeTimer?.invalidate(); edgeTimer = nil
             if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor); self.escapeMonitor = nil }
             if let dragMonitor { NSEvent.removeMonitor(dragMonitor); self.dragMonitor = nil }
@@ -294,8 +295,9 @@ struct Tabs: NSViewRepresentable {
                 path.lineWidth = 1; path.setLineDash([3, 2], count: 2, phase: 0); path.stroke()
             }
         }
+        static var pinsWindow = true
+        private weak var pinnedWindow: NSWindow?
         override func mouseDown(with event: NSEvent) {
-            if ProcessInfo.processInfo.environment["HERDRX_TRACE_TAB_DRAG"] == "1" { FileHandle.standardError.write("TRACE strip.mouseDown writable=\(writable)\n".data(using: .utf8)!) }
             stopDrag()
             renaming = event.clickCount == 2
             let point = convert(event.locationInWindow, from: nil)
@@ -307,6 +309,7 @@ struct Tabs: NSViewRepresentable {
             // cannot claim the gesture after the 4pt threshold. Discrete sendEvent
             // harnesses still hit this path; view mouseDragged remains a fallback.
             installDragMonitor()
+            if Self.pinsWindow, let window, window.isMovable { window.isMovable = false; pinnedWindow = window }
         }
         private func installDragMonitor() {
             if dragMonitor != nil { return }
