@@ -1,6 +1,8 @@
 # HerdrX P0 修复落地说明
 
-分支：`codex/fix-p0-input-tab-close`  
+分支：`codex/fix-p0-input-tab-close`
+PR：https://github.com/cleanwk/herdrX/pull/35
+CI：`Build and test`（含 `scripts/package.sh` 预览全包）已触发  
 对照：`/workspace/herdrm`、审计报告 `/workspace/herdrx-audit-report.md`  
 日期：2026-10-24（Asia/Shanghai）
 
