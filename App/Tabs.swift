@@ -242,7 +242,119 @@ struct Tabs: NSViewRepresentable {
         }
         func stopDrag(restore: Bool = true, animated: Bool = false) {
             source = nil; insertion = nil; dropFrame = nil; dragged = false; dragOrder = []
-            pinnedWindow?.isMovable = true; pinnedWindow = nil
+            if !isMousePointInside { unpinWindow() }
+            edgeTimer?.invalidate(); edgeTimer = nil
+            if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor); self.escapeMonitor = nil }
+            if let dragMonitor { NSEvent.removeMonitor(dragMonitor); self.dragMonitor = nil }
+            if let windowObserver { NotificationCenter.default.removeObserver(windowObserver); self.windowObserver = nil }
+            for button in buttons { button.lifted = false }
+            if restore { positionButtons(layoutFrames, animated: animated) }
+            updateHover(); needsDisplay = true
+        }
+        private var isMousePointInside: Bool {
+            guard let window else { return false }
+            return visibleRect.contains(convert(window.mouseLocationOutsideOfEventStream, from: nil))
+        }
+        override func cancelOperation(_ sender: Any?) { stopDrag(animated: true) }
+        override func viewWillMove(toWindow newWindow: NSWindow?) { if newWindow == nil { stopDrag(); unpinWindow() }; super.viewWillMove(toWindow: newWindow) }
+        private func scrollEdge() {
+            guard dragged, writable, let scroll = enclosingScrollView as? HorizontalScrollView, let source, entries.contains(where: { $0.id == source }) else { return }
+            let point = convert(pointer, from: nil), visible = visibleRect
+            let edge: CGFloat = 28
+            let delta: CGFloat = point.x < visible.minX + edge ? -8 * min(1, (visible.minX + edge - point.x) / edge) : point.x > visible.maxX - edge ? 8 * min(1, (point.x - visible.maxX + edge) / edge) : 0
+            guard delta != 0 else { return }
+            scroll.scrollHorizontally(to: scroll.contentView.bounds.minX + delta)
+            updateDragPreview()
+        }
+        private func updateDragPreview() {
+            guard dragged, let source, let old = entries.firstIndex(where: { $0.id == source }), layoutFrames.count == buttons.count else { return }
+            var frame = layoutFrames[old]
+            frame.origin.x = min(max(TabMetrics.inset, convert(pointer, from: nil).x - grabOffset), max(TabMetrics.inset, contentWidth - TabMetrics.inset - frame.width))
+            let others = entries.indices.filter { $0 != old }
+            // Compare the leading edge with the remaining tabs' midpoints. Removing
+            // the source width first lets a wide tab reach either end beside short tabs.
+            var destination = 0, remainingX = TabMetrics.inset
+            for index in others {
+                if frame.minX > remainingX + layoutFrames[index].width / 2 { destination += 1 }
+                remainingX += layoutFrames[index].width + TabMetrics.gap
+            }
+            insertion = destination > old ? destination + 1 : destination
+            var order = others; order.insert(old, at: destination)
+            var frames = layoutFrames, x = TabMetrics.inset
+            for index in order {
+                frames[index].origin.x = x
+                x += frames[index].width + TabMetrics.gap
+            }
+            dropFrame = frames[old]
+            positionButtons(frames, animated: true, excluding: source)
+            let button = buttons[old]
+            button.layer?.removeAllAnimations(); button.frame = frame; button.targetFrame = frame
+            needsDisplay = true
+        }
+        override func draw(_ dirtyRect: NSRect) {
+            if let dropFrame {
+                let path = NSBezierPath(roundedRect: dropFrame.insetBy(dx: 0.5, dy: 0.5), xRadius: TabMetrics.radius, yRadius: TabMetrics.radius)
+                Theme.tabInactiveWash.setFill(); path.fill()
+                Theme.accentStroke.withAlphaComponent(0.40).setStroke()
+                path.lineWidth = 1; path.setLineDash([3, 2], count: 2, phase: 0); path.stroke()
+            }
+        }
+        static var pressMode = "hover"
+        private weak var pinnedWindow: NSWindow?
+        private var pressMonitor: Any?
+        final class MoveGuard: NSResponder {
+            weak var strip: Strip?
+            override func mouseEntered(with event: NSEvent) { strip?.pinWindow() }
+            override func mouseExited(with event: NSEvent) { if strip?.source == nil { strip?.unpinWindow() } }
+        }
+        private let moveGuard = MoveGuard()
+        private var guardArea: NSTrackingArea?
+        func pinWindow() { if let window, window.isMovable { window.isMovable = false; pinnedWindow = window } }
+        func unpinWindow() { pinnedWindow?.isMovable = true; pinnedWindow = nil }
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let pressMonitor { NSEvent.removeMonitor(pressMonitor); self.pressMonitor = nil }
+            if let guardArea { removeTrackingArea(guardArea); self.guardArea = nil }
+            guard window != nil else { return }
+            if Self.pressMode == "hover" {
+                moveGuard.strip = self
+                let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: moveGuard)
+                guardArea = area; addTrackingArea(area); return
+            }
+            guard Self.pressMode == "consume" else { return }
+            pressMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+                guard let self, let window = self.window, event.window === window,
+                      let frameView = window.contentView?.superview,
+                      let hit = frameView.hitTest(frameView.convert(event.locationInWindow, from: nil)), hit.isDescendant(of: self) else { return event }
+                if !window.isKeyWindow { window.makeKeyAndOrderFront(nil) }
+                self.mouseDown(with: event); return nil
+            }
+        }
+        override func mouseDown(with event: NSEvent) { (superview as? Strip)?.mouseDown(with: event) }
+            override func mouseDragged(with event: NSEvent) { (superview as? Strip)?.mouseDragged(with: event) }
+            override func mouseUp(with event: NSEvent) { (superview as? Strip)?.mouseUp(with: event) }
+            override func menu(for event: NSEvent) -> NSMenu? { (superview as? Strip)?.menu(for: event) }
+        }
+        override func menu(for event: NSEvent) -> NSMenu? {
+            let x = convert(event.locationInWindow, from: nil).x
+            guard let index = buttons.firstIndex(where: { $0.frame.minX <= x && x <= $0.frame.maxX }), entries.indices.contains(index) else { return nil }
+            let menu = NSMenu(); menu.autoenablesItems = false
+            let id = entries[index].id, rename = rename, close = close
+            menu.addItem(ActionMenuItem("Rename Tab…", enabled: writable) { rename?(id) })
+            menu.addItem(.separator())
+            menu.addItem(ActionMenuItem("Close Tab…", enabled: writable) { close?(id) })
+            return menu
+        }
+        func revealSelection() {
+            guard !dragged, let scroll = enclosingScrollView as? HorizontalScrollView,
+                  let index = entries.firstIndex(where: { $0.id == selected }), layoutFrames.indices.contains(index) else { return }
+            let rect = layoutFrames[index].insetBy(dx: -TabMetrics.inset, dy: 0), visible = scroll.contentView.bounds
+            if rect.minX < visible.minX { scroll.scrollHorizontally(to: rect.minX) }
+            else if rect.maxX > visible.maxX { scroll.scrollHorizontally(to: rect.maxX - visible.width) }
+        }
+        func stopDrag(restore: Bool = true, animated: Bool = false) {
+            source = nil; insertion = nil; dropFrame = nil; dragged = false; dragOrder = []
+            if !isMousePointInside { unpinWindow() }
             edgeTimer?.invalidate(); edgeTimer = nil
             if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor); self.escapeMonitor = nil }
             if let dragMonitor { NSEvent.removeMonitor(dragMonitor); self.dragMonitor = nil }
@@ -252,7 +364,7 @@ struct Tabs: NSViewRepresentable {
             updateHover(); needsDisplay = true
         }
         override func cancelOperation(_ sender: Any?) { stopDrag(animated: true) }
-        override func viewWillMove(toWindow newWindow: NSWindow?) { if newWindow == nil { stopDrag() }; super.viewWillMove(toWindow: newWindow) }
+        override func viewWillMove(toWindow newWindow: NSWindow?) { if newWindow == nil { stopDrag(); unpinWindow() }; super.viewWillMove(toWindow: newWindow) }
         private func scrollEdge() {
             guard dragged, writable, let scroll = enclosingScrollView as? HorizontalScrollView, let source, entries.contains(where: { $0.id == source }) else { return }
             let point = convert(pointer, from: nil), visible = visibleRect

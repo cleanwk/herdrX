@@ -45,6 +45,8 @@ case "drag":
     guard let from = list.first(where: { $0.label == args[3] }), let to = list.first(where: { $0.label == args[4] }) else { print("TABS NOT FOUND"); exit(2) }
     let windowBefore = window().flatMap(frame)
     let start = center(from.frame), end = CGPoint(x: to.frame.maxX + 12, y: start.y)
+    post(.mouseMoved, CGPoint(x: start.x, y: start.y + 80)); Thread.sleep(forTimeInterval: 0.2)
+    post(.mouseMoved, start); Thread.sleep(forTimeInterval: 0.4)
     post(.leftMouseDown, start); Thread.sleep(forTimeInterval: 0.15)
     for step in 1...24 {
         post(.leftMouseDragged, CGPoint(x: start.x + (end.x - start.x) * CGFloat(step) / 24, y: start.y)); Thread.sleep(forTimeInterval: 0.03)
