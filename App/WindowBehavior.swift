@@ -11,6 +11,16 @@ struct WindowBehavior: NSViewRepresentable {
             super.viewDidMoveToWindow()
             guard let window, !configured else { return }; configured = true
             window.isMovableByWindowBackground = true
+            if ProcessInfo.processInfo.environment["HERDRX_TRACE_TAB_DRAG"] == "1" {
+                FileHandle.standardError.write("TRACE window \(type(of: window)) style=\(window.styleMask.rawValue) movableBG=\(window.isMovableByWindowBackground) movable=\(window.isMovable) titlebarH=\(window.frame.height - window.contentLayoutRect.height)\n".data(using: .utf8)!)
+                _ = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp]) { [weak window] event in
+                    guard let window, event.window === window, let frameView = window.contentView?.superview else { return event }
+                    var chain: [String] = [], view = frameView.hitTest(frameView.convert(event.locationInWindow, from: nil))
+                    while let v = view { chain.append("\(type(of: v))\(v.mouseDownCanMoveWindow ? "*" : "")"); view = v.superview }
+                    FileHandle.standardError.write("TRACE \(event.type.rawValue) loc=\(event.locationInWindow) win=\(window.frame.origin) hit=\(chain.joined(separator: "<"))\n".data(using: .utf8)!)
+                    return event
+                }
+            }
             // The contract is the whole window, including the native title area.
             window.minSize = NSSize(width: 980, height: 620)
             #if DEBUG

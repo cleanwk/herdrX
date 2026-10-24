@@ -7,7 +7,7 @@ herdr, app, driver = (str(Path(a).resolve()) for a in sys.argv[1:4])
 out = Path("build/tests"); out.mkdir(parents=True, exist_ok=True)
 temp = tempfile.mkdtemp(prefix="hx-drag-", dir="/tmp")
 env = {k: v for k, v in os.environ.items() if not k.startswith("HERDR_")}
-env.update(XDG_CONFIG_HOME=temp + "/c", XDG_STATE_HOME=temp + "/s", HERDRX_STATE_DIR=temp + "/x", SHELL="/bin/sh")
+env.update(XDG_CONFIG_HOME=temp + "/c", XDG_STATE_HOME=temp + "/s", HERDRX_STATE_DIR=temp + "/x", SHELL="/bin/sh", HERDRX_TRACE_TAB_DRAG="1")
 args = [herdr, "--session", "dragtest"]
 def cli(*tail):
     r = subprocess.run(args + list(tail), env=env, stdin=subprocess.DEVNULL, capture_output=True, timeout=20)

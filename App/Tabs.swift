@@ -295,6 +295,7 @@ struct Tabs: NSViewRepresentable {
             }
         }
         override func mouseDown(with event: NSEvent) {
+            if ProcessInfo.processInfo.environment["HERDRX_TRACE_TAB_DRAG"] == "1" { FileHandle.standardError.write("TRACE strip.mouseDown writable=\(writable)\n".data(using: .utf8)!) }
             stopDrag()
             renaming = event.clickCount == 2
             let point = convert(event.locationInWindow, from: nil)
