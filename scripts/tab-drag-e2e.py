@@ -28,6 +28,7 @@ def order(): return [t["label"] for t in rpc("tab.list", dict(workspace_id=ws))[
 print("server before:", order(), flush=True)
 os.makedirs(temp + "/x")
 Path(temp + "/x/devices.json").write_text(json.dumps([dict(id="e2e", displayName="E2E", endpoint=dict(kind="local", socketPath=path))]))
+subprocess.run(["defaults", "write", "io.github.cleanwk.herdrx", "SUEnableAutomaticChecks", "-bool", "false"])
 log = open(out / "tab-drag-app.log", "w")
 proc = subprocess.Popen([app + "/Contents/MacOS/HerdrX"], env=env, stdout=log, stderr=subprocess.STDOUT)
 def drive(*a):

@@ -21,7 +21,8 @@ func walk(_ e: AXUIElement, _ depth: Int = 0, into out: inout [Node]) {
 let args = CommandLine.arguments
 let pid = pid_t(args[1])!
 let app = AXUIElementCreateApplication(pid)
-func window() -> AXUIElement? { (attr(app, kAXWindowsAttribute) as? [AXUIElement])?.first }
+// The main window is the largest one; Sparkle or alerts may sit in front of it.
+func window() -> AXUIElement? { ((attr(app, kAXWindowsAttribute) as? [AXUIElement]) ?? []).max { (frame($0)?.width ?? 0) * (frame($0)?.height ?? 0) < (frame($1)?.width ?? 0) * (frame($1)?.height ?? 0) } }
 func nodes() -> [Node] { var out: [Node] = []; if let w = window() { walk(w, into: &out) }; return out }
 func tabs() -> [Node] { nodes().filter { $0.role == "AXRadioButton" && $0.label.hasPrefix("T-") }.sorted { $0.frame.minX < $1.frame.minX } }
 func post(_ type: CGEventType, _ p: CGPoint) {
