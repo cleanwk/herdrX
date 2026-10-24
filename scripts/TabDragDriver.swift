@@ -36,7 +36,7 @@ case "dump":
     print("window:", window().flatMap(frame).map { "\($0)" } ?? "none")
     for n in nodes() where !n.label.isEmpty || n.role == "AXRadioButton" { print(" ", n.role, "|", n.label, "|", n.frame) }
 case "click":
-    guard let n = nodes().first(where: { $0.label == args[3] && $0.frame.width > 0 }) else { print("NOT FOUND", args[3]); exit(2) }
+    guard let n = nodes().first(where: { $0.label.hasPrefix(args[3]) && $0.frame.width > 0 }) else { print("NOT FOUND", args[3]); exit(2) }
     let p = center(n.frame); print("click", n.role, n.frame)
     post(.leftMouseDown, p); Thread.sleep(forTimeInterval: 0.06); post(.leftMouseUp, p)
 case "drag":
