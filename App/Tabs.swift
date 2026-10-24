@@ -299,36 +299,29 @@ struct Tabs: NSViewRepresentable {
                 path.lineWidth = 1; path.setLineDash([3, 2], count: 2, phase: 0); path.stroke()
             }
         }
-        static var pressMode = "hover"
-        private weak var pinnedWindow: NSWindow?
-        private var pressMonitor: Any?
-        final class MoveGuard: NSResponder {
+        // The bar sits in the hidden title bar of a SwiftUI `Window`. There the
+        // window server starts a title-bar window drag on mouse-down, before the
+        // event reaches AppKit, and SwiftUI's hosting views report the region as
+        // movable, so `mouseDownCanMoveWindow` and event monitors cannot stop it.
+        // Turn off window moving while the pointer is over the strip instead; the
+        // server reads `isMovable` when the button goes down.
+        private final class MoveGuard: NSResponder {
             weak var strip: Strip?
             override func mouseEntered(with event: NSEvent) { strip?.pinWindow() }
             override func mouseExited(with event: NSEvent) { if strip?.source == nil { strip?.unpinWindow() } }
         }
         private let moveGuard = MoveGuard()
         private var guardArea: NSTrackingArea?
-        func pinWindow() { if let window, window.isMovable { window.isMovable = false; pinnedWindow = window } }
-        func unpinWindow() { pinnedWindow?.isMovable = true; pinnedWindow = nil }
+        private weak var pinnedWindow: NSWindow?
+        private func pinWindow() { if let window, window.isMovable { window.isMovable = false; pinnedWindow = window } }
+        private func unpinWindow() { pinnedWindow?.isMovable = true; pinnedWindow = nil }
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            if let pressMonitor { NSEvent.removeMonitor(pressMonitor); self.pressMonitor = nil }
             if let guardArea { removeTrackingArea(guardArea); self.guardArea = nil }
             guard window != nil else { return }
-            if Self.pressMode == "hover" {
-                moveGuard.strip = self
-                let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: moveGuard)
-                guardArea = area; addTrackingArea(area); return
-            }
-            guard Self.pressMode == "consume" else { return }
-            pressMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
-                guard let self, let window = self.window, event.window === window,
-                      let frameView = window.contentView?.superview,
-                      let hit = frameView.hitTest(frameView.convert(event.locationInWindow, from: nil)), hit.isDescendant(of: self) else { return event }
-                if !window.isKeyWindow { window.makeKeyAndOrderFront(nil) }
-                self.mouseDown(with: event); return nil
-            }
+            moveGuard.strip = self
+            let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: moveGuard)
+            guardArea = area; addTrackingArea(area)
         }
         override func mouseDown(with event: NSEvent) {
             stopDrag()

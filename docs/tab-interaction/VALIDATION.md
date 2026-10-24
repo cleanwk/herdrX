@@ -63,3 +63,44 @@ because view `mouseDragged`/`mouseUp` remain as fallbacks.
 
 Physical mouse/trackpad reorder on a movable-background workbench remains the
 user-acceptance gate; `scripts/TabScrollTests.swift` is the synthetic gate.
+
+## Tab drag in the hidden title bar — 2026-10-24
+
+0.1.22 still moved the window instead of the tab. The tab bar sits in the
+hidden title bar of the SwiftUI `Window` scene (`.windowStyle(.hiddenTitleBar)`
+plus `.ignoresSafeArea(.container, edges: .top)`). In that region the window
+server starts a title-bar window drag when the button goes down, before AppKit
+dispatches the event. SwiftUI's hosting views report the area as movable, so
+`mouseDownCanMoveWindow = false` on the tab views, the 0.1.22 drag/up monitor
+and even swallowing the mouse-down in a local monitor do not stop it. The window
+follows the pointer, `locationInWindow` barely changes and no reorder happens.
+
+CI probes with real HID events (`CGEvent.post(tap: .cghidEventTap)`) in a
+minimal SwiftUI `Window` with the app's layout:
+
+| Variant | Tab order after drag | Window moved |
+| --- | --- | --- |
+| 0.1.22 behaviour | unchanged | yes |
+| swallow mouse-down in a local monitor | unchanged | yes |
+| set `isMovable = false` on mouse-down | unchanged | yes |
+| `windowBackgroundDragBehavior(.disabled)` | unchanged | yes |
+| `isMovable = false` before the press | reordered | no |
+| tab bar below the title bar | reordered | no |
+
+`Tabs.Strip` now sets `window.isMovable = false` while the pointer is over the
+strip (an `.activeAlways` tracking area) and restores it when the pointer leaves
+or the drag ends outside the strip. The rest of the hidden title bar still
+moves the window.
+
+Tests:
+
+- `scripts/TabWindowDragTests.swift` (run by `scripts/test-tabs.sh`) opens a
+  SwiftUI `Window` with a hidden title bar, drags the first tab 240pt with HID
+  events and asserts order `bca`, an unmoved window, a still-draggable title
+  area beside the tabs and `isMovable` restored.
+- `scripts/test-tab-drag-app.sh` runs after `scripts/build.sh` in CI. It starts
+  a real Herdr 0.9.3 server, opens the built HerdrX.app, drags `T-A` past `T-C`
+  through Accessibility geometry and HID events, and asserts the server order
+  `T-B, T-C, T-A` and an unmoved window.
+
+Physical mouse and trackpad acceptance on a user Mac is still separate.

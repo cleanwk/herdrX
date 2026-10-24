@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 
 // Drives a running HerdrX through the window server: Accessibility for geometry,
-// HID-level CGEvents for input. Usage: driver <pid> dump|click <label>|drag <from> <to>
+// HID-level CGEvents for input. Usage: driver <pid> dump|click <label>|drag <from> <to>|order
 func attr(_ e: AXUIElement, _ a: String) -> AnyObject? { var v: AnyObject?; return AXUIElementCopyAttributeValue(e, a as CFString, &v) == .success ? v : nil }
 func text(_ e: AXUIElement, _ a: String) -> String { (attr(e, a) as? String) ?? "" }
 func frame(_ e: AXUIElement) -> CGRect? {
@@ -52,8 +52,10 @@ case "drag":
         post(.leftMouseDragged, CGPoint(x: start.x + (end.x - start.x) * CGFloat(step) / 24, y: start.y)); Thread.sleep(forTimeInterval: 0.03)
     }
     Thread.sleep(forTimeInterval: 0.15); post(.leftMouseUp, end); Thread.sleep(forTimeInterval: 0.5)
-    print("window before/after:", windowBefore.map { "\($0)" } ?? "?", window().flatMap(frame).map { "\($0)" } ?? "?")
+    let windowAfter = window().flatMap(frame)
+    print("window before/after:", windowBefore.map { "\($0)" } ?? "?", windowAfter.map { "\($0)" } ?? "?")
     print("tabs right after release:", tabs().map { "\($0.label)@\(Int($0.frame.minX))" })
+    if windowBefore?.origin != windowAfter?.origin { print("FAIL: the tab drag moved the window"); exit(3) }
 case "order":
     print("tabs:", tabs().map(\.label).joined(separator: ","))
 default: exit(64)
