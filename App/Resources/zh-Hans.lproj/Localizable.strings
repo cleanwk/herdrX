@@ -465,3 +465,12 @@
 "No matching spaces, terminals, agents or commands" = "没有匹配的空间、终端、智能体或命令";
 
 "Plugin terminal disconnected. Its Herdr tab is available to reconnect." = "插件终端已断开，可在对应的 Herdr 标签页中重新连接。";
+"Show" = "显示";
+"All Activity" = "全部活动";
+"Working" = "进行中";
+"Needs Attention" = "需处理";
+"Activity Filter" = "活动筛选";
+"Filter spaces and agents. Your current task stays visible." = "筛选空间和智能体。当前任务始终保留显示。";
+"No matching activity." = "没有符合条件的活动。";
+"Show All Activity" = "显示全部活动";
+"New Terminal Tab in %@" = "在“%@”中新建终端标签页";

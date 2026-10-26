@@ -891,6 +891,19 @@
         "selection": "Deferred captured clicks; local gestures temporarily disable engine reporting, copy once on release, clear on copy, accessible feedback; native engine edge autoscroll; cancel on hide/focus/configuration changes.",
         "terminal": "Keep authored ANSI slots, minimum contrast 1, faint opacity 0.65, no truecolor/indexed byte transform.",
         "supersedes": "Earlier all-surface contrast, chromatic ANSI shade adjustment and 0.85 faint contracts; historical screenshot/test evidence remains historical."
+      },
+      "rexComparisonFollowup": {
+        "activityRowHeightPt": 28,
+        "contextualTabTargetPt": [
+          22,
+          28
+        ],
+        "filter": "All Activity / Working / Needs Attention; keep current Space and Agent",
+        "identity": "Group confirmed equivalent endpoints for navigation; preserve selected connection and saved configurations",
+        "layout": "Cache by transport, Tab topology and authoritative geometry; ignore focus and title metadata",
+        "scroll": "Overlap read-only preflight and include queued wheel samples; verify foreground for every batch",
+        "evidence": "docs/rex-beta-comparison/VALIDATION.md",
+        "visualAcceptance": "Final Release clone: Chinese/light at 200pt sidebar passed native filter, current-task retention, new-tab, keyboard-focus and empty-state checks. English/dark rendering and full VoiceOver unverified."
       }
     },
     "agentIcons": {

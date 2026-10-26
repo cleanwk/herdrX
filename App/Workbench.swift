@@ -14,11 +14,24 @@ struct Workbench: View {
                     HStack { Spacer(); Button { showSidebar = false } label: { Image(systemName: "sidebar.left") }.help("Toggle Sidebar · ⌘B").accessibilityLabel("Hide Sidebar") }
                         .buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.leading, 78).padding(.trailing, 12).frame(height: TabMetrics.barHeight)
                     HStack(spacing: 5) {
-                        Button { desk.quickSpace() } label: { Label("New", systemImage: "plus") }.disabled(desk.creatingSpace).help(desk.creationHelp)
+                        Button { desk.quickSpace() } label: { Label("New Space", systemImage: "plus") }.disabled(desk.creatingSpace).help(desk.creationHelp)
                         Menu { Button("New Space…") { desk.showSpaceForm() } } label: { Image(systemName: "chevron.down") }.menuIndicator(.hidden).fixedSize().accessibilityLabel("Space Options")
                         Spacer(minLength: 0)
                         Button { desk.openSearch() } label: { Image(systemName: "magnifyingglass") }.help("Search · ⌘K").accessibilityLabel("Search")
                     }.font(.system(size: 12, weight: .medium)).buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.horizontal, 16).frame(height: 40)
+                    HStack {
+                        Text("Show").foregroundStyle(Color(nsColor: Theme.secondary))
+                        Spacer(minLength: 4)
+                        Menu {
+                            Picker("Activity Filter", selection: $desk.activityFilter) {
+                                ForEach(AgentActivityFilter.allCases, id: \.self) { filter in Text(L(filter.title)).tag(filter) }
+                            }.pickerStyle(.inline)
+                        } label: {
+                            Label(L(desk.activityFilter.title), systemImage: "line.3.horizontal.decrease")
+                        }.menuStyle(.borderlessButton).fixedSize()
+                            .accessibilityLabel("Activity Filter").accessibilityValue(L(desk.activityFilter.title))
+                            .help("Filter spaces and agents. Your current task stays visible.")
+                    }.font(.system(size: 11)).padding(.horizontal, 18).frame(height: 28)
                     sidebarView
                     if !desk.statusText.isEmpty {
                         Text(desk.statusText).font(.system(size: 11, design: .monospaced)).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14).padding(.vertical, 6).help(desk.statusText).accessibilityLabel(desk.statusText)
@@ -106,7 +119,7 @@ struct Workbench: View {
         return PaneCorners(left: showSidebar ? 0 : radius, right: radius)
     }
     private var unavailableDevice: Device? {
-        let visible = desk.devices.filter { desk.deviceFilter.isEmpty || $0.id == desk.deviceFilter }
+        let visible = desk.navigationDevices
         if let device = visible.first(where: { $0.id == desk.selectedDevice }), !desk.canWrite(device.id) { return device }
         return visible.contains(where: { desk.canWrite($0.id) }) ? nil : visible.first
     }
@@ -122,11 +135,18 @@ struct Workbench: View {
     var sidebarView: some View {
         ScrollViewReader { reader in ScrollView {
             LazyVStack(alignment: .leading, spacing: 2, pinnedViews: [.sectionHeaders]) {
-                ForEach(desk.devices.filter { desk.deviceFilter.isEmpty || $0.id == desk.deviceFilter }) { device in deviceGroup(device) }
-                let agents = desk.sidebarAgents.filter { desk.deviceFilter.isEmpty || $0.device == desk.deviceFilter }
+                let devices = desk.navigationDevices
+                ForEach(devices.filter { desk.activityFilter == .all || !desk.visibleSpaces($0.id).isEmpty || !desk.canWrite($0.id) }) { device in deviceGroup(device) }
+                let visible = Set(devices.map(\.id))
+                let agents = desk.sidebarAgents.filter { visible.contains($0.device) && (desk.activityMatches($0) || desk.focused == $0.id) }
                 SidebarGroup(title: L("Agents"), id: "agents", empty: false) {
                     ForEach(agents) { row in agentRow(row) }
-                    if agents.isEmpty { Text("No agents reported by Herdr.").font(.system(size: 11)).foregroundStyle(Color(nsColor: Theme.secondary)).padding(.horizontal, 18).padding(.vertical, 8) }
+                    if agents.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(LocalizedStringKey(desk.activityFilter == .all ? "No agents reported by Herdr." : "No matching activity."))
+                            if desk.activityFilter != .all { Button("Show All Activity") { desk.activityFilter = .all }.buttonStyle(.borderless) }
+                        }.font(.system(size: 11)).foregroundStyle(Color(nsColor: Theme.secondary)).padding(.horizontal, 18).padding(.vertical, 8)
+                    }
                 }
 
             }.padding(.horizontal, 10).padding(.bottom, 8).background(SidebarScrollStyle())
@@ -138,18 +158,28 @@ struct Workbench: View {
                 ConnectionRecovery(device: device).padding(.horizontal, 8).padding(.vertical, 6)
             }
             let spaces = desk.sessions[device.id]?.spaces ?? []
-            ForEach(spaces) { space in
+            ForEach(desk.visibleSpaces(device.id)) { space in
                 SidebarRow(selected: desk.selectedDevice == device.id && desk.selectedSpace == space.id, action: { desk.select(device: device.id, space: space.id) }, verticalPadding: 6.5) {
                     HStack(spacing: 6) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(space.label).font(.system(size: 13, weight: desk.selectedDevice == device.id && desk.selectedSpace == space.id ? .medium : .regular)).lineLimit(1)
                             let branch = desk.branchStates[device.id + "|" + space.id]
-                            Label(branch?.text ?? L("Directory"), systemImage: branch?.symbol ?? "folder").font(.system(size: 11)).foregroundStyle(Color(nsColor: desk.selectedDevice == device.id && desk.selectedSpace == space.id ? Theme.selectedSecondary : Theme.secondary)).lineLimit(1).frame(height: 13)
+                            let path = desk.spacePath(device: device.id, space: space.id)
+                            let branchName = branch.flatMap { $0.phase == .branch || $0.phase == .stale ? $0.text : nil }
+                            Label(branchName ?? path.map { ($0 as NSString).lastPathComponent } ?? L("Directory"), systemImage: branch?.symbol ?? "folder").font(.system(size: 11)).foregroundStyle(Color(nsColor: desk.selectedDevice == device.id && desk.selectedSpace == space.id ? Theme.selectedSecondary : Theme.secondary)).lineLimit(1).frame(height: 13)
                         }.frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 18)
                         if let status = desk.attentionState.summary(device: device.id, panes: (desk.sessions[device.id]?.panes ?? []).filter { $0.workspace == space.id }) { AgentStatus(status: status, unread: status == "unread", selected: desk.selectedDevice == device.id && desk.selectedSpace == space.id) }
-                    }
+                    }.padding(.trailing, 22)
                 }.id(device.id + "|" + space.id).help(DisplayTitle.detail([space.label, desk.spacePath(device: device.id, space: space.id), desk.branchStates[device.id + "|" + space.id]?.detail]))
+                .overlay(alignment: .trailing) {
+                    Button { desk.create(device: device.id, space: space.id) } label: { Image(systemName: "plus").font(.system(size: 11)).frame(width: 22, height: 28).contentShape(Rectangle()) }
+                        .buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.trailing, 5)
+                        .disabled(!desk.canWrite(device.id) || desk.busy.contains(desk.creationID(device.id, space.id)))
+                        .help(LF("New Terminal Tab in %@", space.label)).accessibilityLabel(LF("New Terminal Tab in %@", space.label))
+                }
                 .contextMenu {
+                    Button("New Terminal Tab") { desk.create(device: device.id, space: space.id) }.disabled(!desk.canWrite(device.id) || desk.busy.contains(desk.creationID(device.id, space.id)))
+                    Divider()
                     Button("Rename…") { desk.renameSpace(device: device.id, space: space) }.disabled(!desk.canAct(device: device.id, object: "space|" + space.id))
                     Button("Copy Directory") { if let path = desk.spacePath(device: device.id, space: space.id) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(path, forType: .string) } }.disabled(desk.spacePath(device: device.id, space: space.id) == nil)
                     let index = spaces.firstIndex { $0.id == space.id } ?? 0
@@ -179,7 +209,7 @@ struct Workbench: View {
         let unread = desk.attentionState.unread.contains(row.id)
         let status = L(unread ? "Completed, unread" : row.pane.stateLabel)
         let title = DisplayTitle.agentRow(row.pane, tab: desk.sessions[row.device]?.tabs.first { $0.id == row.pane.tab }, fallback: L("Untitled Task"))
-        let context = DisplayTitle.detail([desk.sessions[row.device]?.spaces.first { $0.id == row.pane.workspace }?.label, desk.deviceFilter.isEmpty && desk.devices.count > 1 ? desk.devices.first { $0.id == row.device }?.displayName : nil])
+        let context = DisplayTitle.detail([desk.sessions[row.device]?.spaces.first { $0.id == row.pane.workspace }?.label, desk.deviceFilter.isEmpty && desk.navigationGroups.count > 1 ? desk.devices.first { $0.id == row.device }?.displayName : nil])
         return SidebarRow(selected: desk.focused == row.id, action: { desk.jump(row.device + "|" + row.pane.id) }, verticalPadding: 9.5, radius: 7, filledSelection: true) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) { Text(title).font(.system(size: 13)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading); AgentStatus(status: row.pane.status, unread: unread, selected: selected).accessibilityHidden(true) }

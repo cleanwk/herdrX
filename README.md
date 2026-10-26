@@ -32,13 +32,15 @@ In-app updates can download signed delta packages from the three most recent sta
 2. Open HerdrX. If local Herdr is stopped, click **Start Herdr**. This runs the existing `herdr server` command in the background. You can also start Herdr yourself.
 3. Select or create a Space, then run `claude`, `codex`, or another CLI in its terminal. Herdr detects agents and reports their state.
 
+Use the sidebar **New Space** action to create a Space, or the **+** beside a Space to create a terminal tab there. **Show** filters spaces and agents by All Activity, Working or Needs Attention; the current task stays visible. Confirmed equivalent device connections share a navigation entry while their saved configurations remain in Settings.
+
 Use **Settings → Connections** to add SSH devices or discover local named sessions. SSH uses your existing keys and configuration; Herdr must be running on the remote device. The default local socket is `~/.config/herdr/herdr.sock`.
 
 Stopped local sessions show a start action. Custom socket paths show connection settings instead of guessing which server to launch. Temporary disconnections reconnect automatically; the info button exposes diagnostics when needed.
 
 If Herdr truncates a large session response, HerdrX automatically reads smaller workspace, pane, layout and agent responses. It reads up to four independent scopes concurrently, combines queued refreshes, and displays each completed snapshot without waiting for a later background request. It checks topology before updating the display and keeps the last complete snapshot if any read fails. Existing terminal attachments continue independently. After splitting, closing, creating a tab or renaming, only the affected Space is read before updating the UI. Full-session and enriched Agent refreshes run in the background; stale full snapshots cannot roll back a completed action.
 
-Space rows show Git branches when available. If Git is missing or a branch refresh fails, the row keeps a neutral Directory label or its last known branch; hover for details. This metadata does not indicate whether the terminal or device is connected.
+Space rows show Git branches when available. If Git is missing or a branch refresh fails, the row keeps the directory name or its last known branch; hover for the full path and details. Unknown directories use a neutral Directory label. This metadata does not indicate whether the terminal or device is connected.
 
 ## Everyday controls
 

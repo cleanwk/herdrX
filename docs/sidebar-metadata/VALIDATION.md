@@ -33,3 +33,8 @@ Rebased the fix onto the published 0.1.16 mainline (`edef390`), preserving its t
 - All 63 Core release tests and 14 Python release tests passed. Local logs: `build/sidebar-metadata/release/`.
 - Repeated native verification in the disposable session `herdrx-sidebar-release-20261013`, with the isolated app/state directory. A deliberately malformed fixture Git config produced the ordinary folder/Directory row, with `fatal: bad config line 1 in file .git/config` only in help. A normal repository showed `fixture/sidebar`, and synthetic server metadata showed `synthetic/server-branch`. Native screenshot and accessibility inspection confirmed the current rendering. Quit the isolated app and stopped only that named test session.
 - Complete CI and public artifact verification are release gates; local installation is left to the user.
+
+
+## 2026-10-26 navigation follow-up (unreleased)
+
+The fallback row now shows the known directory basename instead of the generic Directory label, while retaining the last valid branch and all help diagnostics. Unknown paths still use Directory. This is a presentation change only; Git failure remains separate from connection health. Current checks and the bounded native acceptance are in [Rex comparison validation](../rex-beta-comparison/VALIDATION.md).

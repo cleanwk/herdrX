@@ -5,7 +5,7 @@ struct DeviceSwitcher: View {
     @EnvironmentObject var desk: Desk
     @Environment(\.openSettings) private var openSettings
     @State private var showing = false
-    private var selected: Device? { desk.devices.first { $0.id == desk.deviceFilter } }
+    private var selected: Device? { desk.deviceFilter.isEmpty ? nil : desk.navigationDevices.first }
     var body: some View {
         Button { showing.toggle() } label: {
             HStack(spacing: 6) {
@@ -18,15 +18,19 @@ struct DeviceSwitcher: View {
         }.buttonStyle(.plain).help(selected?.displayName ?? L("All Devices")).accessibilityLabel("Device Filter").accessibilityValue(selected?.displayName ?? L("All Devices"))
             .popover(isPresented: $showing, arrowEdge: .top) {
                 VStack(alignment: .leading, spacing: 4) {
+                    let groups = desk.navigationGroups
+                    let connected = Set(desk.devices.filter { desk.canWrite($0.id) }.map(\.id))
                     Text("Devices").font(.system(size: 11, weight: .semibold)).foregroundStyle(Color(nsColor: Theme.secondary)).padding(.horizontal, 10).padding(.top, 4)
-                    deviceRow(name: L("All Devices"), detail: LF("%d devices · %d connected", desk.devices.count, desk.devices.filter { desk.canWrite($0.id) }.count), symbol: "square.stack.3d.up", id: "", device: nil)
+                    deviceRow(name: L("All Devices"), detail: LF("%d devices · %d connected", groups.count, groups.filter { $0.devices.contains { connected.contains($0.id) } }.count), symbol: "square.stack.3d.up", id: "", device: nil)
                     ScrollView {
                         VStack(spacing: 2) {
-                            ForEach(desk.devices) { device in
-                                deviceRow(name: device.displayName, detail: detail(device), symbol: symbol(device), id: device.id, device: device)
+                            ForEach(groups) { group in
+                                let device = group.representative(selected: desk.selectedDevice, connected: connected)
+                                deviceRow(name: device.displayName, detail: detail(device), symbol: symbol(device), id: group.contains(desk.deviceFilter) ? desk.deviceFilter : device.id, device: device)
+                                    .help(group.devices.map(\.displayName).joined(separator: " · ") + "\n" + detail(device))
                             }
                         }
-                    }.frame(maxHeight: min(360, CGFloat(desk.devices.count) * 46))
+                    }.frame(maxHeight: min(360, CGFloat(groups.count) * 46))
                     Divider().padding(.horizontal, 8).padding(.vertical, 4)
                     Button {
                         desk.connectionFormRevision += 1
@@ -43,7 +47,8 @@ struct DeviceSwitcher: View {
     func detail(_ device: Device) -> String {
         let endpoint = device.endpoint
         if endpoint.kind == "local" { return DisplayTitle.detail([L("This Mac"), URL(fileURLWithPath: endpoint.socketPath).lastPathComponent]) }
-        return DisplayTitle.detail([endpoint.target ?? device.displayName, endpoint.kind == "ssh" ? "SSH" : "Tailcat"])
+        let session = endpoint.session ?? URL(fileURLWithPath: endpoint.socketPath).lastPathComponent
+        return DisplayTitle.detail([endpoint.target ?? device.displayName, endpoint.kind == "ssh" ? "SSH" : "Tailcat", session])
     }
     func connectionDot(_ device: Device) -> some View {
         Circle().fill((desk.connections[device.id] ?? .connecting).color).frame(width: 6, height: 6)

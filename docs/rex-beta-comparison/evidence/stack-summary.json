@@ -1,0 +1,29 @@
+[
+  {
+    "file": "herdrx-idle-sample.txt",
+    "version": "0.1.22 (23)",
+    "timestamp": "2026-10-26 18:25:28.738 +0800",
+    "main_thread_samples": 3800,
+    "largest_event_loop_wait_branch_samples": 3798,
+    "physical_footprint": "176.9M",
+    "notes": "Stack-sample counts include waits and tool AX observation. Not CPU %, frame rate, or matched-load comparison."
+  },
+  {
+    "file": "rex-idle-sample.txt",
+    "version": "0.1.0 (1408)",
+    "timestamp": "2026-10-26 18:25:28.738 +0800",
+    "main_thread_samples": 3841,
+    "largest_event_loop_wait_branch_samples": 3840,
+    "physical_footprint": "303.1M",
+    "notes": "Stack-sample counts include waits and tool AX observation. Not CPU %, frame rate, or matched-load comparison."
+  },
+  {
+    "file": "herdrx-interaction-sample.txt",
+    "version": "0.1.22 (23)",
+    "timestamp": "2026-10-26 18:28:34.813 +0800",
+    "main_thread_samples": 13924,
+    "largest_event_loop_wait_branch_samples": 13280,
+    "physical_footprint": "182.8M",
+    "notes": "Stack-sample counts include waits and tool AX observation. Not CPU %, frame rate, or matched-load comparison."
+  }
+]

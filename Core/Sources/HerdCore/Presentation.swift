@@ -60,13 +60,19 @@ public enum DisplayTitle {
     }
     public static func agentRow(_ pane: Item, tab: Item?, fallback: String) -> String {
         authoredTask(pane.customLabel, tool: pane.agent) ?? meaningful(pane.agentTitle, tool: pane.agent)
-            ?? authoredTask(tab?.customLabel, tool: pane.agent) ?? meaningful(pane.sessionName, tool: pane.agent)
+            ?? taskTabLabel(tab?.customLabel, tool: pane.agent) ?? meaningful(pane.sessionName, tool: pane.agent)
             ?? meaningful(pane.terminalTitle, tool: pane.agent) ?? pane.cwd.map(directory) ?? fallback
     }
     /// Shorten only a recognizable shell location, preserving authored labels and OSC tasks.
     private static func authoredTask(_ value: String?, tool: String?) -> String? {
         guard let value = clean(value) else { return nil }
         return isToolName(value.lowercased(), tool: tool) ? nil : value
+    }
+    // Herdr also puts automatic tab ordinals in `label`. Keep explicit pane
+    // names intact, but do not let a tab number hide the actual Agent task.
+    private static func taskTabLabel(_ value: String?, tool: String?) -> String? {
+        guard let value = authoredTask(value, tool: tool), Int(value) == nil else { return nil }
+        return value
     }
     public static func terminal(_ pane: Item, fallback: String = "Terminal") -> String {
         if let label = pane.customLabel { return label }

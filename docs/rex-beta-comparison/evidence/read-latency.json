@@ -1,0 +1,247 @@
+{
+  "timestamp": "2026-10-26T18:33:17.309760+08:00",
+  "method": "10 pairs after one warmup; fresh socket per call; existing forwards; independent endpoints in parallel",
+  "limits": "Read-only RPC latency, not input-to-frame latency. pane.scroll and rendering were not measured.",
+  "results": [
+    {
+      "endpoint": "local",
+      "forward_count": 1,
+      "sample_count": 10,
+      "median_ms": 1.0141878155991435,
+      "min_ms": 0.8135417010635138,
+      "max_ms": 1.8232488073408604,
+      "samples": [
+        {
+          "process_info_ms": 0.5489587783813477,
+          "pane_get_ms": 0.4871669225394726,
+          "total_ms": 1.0361257009208202
+        },
+        {
+          "process_info_ms": 0.4782918840646744,
+          "pane_get_ms": 0.3573338035494089,
+          "total_ms": 0.8356256876140833
+        },
+        {
+          "process_info_ms": 1.2480828445404768,
+          "pane_get_ms": 0.5751659628003836,
+          "total_ms": 1.8232488073408604
+        },
+        {
+          "process_info_ms": 0.5213748663663864,
+          "pane_get_ms": 0.42170798406004906,
+          "total_ms": 0.9430828504264355
+        },
+        {
+          "process_info_ms": 0.5498339887708426,
+          "pane_get_ms": 0.613790936768055,
+          "total_ms": 1.1636249255388975
+        },
+        {
+          "process_info_ms": 0.5630829837173223,
+          "pane_get_ms": 0.39541698060929775,
+          "total_ms": 0.9584999643266201
+        },
+        {
+          "process_info_ms": 0.616749981418252,
+          "pane_get_ms": 0.3754999488592148,
+          "total_ms": 0.9922499302774668
+        },
+        {
+          "process_info_ms": 0.4436247982084751,
+          "pane_get_ms": 0.36991690285503864,
+          "total_ms": 0.8135417010635138
+        },
+        {
+          "process_info_ms": 0.46324986033141613,
+          "pane_get_ms": 0.5809159483760595,
+          "total_ms": 1.0441658087074757
+        },
+        {
+          "process_info_ms": 0.42316713370382786,
+          "pane_get_ms": 1.1553340591490269,
+          "total_ms": 1.5785011928528547
+        }
+      ]
+    },
+    {
+      "endpoint": "burberry",
+      "forward_count": 2,
+      "sample_count": 10,
+      "median_ms": 2245.9681670879945,
+      "min_ms": 2156.762707978487,
+      "max_ms": 2358.416832983494,
+      "samples": [
+        {
+          "process_info_ms": 1115.637332899496,
+          "pane_get_ms": 1041.125375078991,
+          "total_ms": 2156.762707978487
+        },
+        {
+          "process_info_ms": 1056.5067089628428,
+          "pane_get_ms": 1134.1142090968788,
+          "total_ms": 2190.6209180597216
+        },
+        {
+          "process_info_ms": 1112.0147500187159,
+          "pane_get_ms": 1148.4913749154657,
+          "total_ms": 2260.5061249341816
+        },
+        {
+          "process_info_ms": 1114.0690420288593,
+          "pane_get_ms": 1126.8962079193443,
+          "total_ms": 2240.9652499482036
+        },
+        {
+          "process_info_ms": 1118.6561670619994,
+          "pane_get_ms": 1113.7415419798344,
+          "total_ms": 2232.397709041834
+        },
+        {
+          "process_info_ms": 1126.0092498268932,
+          "pane_get_ms": 1232.4075831566006,
+          "total_ms": 2358.416832983494
+        },
+        {
+          "process_info_ms": 1125.0089169479907,
+          "pane_get_ms": 1117.3707921989262,
+          "total_ms": 2242.379709146917
+        },
+        {
+          "process_info_ms": 1118.082000175491,
+          "pane_get_ms": 1131.4746248535812,
+          "total_ms": 2249.556625029072
+        },
+        {
+          "process_info_ms": 1154.9297091551125,
+          "pane_get_ms": 1134.39204194583,
+          "total_ms": 2289.3217511009425
+        },
+        {
+          "process_info_ms": 1132.5722499750555,
+          "pane_get_ms": 1145.8209578413516,
+          "total_ms": 2278.393207816407
+        }
+      ]
+    },
+    {
+      "endpoint": "paofu",
+      "forward_count": 2,
+      "sample_count": 10,
+      "median_ms": 1172.384771052748,
+      "min_ms": 1016.4543332066387,
+      "max_ms": 1541.0946251358837,
+      "samples": [
+        {
+          "process_info_ms": 599.8842909466475,
+          "pane_get_ms": 483.23320783674717,
+          "total_ms": 1083.1174987833947
+        },
+        {
+          "process_info_ms": 1033.5207080934197,
+          "pane_get_ms": 507.573917042464,
+          "total_ms": 1541.0946251358837
+        },
+        {
+          "process_info_ms": 515.7299579586834,
+          "pane_get_ms": 502.7562500908971,
+          "total_ms": 1018.4862080495805
+        },
+        {
+          "process_info_ms": 509.7936252132058,
+          "pane_get_ms": 506.6607079934329,
+          "total_ms": 1016.4543332066387
+        },
+        {
+          "process_info_ms": 561.4208332262933,
+          "pane_get_ms": 961.4194161258638,
+          "total_ms": 1522.8402493521571
+        },
+        {
+          "process_info_ms": 882.9419577959925,
+          "pane_get_ms": 502.0707920193672,
+          "total_ms": 1385.0127498153597
+        },
+        {
+          "process_info_ms": 529.8755830153823,
+          "pane_get_ms": 505.718459142372,
+          "total_ms": 1035.5940421577543
+        },
+        {
+          "process_info_ms": 716.7934579774737,
+          "pane_get_ms": 707.3688751552254,
+          "total_ms": 1424.1623331326991
+        },
+        {
+          "process_info_ms": 608.8874998968095,
+          "pane_get_ms": 619.6409589610994,
+          "total_ms": 1228.5284588579088
+        },
+        {
+          "process_info_ms": 612.9134581424296,
+          "pane_get_ms": 503.3276251051575,
+          "total_ms": 1116.241083247587
+        }
+      ]
+    },
+    {
+      "endpoint": "paofu-dc9",
+      "forward_count": 2,
+      "sample_count": 10,
+      "median_ms": 1022.9807503055781,
+      "min_ms": 817.367791896686,
+      "max_ms": 1167.3925819341093,
+      "samples": [
+        {
+          "process_info_ms": 549.1452920250595,
+          "pane_get_ms": 577.699291985482,
+          "total_ms": 1126.8445840105414
+        },
+        {
+          "process_info_ms": 578.4050840884447,
+          "pane_get_ms": 584.378165891394,
+          "total_ms": 1162.7832499798387
+        },
+        {
+          "process_info_ms": 478.3612920437008,
+          "pane_get_ms": 488.45391697250307,
+          "total_ms": 966.8152090162039
+        },
+        {
+          "process_info_ms": 477.5832500308752,
+          "pane_get_ms": 579.0495418477803,
+          "total_ms": 1056.6327918786556
+        },
+        {
+          "process_info_ms": 441.8137089814991,
+          "pane_get_ms": 578.7115418352187,
+          "total_ms": 1020.5252508167177
+        },
+        {
+          "process_info_ms": 340.1047911029309,
+          "pane_get_ms": 575.6482079159468,
+          "total_ms": 915.7529990188777
+        },
+        {
+          "process_info_ms": 475.71841697208583,
+          "pane_get_ms": 489.5468750037253,
+          "total_ms": 965.2652919758111
+        },
+        {
+          "process_info_ms": 589.7831660695374,
+          "pane_get_ms": 577.6094158645719,
+          "total_ms": 1167.3925819341093
+        },
+        {
+          "process_info_ms": 476.8693749792874,
+          "pane_get_ms": 340.4984169173986,
+          "total_ms": 817.367791896686
+        },
+        {
+          "process_info_ms": 444.5411248598248,
+          "pane_get_ms": 580.8951249346137,
+          "total_ms": 1025.4362497944385
+        }
+      ]
+    }
+  ]
+}
