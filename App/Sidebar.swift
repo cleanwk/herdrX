@@ -125,3 +125,18 @@ struct SidebarScrollStyle: NSViewRepresentable {
         }
     }
 }
+
+/// Shared geometry for the sidebar's titlebar and footer controls.
+/// Keep the hit area independent of each SF Symbol's intrinsic width.
+struct SidebarToolIcon: View {
+    let symbol: String
+    var active = false
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 13, weight: .regular))
+            .foregroundStyle(Color(nsColor: active ? Theme.accent : Theme.secondary))
+            .frame(width: 26, height: 26)
+            .background(active ? Color(nsColor: Theme.accentWash) : .clear, in: RoundedRectangle(cornerRadius: 5))
+            .contentShape(Rectangle())
+    }
+}

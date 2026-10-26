@@ -94,3 +94,12 @@ Use an explicit New Space label, a 28pt activity-filter row (All Activity / Work
 Group only confirmed equivalent connection endpoints in navigation, preserving the selected device identity and all saved configurations. Named SSH sessions need actual socket resolution before grouping. This is presentation, not transport pooling. Cache exported split trees by transport, Tab topology and server geometry; invalidate on geometry or explicit ratio changes. Overlap read-only scroll preflight queries, preserve foreground validation, and consume samples queued during preflight in the same batch.
 
 Build/test evidence and the bounded native acceptance are recorded in [Rex comparison validation](../../docs/rex-beta-comparison/VALIDATION.md). The final Release clone passed Chinese/light native interaction and 200pt sidebar checks; English/dark rendering, full VoiceOver and frame latency remain unverified. This is not a release or an FPS claim. No raster assets added.
+
+
+### Sidebar icon toolbar — 2026-10-26 follow-up
+
+Supersedes the earlier New Space / Show text rows: one 28pt titlebar row presents Hide Sidebar, Activity Filter (eye), Search/commands (command), and New Terminal Tab (plus), following the user's Rex reference. Each icon uses a 13pt regular SF Symbol in a 26×26pt hit area. Reserve 78pt for window controls, 8pt at the trailing edge, and 8pt before sidebar content; the 200pt minimum still fits all four controls.
+
+The 40pt footer aligns Device Filter and Settings on the left, New Space and Add Device on the right. Non-default activity/device filters have a selected wash; accessible values and help retain their identities. New Space clicks invoke existing quick creation; its context menu opens New Space with Name and Directory. Device selection and connection health remain visible in the existing popover and device group headers. All actions reuse existing Desk/native settings contracts.
+
+Space metadata is text-only: remove branch/folder glyphs, align the subtitle directly with its title, use a 3pt interline gap and 6pt vertical padding. Full path/Git diagnostics stay in help. Agent brand assets and state indicators retain their distinct functions. Evidence and limitations: [sidebar toolbar validation](../../docs/rex-beta-comparison/SIDEBAR-TOOLBAR.md).
