@@ -8,13 +8,7 @@ struct DeviceSwitcher: View {
     private var selected: Device? { desk.deviceFilter.isEmpty ? nil : desk.navigationDevices.first }
     var body: some View {
         Button { showing.toggle() } label: {
-            HStack(spacing: 6) {
-                Image(systemName: selected.map(symbol) ?? "square.stack.3d.up").font(.system(size: 11))
-                Text(selected?.displayName ?? L("All Devices")).font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.middle)
-                if let selected { connectionDot(selected) }
-                Image(systemName: "chevron.up.chevron.down").font(.system(size: 9)).foregroundStyle(Color(nsColor: showing ? Theme.selectedSecondary : Theme.secondary))
-            }.foregroundStyle(Color(nsColor: showing ? Theme.selectedText : Theme.foreground)).padding(.horizontal, 8).frame(height: 28)
-                .background(Color(nsColor: showing ? Theme.accentWash : Theme.hover), in: RoundedRectangle(cornerRadius: 6))
+            SidebarToolIcon(symbol: "line.3.horizontal.decrease.circle", active: showing || !desk.deviceFilter.isEmpty)
         }.buttonStyle(.plain).help(selected?.displayName ?? L("All Devices")).accessibilityLabel("Device Filter").accessibilityValue(selected?.displayName ?? L("All Devices"))
             .popover(isPresented: $showing, arrowEdge: .top) {
                 VStack(alignment: .leading, spacing: 4) {

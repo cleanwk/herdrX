@@ -5,49 +5,26 @@ import HerdCore
 struct Workbench: View {
     @EnvironmentObject var desk: Desk
     @Environment(\.locale) private var locale
+    @Environment(\.openSettings) private var openSettings
     @AppStorage("sidebarWidth") private var sidebar = 260.0
     @AppStorage("showSidebar") private var showSidebar = true
     var body: some View {
         HStack(spacing: 0) {
             if showSidebar {
                 VStack(spacing: 0) {
-                    HStack { Spacer(); Button { showSidebar = false } label: { Image(systemName: "sidebar.left") }.help("Toggle Sidebar · ⌘B").accessibilityLabel("Hide Sidebar") }
-                        .buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.leading, 78).padding(.trailing, 12).frame(height: TabMetrics.barHeight)
-                    HStack(spacing: 5) {
-                        Button { desk.quickSpace() } label: { Label("New Space", systemImage: "plus") }.disabled(desk.creatingSpace).help(desk.creationHelp)
-                        Menu { Button("New Space…") { desk.showSpaceForm() } } label: { Image(systemName: "chevron.down") }.menuIndicator(.hidden).fixedSize().accessibilityLabel("Space Options")
-                        Spacer(minLength: 0)
-                        Button { desk.openSearch() } label: { Image(systemName: "magnifyingglass") }.help("Search · ⌘K").accessibilityLabel("Search")
-                    }.font(.system(size: 12, weight: .medium)).buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.horizontal, 16).frame(height: 40)
-                    HStack {
-                        Text("Show").foregroundStyle(Color(nsColor: Theme.secondary))
-                        Spacer(minLength: 4)
-                        Menu {
-                            Picker("Activity Filter", selection: $desk.activityFilter) {
-                                ForEach(AgentActivityFilter.allCases, id: \.self) { filter in Text(L(filter.title)).tag(filter) }
-                            }.pickerStyle(.inline)
-                        } label: {
-                            Label(L(desk.activityFilter.title), systemImage: "line.3.horizontal.decrease")
-                        }.menuStyle(.borderlessButton).fixedSize()
-                            .accessibilityLabel("Activity Filter").accessibilityValue(L(desk.activityFilter.title))
-                            .help("Filter spaces and agents. Your current task stays visible.")
-                    }.font(.system(size: 11)).padding(.horizontal, 18).frame(height: 28)
+                    sidebarToolbar
                     sidebarView
                     if !desk.statusText.isEmpty {
                         Text(desk.statusText).font(.system(size: 11, design: .monospaced)).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14).padding(.vertical, 6).help(desk.statusText).accessibilityLabel(desk.statusText)
                     }
                     if let error = desk.configError { Label("Herdr config unavailable", systemImage: "exclamationmark.triangle").font(.caption).padding(8).help(error) }
-                    HStack {
-                        DeviceSwitcher()
-                        Spacer(minLength: 0)
-                        SettingsLink { Image(systemName: "gearshape") }.help("Settings · ⌘,").accessibilityLabel("Settings")
-                    }.buttonStyle(.borderless).tint(Color(nsColor: Theme.secondary)).padding(.horizontal, 12).frame(height: 40)
+                    sidebarFooter
                 }.frame(width: sidebar)
                 Rectangle().fill(Color(nsColor: .separatorColor)).frame(width: 1)
             }
             VStack(spacing: 0) {
                 HStack(spacing: 4) {
-                    if !showSidebar { Button { showSidebar = true } label: { Image(systemName: "sidebar.left") }.padding(.leading, 78).help("Show Sidebar · ⌘B").accessibilityLabel("Show Sidebar") }
+                    if !showSidebar { Button { showSidebar = true } label: { SidebarToolIcon(symbol: "sidebar.left") }.padding(.leading, 78).help("Show Sidebar · ⌘B").accessibilityLabel("Show Sidebar") }
                     Tabs(scope: (desk.selectedDevice ?? "") + "|" + (desk.selectedSpace ?? ""), entries: tabs, selected: desk.selectedTab, select: { id in desk.select(device: desk.selectedDevice, space: desk.selectedSpace, tab: id) }, move: reorder, rename: { desk.renameTab($0) }, close: { desk.closeTab($0) }, writable: desk.selectedDevice.map(desk.canWrite) ?? false)
                     Button { desk.create() } label: { Image(systemName: "plus") }.disabled(!desk.canCreate).help("New Terminal Tab · ⌘T").accessibilityLabel("New Terminal Tab")
                     Menu {
@@ -100,6 +77,50 @@ struct Workbench: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in desk.shutdown() }
         .focusedSceneValue(\.workbenchActions, WorkbenchActions(perform: command, enabled: enabled))
     }
+    private var sidebarToolbar: some View {
+        HStack(spacing: 0) {
+            Button { showSidebar = false } label: { SidebarToolIcon(symbol: "sidebar.left") }
+                .help("Toggle Sidebar · ⌘B").accessibilityLabel("Hide Sidebar")
+            Spacer(minLength: 0)
+            Menu {
+                Picker("Activity Filter", selection: $desk.activityFilter) {
+                    ForEach(AgentActivityFilter.allCases, id: \.self) { filter in Text(L(filter.title)).tag(filter) }
+                }.pickerStyle(.inline)
+            } label: {
+                SidebarToolIcon(symbol: "eye", active: desk.activityFilter != .all)
+            }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                .accessibilityLabel("Activity Filter").accessibilityValue(L(desk.activityFilter.title))
+                .help(L("Activity Filter") + " · " + L(desk.activityFilter.title))
+            Button { desk.openSearch() } label: { SidebarToolIcon(symbol: "command") }
+                .help("Search · ⌘K").accessibilityLabel("Search")
+            Button { desk.create() } label: { SidebarToolIcon(symbol: "plus") }
+                .disabled(!desk.canCreate).help("New Terminal Tab · ⌘T").accessibilityLabel("New Terminal Tab")
+        }.buttonStyle(.plain).tint(Color(nsColor: Theme.secondary))
+            .padding(.leading, 78).padding(.trailing, 8).frame(height: TabMetrics.barHeight)
+            .padding(.bottom, 8)
+    }
+
+    private var sidebarFooter: some View {
+        HStack(spacing: 2) {
+            DeviceSwitcher()
+            SettingsLink { SidebarToolIcon(symbol: "gearshape") }
+                .help("Settings · ⌘,").accessibilityLabel("Settings")
+            Spacer(minLength: 0)
+            Button { desk.quickSpace() } label: {
+                SidebarToolIcon(symbol: "rectangle.stack.badge.plus")
+            }.contextMenu {
+                Button("New Space with Name and Directory…") { desk.showSpaceForm() }
+            }.disabled(desk.creatingSpace).help(desk.creationHelp).accessibilityLabel("New Space")
+            Button {
+                desk.connectionFormRevision += 1
+                UserDefaults.standard.set("Connections", forKey: "settingsPage")
+                openSettings()
+            } label: { SidebarToolIcon(symbol: "network") }
+                .help("Add Device…").accessibilityLabel("Add Device…")
+        }.buttonStyle(.plain).tint(Color(nsColor: Theme.secondary))
+            .padding(.horizontal, 12).frame(height: 40)
+    }
+
     private func paneCorners(_ geometry: GeometryProxy) -> PaneCorners {
         var resolvedRadii = true
         #if DEBUG
@@ -159,14 +180,14 @@ struct Workbench: View {
             }
             let spaces = desk.sessions[device.id]?.spaces ?? []
             ForEach(desk.visibleSpaces(device.id)) { space in
-                SidebarRow(selected: desk.selectedDevice == device.id && desk.selectedSpace == space.id, action: { desk.select(device: device.id, space: space.id) }, verticalPadding: 6.5) {
+                SidebarRow(selected: desk.selectedDevice == device.id && desk.selectedSpace == space.id, action: { desk.select(device: device.id, space: space.id) }, verticalPadding: 6) {
                     HStack(spacing: 6) {
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: 3) {
                             Text(space.label).font(.system(size: 13, weight: desk.selectedDevice == device.id && desk.selectedSpace == space.id ? .medium : .regular)).lineLimit(1)
                             let branch = desk.branchStates[device.id + "|" + space.id]
                             let path = desk.spacePath(device: device.id, space: space.id)
                             let branchName = branch.flatMap { $0.phase == .branch || $0.phase == .stale ? $0.text : nil }
-                            Label(branchName ?? path.map { ($0 as NSString).lastPathComponent } ?? L("Directory"), systemImage: branch?.symbol ?? "folder").font(.system(size: 11)).foregroundStyle(Color(nsColor: desk.selectedDevice == device.id && desk.selectedSpace == space.id ? Theme.selectedSecondary : Theme.secondary)).lineLimit(1).frame(height: 13)
+                            Text(branchName ?? path.map { ($0 as NSString).lastPathComponent } ?? L("Directory")).font(.system(size: 11)).foregroundStyle(Color(nsColor: desk.selectedDevice == device.id && desk.selectedSpace == space.id ? Theme.selectedSecondary : Theme.secondary)).lineLimit(1).frame(height: 13)
                         }.frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 18)
                         if let status = desk.attentionState.summary(device: device.id, panes: (desk.sessions[device.id]?.panes ?? []).filter { $0.workspace == space.id }) { AgentStatus(status: status, unread: status == "unread", selected: desk.selectedDevice == device.id && desk.selectedSpace == space.id) }
                     }.padding(.trailing, 22)
