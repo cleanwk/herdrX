@@ -163,3 +163,10 @@ Apple 的 [SwiftUI performance guidance](https://developer.apple.com/documentati
 验收范围：上述简中/light 场景通过。未做最终英文/dark 渲染、完整 VoiceOver、物理触控板方向/延迟、同负载 Rex 对比、真实远程手势到像素、p95/hitch/帧率测试，未声称远端控制通道的秒级延迟已修复。Git 异常时的目录短名保持源代码契约，本轮未重新注入缺少 Git 的失败场景。
 
 临时日志、bundle、fixture 与原始结果在 `build/rex-comparison/`；持久的合成测试摘要在 `evidence/implementation-checks.json`。
+
+
+## 0.1.24 release preparation
+
+Rebased onto published 0.1.23 (`4a7d0fb`), preserving the later tab-titlebar drag, input-method and immediate-pane-close fixes. Optimistic close now invalidates the exported-layout cache, so rejection restores the original authoritative split tree even when the server snapshot is unchanged. The native layout regression covers this rollback and preserves the surviving terminal attachment.
+
+On this release base, 88 Core Release tests, the four native action tests and Python release tests passed locally. The existing GitHub CI sequence, including built-app tab dragging, remains the merge gate for the current PR head. VERSION, project.yml and bilingual release notes target 0.1.24. Publication, signed asset verification, tap update and Brew installation are recorded separately after they occur.

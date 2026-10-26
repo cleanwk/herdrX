@@ -40,7 +40,7 @@ Stopped local sessions show a start action. Custom socket paths show connection 
 
 If Herdr truncates a large session response, HerdrX automatically reads smaller workspace, pane, layout and agent responses. It reads up to four independent scopes concurrently, combines queued refreshes, and displays each completed snapshot without waiting for a later background request. It checks topology before updating the display and keeps the last complete snapshot if any read fails. Existing terminal attachments continue independently. After splitting, closing, creating a tab or renaming, only the affected Space is read before updating the UI. Full-session and enriched Agent refreshes run in the background; stale full snapshots cannot roll back a completed action.
 
-Space rows show Git branches when available. If Git is missing or a branch refresh fails, the row keeps a neutral Directory label or its last known branch; hover for details. This metadata does not indicate whether the terminal or device is connected.
+Space rows show Git branches when available. If Git is missing or a branch refresh fails, the row keeps the directory name or its last known branch; hover for the full path and details. Unknown directories use a neutral Directory label. This metadata does not indicate whether the terminal or device is connected.
 
 ## Everyday controls
 

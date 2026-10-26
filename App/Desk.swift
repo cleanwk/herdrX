@@ -205,6 +205,13 @@ final class Desk: ObservableObject {
     private var pendingLayout: LayoutContext?
     private var layoutRequest = UUID()
     private var loadedLayouts: [String: LayoutContext] = [:]
+    private func invalidateLayout(device: String, tab: String) {
+        let key = device + "|" + tab
+        loadedLayouts[key] = nil
+        if pendingLayout?.key == key {
+            layoutTask?.cancel(); pendingLayout = nil; layoutRequest = UUID()
+        }
+    }
     private func layoutContext(device: String, tab: String) -> LayoutContext? {
         guard let snapshot = sessions[device], snapshot.tabs.contains(where: { $0.id == tab }) else { return nil }
         let layout = snapshot.layouts.array.first { $0["tab_id"].string == tab } ?? .null
@@ -246,10 +253,7 @@ final class Desk: ObservableObject {
                     let client = try rpc(device)
                     _ = try await client.call("layout.set_split_ratio", ["tab_id": .string(tab), "path": .array(divider.path.map(JSON.bool)), "ratio": .number(min(0.9, max(0.1, ratio)))])
                     // Ratios can change without changing rounded cell rectangles.
-                    loadedLayouts[device + "|" + tab] = nil
-                    if pendingLayout?.key == device + "|" + tab {
-                        layoutTask?.cancel(); pendingLayout = nil; layoutRequest = UUID()
-                    }
+                    invalidateLayout(device: device, tab: tab)
                     try await refresh(device, client: client)
                     if selectedDevice == device && selectedTab == tab { ensureAttachments() }
                 } catch { message = error.localizedDescription }
@@ -786,6 +790,9 @@ final class Desk: ObservableObject {
         exitStatus.removeValue(forKey: key)
         let tab = sessions[key.device]?.panes.first { $0.id == key.pane }?.tab ?? selectedTab
         let layoutKey = key.device + "|" + tab
+        // Optimistic removal changes our cached tree before the server snapshot.
+        // A rejected close must export the original tree even if geometry stayed equal.
+        invalidateLayout(device: key.device, tab: tab)
         let base = draggingLayout ?? remoteLayouts[layoutKey]
         if let base {
             if let next = base.removing(key) {

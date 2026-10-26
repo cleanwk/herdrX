@@ -145,6 +145,13 @@ import Testing
         desk.setRatio(try #require(desk.dividers.first), ratio: 0.6)
         try await wait { desk.dividers.first?.ratio == 0.6 }
         #expect(wire.layoutExports == reads + 2, "Explicit ratio write must refresh the tree even when cell rectangles are unchanged")
+        let right = PaneKey(device: "fixture", pane: "right")
+        desk.detachClosedPane(right)
+        #expect(desk.terminals[right] == nil && desk.dividers.isEmpty)
+        desk.restoreDetachedPane(right)
+        try await wait { desk.terminals[right] != nil && desk.dividers.first?.panes == Set([key, right]) }
+        #expect(wire.layoutExports == reads + 3, "Rejected optimistic close must restore the authoritative tree")
+        #expect(desk.terminals[key] === terminal && terminal.attachmentID == attachment)
         print("NATIVE LAYOUT: 20 metadata reconciliations + filter + return navigation reused cached export and terminal attachment")
     }
 
