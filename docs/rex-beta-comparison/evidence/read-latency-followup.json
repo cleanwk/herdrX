@@ -1,0 +1,48 @@
+{
+  "endpoint": "burberry",
+  "method": "Three sequential rounds; no concurrent endpoint probes; existing SSH forward; read-only",
+  "samples": [
+    {
+      "ping": {
+        "ms": 1879.907,
+        "response_bytes": 277
+      },
+      "pane.process_info": {
+        "ms": 1592.561,
+        "response_bytes": 286
+      },
+      "pane.get": {
+        "ms": 942.325,
+        "response_bytes": 459
+      }
+    },
+    {
+      "ping": {
+        "ms": 1918.665,
+        "response_bytes": 277
+      },
+      "pane.process_info": {
+        "ms": 942.946,
+        "response_bytes": 286
+      },
+      "pane.get": {
+        "ms": 1116.886,
+        "response_bytes": 459
+      }
+    },
+    {
+      "ping": {
+        "ms": 1123.509,
+        "response_bytes": 277
+      },
+      "pane.process_info": {
+        "ms": 1121.725,
+        "response_bytes": 286
+      },
+      "pane.get": {
+        "ms": 1120.493,
+        "response_bytes": 459
+      }
+    }
+  ]
+}

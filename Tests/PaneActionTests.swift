@@ -95,6 +95,113 @@ import Testing
             "includes_native_layout": true], options: [.prettyPrinted, .sortedKeys]).write(to: evidence, options: .atomic)
     }
 
+    @Test func metadataAndNavigationReuseLayoutWithoutReplacingTerminals() async throws {
+        _ = NSApplication.shared
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("hx-navigation-" + UUID().uuidString)
+        let previous = ProcessInfo.processInfo.environment["HERDRX_STATE_DIR"]
+        setenv("HERDRX_STATE_DIR", root.path, 1)
+        defer {
+            if let previous { setenv("HERDRX_STATE_DIR", previous, 1) } else { unsetenv("HERDRX_STATE_DIR") }
+            try? FileManager.default.removeItem(at: root)
+        }
+        let wire = PaneActionWire()
+        let server = try TestRPCServer(requests: 200, concurrent: true, fragmentSize: 65536, rawHandler: wire.respond)
+        let desk = Desk(startServices: false)
+        defer { desk.shutdown(); wire.stopEvents.signal(); withExtendedLifetime(server) {} }
+        desk.add(Device(id: "fixture", displayName: "Isolated navigation", endpoint: .init(kind: "local", socketPath: server.path)))
+        try await wait { desk.sessions["fixture"] != nil && desk.dividers.count == 1 }
+        let key = PaneKey(device: "fixture", pane: "left")
+        let terminal = try #require(desk.terminals[key])
+        let attachment = terminal.attachmentID, reads = wire.layoutExports
+        var fields = wire.snapshot.object
+        fields["panes"] = .array(fields["panes"]!.array.map { pane in
+            var value = pane.object
+            value["agent"] = .string("codex"); value["agent_status"] = .string("idle")
+            value["title"] = .string("Synthetic metadata changed")
+            return .object(value)
+        })
+        fields["layouts"] = .array(fields["layouts"]!.array.map { layout in
+            var value = layout.object; value["focused_pane_id"] = .string("right")
+            value["panes"] = .array(value["panes"]!.array.map { pane in
+                var leaf = pane.object; leaf["focused"] = .bool(true); return .object(leaf)
+            })
+            return .object(value)
+        })
+        desk.sessions["fixture"] = try Session(.object(fields)); desk.reindex()
+        for _ in 0..<20 { desk.ensureAttachments() }
+        desk.activityFilter = .working
+        #expect(desk.visibleSpaces("fixture").map(\.id) == ["w"], "Current Space must remain even when idle")
+        #expect(desk.focused == key && desk.terminals[key] === terminal)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(wire.layoutExports == reads, "Metadata/filter changes repeated layout.export")
+        desk.select(device: "fixture", space: "other", tab: "other-t")
+        try await wait { wire.layoutExports == reads + 1 }
+        try await Task.sleep(for: .milliseconds(100))
+        desk.select(device: "fixture", space: "w", tab: "t")
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(wire.layoutExports == reads + 1, "Returning to cached tab repeated layout.export")
+        #expect(desk.terminals[key] === terminal && terminal.attachmentID == attachment)
+        desk.canvasSize = CGSize(width: 1000, height: 800)
+        desk.setRatio(try #require(desk.dividers.first), ratio: 0.6)
+        try await wait { desk.dividers.first?.ratio == 0.6 }
+        #expect(wire.layoutExports == reads + 2, "Explicit ratio write must refresh the tree even when cell rectangles are unchanged")
+        print("NATIVE LAYOUT: 20 metadata reconciliations + filter + return navigation reused cached export and terminal attachment")
+    }
+
+    @Test func contextualCreationCapturesSpaceAndRecoversFromFailureAndStalePane() async throws {
+        _ = NSApplication.shared
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("hx-create-" + UUID().uuidString)
+        let previous = ProcessInfo.processInfo.environment["HERDRX_STATE_DIR"]
+        setenv("HERDRX_STATE_DIR", root.path, 1)
+        defer {
+            if let previous { setenv("HERDRX_STATE_DIR", previous, 1) } else { unsetenv("HERDRX_STATE_DIR") }
+            try? FileManager.default.removeItem(at: root)
+        }
+        let wire = PaneActionWire()
+        let server = try TestRPCServer(requests: 200, concurrent: true, fragmentSize: 65536, rawHandler: wire.respond)
+        let desk = Desk(startServices: false)
+        defer { desk.shutdown(); wire.stopEvents.signal(); withExtendedLifetime(server) {} }
+        desk.add(Device(id: "fixture", displayName: "Isolated creation", endpoint: .init(kind: "local", socketPath: server.path)))
+        try await wait { desk.sessions["fixture"] != nil }
+        let focus = desk.focused
+        desk.create(device: "fixture", space: "other")
+        try await wait { !desk.busy.contains(desk.creationID("fixture", "other")) }
+        #expect(wire.tabCreations.count == 1)
+        #expect(wire.tabCreations.first?["workspace_id"].string == "other")
+        #expect(wire.tabCreations.first?["cwd"].string == "/tmp")
+        #expect(wire.tabCreations.first?["focus"] == .bool(false))
+        #expect(desk.message != nil && desk.focused == focus, "Rejected creation must keep the usable terminal")
+        desk.message = nil
+        desk.create(device: "fixture", space: "other")
+        // Remove the captured pane while pane.get is in flight.
+        var snapshot = wire.snapshot.object
+        snapshot["panes"] = .array(snapshot["panes"]!.array.filter { $0["workspace_id"].string != "other" })
+        desk.sessions["fixture"] = try Session(.object(snapshot))
+        try await wait { !desk.busy.contains(desk.creationID("fixture", "other")) }
+        #expect(wire.tabCreations.count == 1, "Stale target must not send tab.create")
+        #expect(desk.message != nil && desk.focused == focus)
+    }
+
+    @Test func wheelSamplesArrivingDuringPreflightJoinTheCurrentBatch() async throws {
+        let terminal = Terminal(command: "/bin/cat", takeoverCommand: "/bin/cat", observationCommand: { _, _ in "/bin/cat" })
+        defer { terminal.stop() }
+        var batches = 0, samples = 0
+        terminal.onScroll = { [weak terminal] events in
+            batches += 1
+            try? await Task.sleep(for: .milliseconds(150))
+            guard !Task.isCancelled, let terminal else { return }
+            samples += events.count + terminal.takePendingScrollEvents().count
+        }
+        let cg = try #require(CGEvent(scrollWheelEvent2Source: nil, units: .line, wheelCount: 1, wheel1: 1, wheel2: 0, wheel3: 0))
+        let event = try #require(NSEvent(cgEvent: cg))
+        terminal.view.onRemoteScroll?(event)
+        try await wait { batches == 1 }
+        terminal.view.onRemoteScroll?(event); terminal.view.onRemoteScroll?(event)
+        try await wait { samples == 3 }
+        #expect(batches == 1, "Queued gesture samples started another preflight")
+        #expect(terminal.takePendingScrollEvents().isEmpty)
+    }
+
     private func wait(_ condition: () -> Bool) async throws {
         let deadline = Date().addingTimeInterval(5)
         while !condition(), Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }

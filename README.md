@@ -32,6 +32,8 @@ In-app updates can download signed delta packages from the three most recent sta
 2. Open HerdrX. If local Herdr is stopped, click **Start Herdr**. This runs the existing `herdr server` command in the background. You can also start Herdr yourself.
 3. Select or create a Space, then run `claude`, `codex`, or another CLI in its terminal. Herdr detects agents and reports their state.
 
+Use the sidebar **New Space** action to create a Space, or the **+** beside a Space to create a terminal tab there. **Show** filters spaces and agents by All Activity, Working or Needs Attention; the current task stays visible. Confirmed equivalent device connections share a navigation entry while their saved configurations remain in Settings.
+
 Use **Settings → Connections** to add SSH devices or discover local named sessions. SSH uses your existing keys and configuration; Herdr must be running on the remote device. The default local socket is `~/.config/herdr/herdr.sock`.
 
 Stopped local sessions show a start action. Custom socket paths show connection settings instead of guessing which server to launch. Temporary disconnections reconnect automatically; the info button exposes diagnostics when needed.

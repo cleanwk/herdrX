@@ -34,3 +34,8 @@ Herdr 0.9.3 observers receive live ANSI viewport frames, do not read stdin, and 
 - Required current-head CI also runs Core, universal app build, PTY stress, tab containment, text input, geometry and packaging checks.
 
 Native wheel/selection tests (9) and production Herdr scroll/coexistence tests passed at `a346e78fa68b412fa611729a98b7386d7ee10b83` in [CI run 38230758601](https://github.com/cleanwk/herdrX/actions/runs/38230758601). The final current-head gate is [PR #21](https://github.com/cleanwk/herdrX/pull/21/checks); all required checks must pass before tagging. These are native engine/real transport checks with a synthetic TUI, not physical trackpad testing or a claim of live Claude/Codex acceptance. User hardware, third-party GUI combinations and SSH/Tailcat remain unverified. Publication and installation remain separate.
+
+
+## 2026-10-26 preflight latency follow-up (unreleased)
+
+The independent process-info/history reads now overlap. Foreground validation remains mandatory for each batch; a TUI does not wait for history, and a verified Shell still uses authoritative absolute offsets. Samples queued during the preflight join its batch. Existing attachment, connection, terminal identity, hidden-view and cancellation guards remain. Synthetic 250ms reads complete in about 251ms; this is read-path evidence, not gesture-to-pixel latency or a fix for slow remote transport. New cancellation/identity and native batching tests plus visual limits are recorded in [Rex comparison validation](../rex-beta-comparison/VALIDATION.md).

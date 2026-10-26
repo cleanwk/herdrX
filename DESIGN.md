@@ -475,3 +475,12 @@ Transient command windows use native floating windows and real Ghostty terminals
 ### Immediate action results — 0.1.21
 
 Split, close, new-tab and rename completion reads the affected Space through existing workspace/tab/pane/layout RPCs, independently of the full-session queue. Publish only validated server geometry, remove closed native surfaces and preserve surviving terminal objects. Full metadata catches up in the background. Shared read-start revisions prevent an older full snapshot from restoring a removed pane or removing a new split. Scoped failure retains the usable cache and falls back to a full read without repeating the mutation. Native latency tests deliberately hold full snapshots for two seconds.
+
+
+### Rex comparison follow-up — 2026-10-26 (unreleased)
+
+Use an explicit New Space label, a 28pt activity-filter row (All Activity / Working / Needs Attention), and a 22×28pt contextual New Terminal Tab target beside each Space. Filters keep the current Space/Agent and mounted terminal visible; the empty state restores All Activity. Working uses server status; attention uses existing blocked/unread semantics. Keep the existing row hierarchy, palette, native menu/keyboard paths and 200–480pt sidebar width range. Numeric Tab ordinals do not hide meaningful Agent task titles. No valid Git branch means a short directory name with full diagnostics in help.
+
+Group only confirmed equivalent connection endpoints in navigation, preserving the selected device identity and all saved configurations. Named SSH sessions need actual socket resolution before grouping. This is presentation, not transport pooling. Cache exported split trees by transport, Tab topology and server geometry; invalidate on geometry or explicit ratio changes. Overlap read-only scroll preflight queries, preserve foreground validation, and consume samples queued during preflight in the same batch.
+
+Build/test evidence and the bounded native acceptance are recorded in [Rex comparison validation](docs/rex-beta-comparison/VALIDATION.md). The final Release clone passed Chinese/light native interaction and 200pt sidebar checks; English/dark rendering, full VoiceOver and frame latency remain unverified. This is not a release or an FPS claim. No raster assets added.

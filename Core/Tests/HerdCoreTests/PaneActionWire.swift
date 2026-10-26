@@ -8,11 +8,16 @@ final class PaneActionWire: @unchecked Sendable {
     private var ids = ["left", "right"]
     private var next = 3
     private var reads = 0
+    private var exports = 0
+    private var creations: [JSON] = []
+    private var ratio = 0.5
     private var invalidLayout = false
     private var workspaceError: String?
     private var timings: [(String, Date, TimeInterval, TimeInterval)] = []
     let stopEvents = DispatchSemaphore(value: 0)
     var fullReads: Int { lock.lock(); defer { lock.unlock() }; return reads }
+    var layoutExports: Int { lock.lock(); defer { lock.unlock() }; return exports }
+    var tabCreations: [JSON] { lock.lock(); defer { lock.unlock() }; return creations }
     func breakLayout(_ broken: Bool) { lock.lock(); invalidLayout = broken; lock.unlock() }
     func rejectWorkspace(_ code: String?) { lock.lock(); workspaceError = code; lock.unlock() }
     var snapshot: JSON { lock.lock(); defer { lock.unlock() }; return makeSnapshot() }
@@ -48,11 +53,14 @@ final class PaneActionWire: @unchecked Sendable {
         if method == "pane.close" { ids.removeAll { $0 == params["pane_id"].string } }
         if method == "pane.split" { ids.append("new-\(next)"); next += 1 }
         if method == "session.snapshot" { reads += 1 }
-        let snapshot = makeSnapshot(), created = ids.last, workspaceError = workspaceError
+        if method == "layout.export" { exports += 1 }
+        if method == "tab.create" { creations.append(params) }
+        if method == "layout.set_split_ratio", case .number(let value) = params["ratio"] { ratio = value }
+        let snapshot = makeSnapshot(), created = ids.last, workspaceError = workspaceError, ratio = ratio
         lock.unlock()
         if method == "events.subscribe" { _ = stopEvents.wait(timeout: .now() + 15) }
         let sleepStart = Date()
-        TestRPCServer.delay(method == "session.snapshot" ? 2 : 0.02)
+        TestRPCServer.delay(method == "session.snapshot" ? 2 : method == "pane.get" ? 0.15 : 0.02)
         sleep = Date().timeIntervalSince(sleepStart)
         let result: JSON
         switch method {
@@ -72,8 +80,18 @@ final class PaneActionWire: @unchecked Sendable {
             let pane = snapshot["panes"].array.first { $0["pane_id"] == params["pane_id"] }
             result = .object(["layout": snapshot["layouts"].array.first { $0["workspace_id"] == pane?["workspace_id"] } ?? .null])
         case "pane.get": result = .object(["pane": snapshot["panes"].array.first { $0["pane_id"] == params["pane_id"] } ?? .null])
+        case "layout.export":
+            let panes = snapshot["panes"].array.filter { $0["tab_id"] == params["tab_id"] }
+            func tree(_ leaves: ArraySlice<JSON>) -> JSON {
+                guard let first = leaves.first else { return .null }
+                let pane: JSON = .object(["type": .string("pane"), "pane_id": first["pane_id"]])
+                if leaves.count == 1 { return pane }
+                return .object(["type": .string("split"), "direction": .string("right"), "ratio": .number(leaves.count == 2 ? ratio : 1 / Double(leaves.count)), "first": pane, "second": tree(leaves.dropFirst())])
+            }
+            result = .object(["root": tree(panes[...])])
         case "pane.split": result = .object(["pane": snapshot["panes"].array.first { $0["pane_id"].string == created } ?? .null])
         case "pane.close": result = .object([:])
+        case "layout.set_split_ratio": result = .object([:])
         case "plugin.list": result = .object(["plugins": .array([])])
         case "events.subscribe": result = .object(["type": .string("subscription_started")])
         default: return try! JSONEncoder().encode(JSON.object(["id": request["id"], "error": .object(["message": .string("Unsupported fixture RPC " + method)])])) + Data([10])

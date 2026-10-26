@@ -112,6 +112,11 @@ final class Terminal: NSObject, TerminalSurfaceLifecycleDelegate, TerminalSurfac
         wheelID = UUID(); wheelTask?.cancel(); wheelTask = nil
         wheelEvents.removeAll(); historyScroll = TerminalScroll()
     }
+    func takePendingScrollEvents() -> [NSEvent] {
+        let events = wheelEvents
+        wheelEvents.removeAll(keepingCapacity: true)
+        return events
+    }
     func terminalDidResize(_ size: TerminalGridMetrics) { cellHeightPixels = Double(size.cellHeightPixels) }
     func terminalDidAttachSurface(_ surface: TerminalSurface) { self.surface = surface; view.hostSurface = surface }
     func terminalDidDetachSurface() { surface = nil; view.hostSurface = nil }

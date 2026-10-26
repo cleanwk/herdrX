@@ -1,0 +1,105 @@
+{
+  "date": "2026-10-26",
+  "source_base": "1006395",
+  "branch": "codex/rex-beta-comparison",
+  "core_release": {
+    "tests": 88,
+    "failures": 0,
+    "log": "build/rex-comparison/release-build.log"
+  },
+  "scroll_preflight": {
+    "per_read_injected_ms": 250,
+    "observed_parallel_ms": 251.508708,
+    "expected_serial_injected_ms": 500,
+    "includes_write_or_render": false
+  },
+  "native_selection": {
+    "tests": 16,
+    "failures": 0,
+    "configuration": "Release",
+    "log": "build/rex-comparison/native-selection.log"
+  },
+  "universal_build": {
+    "architectures": [
+      "arm64",
+      "x86_64"
+    ],
+    "script": "scripts/build.sh",
+    "signing": "ad-hoc",
+    "installed": false,
+    "published": false,
+    "log": "build/rex-comparison/release-final.log",
+    "codesign_deep_strict": true
+  },
+  "visual_acceptance": {
+    "status": "passed_for_tested_scope",
+    "configuration": "Release",
+    "language": "zh-Hans",
+    "appearance": "light",
+    "window_points": [
+      1200,
+      760
+    ],
+    "sidebar_points": 200,
+    "initial_debug_sidebar_points": 260,
+    "screenshots_verified": true,
+    "screenshot": "workbench-filter-200.png",
+    "checks": [
+      "Flat activity menu",
+      "Working filter retains selected idle task and current terminal",
+      "Needs Attention keeps blocked task and current task",
+      "No matching activity offers Show All Activity; action restores rows",
+      "Two equivalent local configurations display one connected device",
+      "Contextual New Terminal Tab creates in the requested nonselected Space and directory",
+      "New terminal immediately accepts keyboard input",
+      "Long branch name truncates within 200pt sidebar while help retains full metadata"
+    ],
+    "not_exercised": [
+      "English rendered layout",
+      "Dark rendered layout",
+      "Full VoiceOver operation",
+      "Physical trackpad direction and latency"
+    ]
+  },
+  "limits": [
+    "No real remote gesture-to-pixel benchmark",
+    "No FPS/p95/hitch measurements",
+    "Connection grouping does not pool existing SSH transports",
+    "Installed 0.1.22 binary not replaced by repository version 0.1.21"
+  ],
+  "native_actions": {
+    "tests": 4,
+    "failures": 0,
+    "configuration": "Release",
+    "log": "build/rex-comparison/native-actions-cache.log",
+    "covers": [
+      "Metadata and focus do not repeat layout export",
+      "Return navigation preserves terminal and attachment",
+      "Explicit ratio write refreshes tree even with unchanged cell rectangles",
+      "Contextual creation preserves target and recovers on failure or stale pane",
+      "Queued wheel samples join the in-flight batch"
+    ]
+  },
+  "real_herdr_coexistence": {
+    "passed": true,
+    "log": "build/rex-comparison/coexistence.log"
+  },
+  "native_gui_scroll": {
+    "server_offsets": [
+      0,
+      107,
+      0
+    ],
+    "maximum": 107,
+    "synthetic_agent_metadata": true,
+    "server_shell_real": true,
+    "notes": "CUA down/up labels produced older/newer history respectively on this Mac. Verified offset movement; physical-device direction and gesture-to-pixel latency not measured."
+  },
+  "cleanup": {
+    "gui_stopped": true,
+    "gui_stop_method": "SIGTERM owned fixture process after screen locked again",
+    "server_shell_pids_preserved_after_gui_stop": 5,
+    "named_session_stopped": "herdrx-rex-ui-20261026",
+    "production_sessions_modified": false
+  }
+}

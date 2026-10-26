@@ -465,3 +465,12 @@
 "No matching spaces, terminals, agents or commands" = "No matching spaces, terminals, agents or commands";
 
 "Plugin terminal disconnected. Its Herdr tab is available to reconnect." = "Plugin terminal disconnected. Its Herdr tab is available to reconnect.";
+"Show" = "Show";
+"All Activity" = "All Activity";
+"Working" = "Working";
+"Needs Attention" = "Needs Attention";
+"Activity Filter" = "Activity Filter";
+"Filter spaces and agents. Your current task stays visible." = "Filter spaces and agents. Your current task stays visible.";
+"No matching activity." = "No matching activity.";
+"Show All Activity" = "Show All Activity";
+"New Terminal Tab in %@" = "New Terminal Tab in %@";
